@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, ScrollView, Alert, Image } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as Haptics from 'expo-haptics';
 import { Screen, Card, Button, Badge, Banner } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry, useDeleteEntry, useAmendmentForEntry } from '../hooks/useEntries';
@@ -38,6 +39,7 @@ export function EntryDetailScreen() {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           await deleteEntry.mutateAsync(entryId);
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           navigation.goBack();
         },
       },

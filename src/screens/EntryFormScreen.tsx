@@ -4,6 +4,8 @@ import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'r
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { copyPhotoToAppStorage } from '../utils/fileStorage';
 import { Screen, Button, Input, Textarea, Chip } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
@@ -53,6 +55,7 @@ export function EntryFormScreen() {
   const [equipmentNotes, setEquipmentNotes] = useState('');
   const [weather, setWeather] = useState('');
   const [amendmentReason, setAmendmentReason] = useState('');
+  const [photoPaths, setPhotoPaths] = useState<string[]>([]);
 
   useEffect(() => {
     if (existingEntry) {
@@ -65,8 +68,24 @@ export function EntryFormScreen() {
       setWorkTypes(existingEntry.work_types);
       setEquipmentNotes(existingEntry.equipment_notes ?? '');
       setWeather(existingEntry.weather ?? '');
+      setPhotoPaths(existingEntry.photo_paths ?? []);
     }
   }, [existingEntry]);
+
+  const handleAddPhoto = async () => {
+    if (photoPaths.length >= 5) {
+      Alert.alert('Maximum photos', 'You can attach up to 5 photos per entry.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const saved = await copyPhotoToAppStorage(result.assets[0].uri, editId ?? 'new', photoPaths.length);
+      setPhotoPaths((prev) => [...prev, saved]);
+    }
+  };
 
   const toggleWorkType = (wt: WorkType) => {
     setWorkTypes((prev) => (prev.includes(wt) ? prev.filter((t) => t !== wt) : [...prev, wt]));
@@ -89,12 +108,13 @@ export function EntryFormScreen() {
       await updateEntry.mutateAsync({
         id: editId,
         input: { date, employer, site, client, description, work_hours: hours, work_types: workTypes,
-          equipment_notes: equipmentNotes || null, weather: weather || null },
+          equipment_notes: equipmentNotes || null, weather: weather || null, photo_paths: photoPaths },
       });
     } else {
       await createEntry.mutateAsync({
         input: { date, employer, site, client, description, work_hours: hours, work_types: workTypes,
-          equipment_notes: equipmentNotes || undefined, weather: weather || undefined },
+          equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
+          photo_paths: photoPaths.length > 0 ? photoPaths : undefined },
         techLevel: profile.level,
       });
     }
@@ -139,6 +159,7 @@ export function EntryFormScreen() {
           <Text style={[typography.h2, { color: colors.textSecondary }]}>Optional</Text>
           <Input label="Equipment / rigging notes" value={equipmentNotes} onChangeText={setEquipmentNotes} />
           <Input label="Weather / conditions" value={weather} onChangeText={setWeather} />
+          <Button title={`Add photo (${photoPaths.length}/5)`} variant="secondary" onPress={handleAddPhoto} />
 
           <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
             <Button title="Save as draft" onPress={handleSave} disabled={!canSubmit}
