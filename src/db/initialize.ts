@@ -10,7 +10,16 @@ export async function initializeDatabase(): Promise<DbClient> {
   if (clientInstance) return clientInstance;
   const db = await SQLite.openDatabaseAsync('logbook.db');
   await db.execAsync('PRAGMA journal_mode = WAL;');
-  await db.execAsync(SCHEMA_SQL);
+
+  // Execute each statement individually — execAsync can be
+  // unreliable with multiple statements on some devices
+  const statements = SCHEMA_SQL.split(';')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  for (const stmt of statements) {
+    await db.execAsync(stmt + ';');
+  }
+
   clientInstance = createExpoClient(db);
   return clientInstance;
 }

@@ -14,7 +14,7 @@ import { Entry } from '../types';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function LogbookScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, typography, radii } = useTheme();
   const navigation = useNavigation<Nav>();
   const { data: entries = [] } = useEntries();
   const { data: totalHours = 0 } = useTotalWorkHours(new Date().getFullYear());
@@ -39,18 +39,18 @@ export function LogbookScreen() {
 
   return (
     <Screen padded={false}>
-      <View style={{ paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.sm }}>
+      <View style={{ backgroundColor: colors.navy, paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.base }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
-            <Text style={[typography.h1, { color: colors.textPrimary }]}>Logbook</Text>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>{totalHours}h this year</Text>
+            <Text style={[typography.h1, { color: colors.textInverse }]}>Logbook</Text>
+            <Text style={[typography.bodySmall, { color: colors.slateLighter }]}>{totalHours}h this year</Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-            <IconButton icon={<Download size={22} color={colors.accent} />}
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <IconButton icon={<Download size={24} color={colors.slateLighter} />}
               onPress={() => navigation.navigate('Main', { screen: 'Profile' } as any)} />
-            <IconButton icon={<Plus size={22} color={colors.textInverse} />}
+            <IconButton icon={<Plus size={24} color={colors.textInverse} />}
               onPress={() => navigation.navigate('EntryForm')}
-              style={{ backgroundColor: colors.accent }} />
+              style={{ backgroundColor: colors.accent, borderRadius: radii.md }} />
           </View>
         </View>
       </View>

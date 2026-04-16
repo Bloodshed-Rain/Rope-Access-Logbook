@@ -28,8 +28,17 @@ const Tab = createBottomTabNavigator<TabParamList>();
 function TabNavigator() {
   return (
     <Tab.Navigator screenOptions={{
-      tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.textTertiary,
-      tabBarStyle: { borderTopColor: colors.border }, headerShown: false }}>
+      tabBarActiveTintColor: colors.accent,
+      tabBarInactiveTintColor: colors.slateLighter,
+      tabBarStyle: {
+        backgroundColor: colors.navy,
+        borderTopColor: colors.navy,
+        paddingTop: 4,
+        height: 60,
+      },
+      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+      headerShown: false,
+    }}>
       <Tab.Screen name="Logbook" component={LogbookScreen}
         options={{ tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} /> }} />
       <Tab.Screen name="Profile" component={ProfileScreen}

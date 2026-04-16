@@ -105,6 +105,7 @@ export function SignatureScreen() {
             <SignatureCanvas
               ref={sigRef}
               onOK={(sig) => setSignatureData(sig)}
+              onEnd={() => sigRef.current?.readSignature()}
               onClear={() => setSignatureData(null)}
               autoClear={false}
               descriptionText=""

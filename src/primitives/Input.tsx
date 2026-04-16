@@ -5,15 +5,16 @@ import { useTheme } from '../theme/ThemeProvider';
 interface InputProps extends TextInputProps { label: string; error?: string; }
 
 export function Input({ label, error, style, ...props }: InputProps) {
-  const { colors, spacing, typography, radii } = useTheme();
+  const { colors, spacing, typography, radii, touchTarget } = useTheme();
   const [focused, setFocused] = useState(false);
   return (
-    <View style={{ gap: spacing.xs }}>
-      <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>{label}</Text>
+    <View style={{ gap: spacing.sm }}>
+      <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3 }]}>{label}</Text>
       <TextInput
         style={[typography.body, {
-          borderWidth: 1.5, borderColor: error ? colors.error : focused ? colors.borderFocused : colors.border,
-          borderRadius: radii.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+          borderWidth: 2, borderColor: error ? colors.error : focused ? colors.borderFocused : colors.border,
+          borderRadius: radii.md, paddingHorizontal: spacing.base, paddingVertical: spacing.base,
+          minHeight: touchTarget.min,
           color: colors.textPrimary, backgroundColor: colors.surface }, style]}
         placeholderTextColor={colors.textTertiary}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} {...props} />

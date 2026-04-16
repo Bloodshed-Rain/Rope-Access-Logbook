@@ -8,22 +8,23 @@ interface ButtonProps {
 }
 
 export function Button({ title, onPress, variant = 'primary', disabled = false, loading = false, style }: ButtonProps) {
-  const { colors, spacing, typography, radii } = useTheme();
+  const { colors, spacing, typography, radii, touchTarget } = useTheme();
   const bgColor = variant === 'primary' ? colors.accent : variant === 'secondary' ? colors.surface : 'transparent';
-  const textColor = variant === 'primary' ? colors.textInverse : colors.accent;
-  const borderColor = variant === 'secondary' ? colors.accent : 'transparent';
+  const textColor = variant === 'primary' ? colors.textInverse : variant === 'secondary' ? colors.navy : colors.accent;
+  const borderColor = variant === 'secondary' ? colors.navy : 'transparent';
 
   return (
     <Pressable onPress={onPress} disabled={disabled || loading}
       style={({ pressed }) => [
-        { backgroundColor: bgColor, borderRadius: radii.md, paddingVertical: spacing.md,
-          paddingHorizontal: spacing.lg, borderWidth: variant === 'secondary' ? 1.5 : 0, borderColor,
-          opacity: disabled ? 0.5 : pressed ? 0.85 : 1, alignItems: 'center' as const,
+        { backgroundColor: bgColor, borderRadius: radii.md,
+          minHeight: touchTarget.min, paddingVertical: spacing.base,
+          paddingHorizontal: spacing.lg, borderWidth: variant === 'secondary' ? 2 : 0, borderColor,
+          opacity: disabled ? 0.4 : pressed ? 0.8 : 1, alignItems: 'center' as const,
           justifyContent: 'center' as const, flexDirection: 'row' as const, gap: spacing.sm },
         style,
       ]}>
       {loading && <ActivityIndicator size="small" color={textColor} />}
-      <Text style={[typography.body, { fontWeight: '600', color: textColor }]}>{title}</Text>
+      <Text style={[typography.bodyBold, { color: textColor, letterSpacing: 0.3 }]}>{title}</Text>
     </Pressable>
   );
 }
