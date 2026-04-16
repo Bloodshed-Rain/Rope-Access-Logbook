@@ -1,6 +1,6 @@
 // src/screens/LogbookScreen.tsx
-import React, { useState } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, FlatList, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Download, Plus } from 'lucide-react-native';
@@ -13,6 +13,14 @@ import { Entry } from '../types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+function AnimatedRow({ children }: { children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+  }, []);
+  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+}
+
 export function LogbookScreen() {
   const { colors, spacing, typography, radii } = useTheme();
   const navigation = useNavigation<Nav>();
@@ -22,19 +30,21 @@ export function LogbookScreen() {
   const [reminderDismissed, setReminderDismissed] = useState(false);
 
   const renderEntry = ({ item }: { item: Entry }) => (
-    <ListRow
-      title={`${item.date} — ${item.site}`}
-      subtitle={`${item.work_hours}h · ${item.employer}`}
-      right={
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <Badge status={item.status} />
-          {item.amends_entry_id && (
-            <Text style={[typography.caption, { color: colors.statusAmended }]}>amends</Text>
-          )}
-        </View>
-      }
-      onPress={() => navigation.navigate('EntryDetail', { entryId: item.id })}
-    />
+    <AnimatedRow>
+      <ListRow
+        title={`${item.date} — ${item.site}`}
+        subtitle={`${item.work_hours}h · ${item.employer}`}
+        right={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Badge status={item.status} />
+            {item.amends_entry_id && (
+              <Text style={[typography.caption, { color: colors.statusAmended }]}>amends</Text>
+            )}
+          </View>
+        }
+        onPress={() => navigation.navigate('EntryDetail', { entryId: item.id })}
+      />
+    </AnimatedRow>
   );
 
   return (
