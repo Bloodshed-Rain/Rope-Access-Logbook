@@ -7,6 +7,8 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useProfile, useUpdateLastBackupAt } from '../hooks/useProfile';
 import { useBackupReminder } from '../hooks/useBackupReminder';
 import { createExportService } from '../services/exportService';
+import { createEntriesService } from '../services/entriesService';
+import { createSigningService } from '../services/signingService';
 import { getClient } from '../db/initialize';
 import Constants from 'expo-constants';
 
@@ -25,6 +27,21 @@ export function ProfileScreen() {
     const path = `${FileSystem.cacheDirectory}logbook-backup.json`;
     await FileSystem.writeAsStringAsync(path, json);
     await Sharing.shareAsync(path, { mimeType: 'application/json' });
+    updateLastBackup.mutate(new Date().toISOString());
+  };
+
+  const handleExportPdf = async () => {
+    const exportService = createExportService(getClient());
+    const entriesService = createEntriesService(getClient());
+    const signingService = createSigningService(getClient());
+
+    const entries = await entriesService.listEntries();
+    const signatures = await signingService.getAllSignatures();
+    const hoursByLevel = await entriesService.getLifetimeHoursByLevel();
+    const version = Constants.expoConfig?.version ?? '1.0.0';
+
+    const uri = await exportService.exportAsPdf(profile!, entries, signatures, hoursByLevel, version);
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
     updateLastBackup.mutate(new Date().toISOString());
   };
 
@@ -51,6 +68,7 @@ export function ProfileScreen() {
             <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Never backed up</Text>
           )}
           <Button title="Export full logbook (JSON)" onPress={handleExportJson} variant="secondary" />
+          <Button title="Export full logbook (PDF)" onPress={handleExportPdf} />
         </Card>
       </ScrollView>
     </Screen>
