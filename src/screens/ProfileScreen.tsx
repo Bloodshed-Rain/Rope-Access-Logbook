@@ -1,5 +1,58 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Screen, Card, Button, Banner } from '../primitives';
+import { useTheme } from '../theme/ThemeProvider';
+import { useProfile, useUpdateLastBackupAt } from '../hooks/useProfile';
+import { useBackupReminder } from '../hooks/useBackupReminder';
+import { createExportService } from '../services/exportService';
+import { getClient } from '../db/initialize';
+import Constants from 'expo-constants';
+
 export function ProfileScreen() {
-  return (<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>ProfileScreen</Text></View>);
+  const { colors, spacing, typography } = useTheme();
+  const { data: profile } = useProfile();
+  const { certExpiryStatus, daysSinceBackup } = useBackupReminder();
+  const updateLastBackup = useUpdateLastBackupAt();
+
+  if (!profile) return null;
+
+  const handleExportJson = async () => {
+    const exportService = createExportService(getClient());
+    const backup = await exportService.exportAsJson(Constants.expoConfig?.version ?? '1.0.0');
+    const json = JSON.stringify(backup, null, 2);
+    const path = `${FileSystem.cacheDirectory}logbook-backup.json`;
+    await FileSystem.writeAsStringAsync(path, json);
+    await Sharing.shareAsync(path, { mimeType: 'application/json' });
+    updateLastBackup.mutate(new Date().toISOString());
+  };
+
+  return (
+    <Screen>
+      <ScrollView contentContainerStyle={{ gap: spacing.base, paddingVertical: spacing.base }}>
+        <Text style={[typography.h1, { color: colors.textPrimary }]}>Profile</Text>
+        {certExpiryStatus === 'expired' && <Banner variant="error" message="Your SPRAT certification has expired." />}
+        {certExpiryStatus === 'warning' && <Banner variant="warning" message="Your SPRAT certification expires within 60 days." />}
+        <Card>
+          <View style={{ gap: spacing.sm }}>
+            <Text style={[typography.h2, { color: colors.textPrimary }]}>{profile.full_name}</Text>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>SPRAT ID: {profile.sprat_id}</Text>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>Level {profile.level}</Text>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>Cert expires: {profile.cert_expires_on}</Text>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>Employer: {profile.default_employer}</Text>
+          </View>
+        </Card>
+        <Card style={{ gap: spacing.md }}>
+          <Text style={[typography.h2, { color: colors.textPrimary }]}>Backup</Text>
+          {daysSinceBackup !== null ? (
+            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Last backed up: {daysSinceBackup} days ago</Text>
+          ) : (
+            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Never backed up</Text>
+          )}
+          <Button title="Export full logbook (JSON)" onPress={handleExportJson} variant="secondary" />
+        </Card>
+      </ScrollView>
+    </Screen>
+  );
 }
