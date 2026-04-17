@@ -174,6 +174,7 @@ export interface AuthSession {
   email: string | null;
   access_token: string;
   refresh_token: string;
+  /** Unix epoch milliseconds. */
   expires_at: number;
 }
 
