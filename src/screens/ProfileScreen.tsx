@@ -12,6 +12,7 @@ import { createEntriesService } from '../services/entriesService';
 import { createSigningService } from '../services/signingService';
 import { getClient } from '../db/initialize';
 import { ProfileCloudSection } from '../components/ProfileCloudSection';
+import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import Constants from 'expo-constants';
 
 export function ProfileScreen() {
@@ -91,6 +92,11 @@ export function ProfileScreen() {
           onDeleteAccount={() => setDeleteModalOpen(true)}
         />
       </ScrollView>
+      <DeleteAccountModal
+        visible={deleteModalOpen}
+        onDone={() => setDeleteModalOpen(false)}
+        db={getClient()}
+      />
     </Screen>
   );
 }
