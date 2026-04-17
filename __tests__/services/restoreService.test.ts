@@ -248,3 +248,19 @@ describe('restoreService.restore', () => {
     expect(result.kind).toBe('version_too_new');
   });
 });
+
+describe('restoreService.uploadCurrentAsCloud', () => {
+  it('overwrites cloud snapshot and wipes orphan assets', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode('{"old":true}'));
+    cloud.storage.set(`${uid}/assets/sig_old.png`, new Uint8Array([1, 2]));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    await svc.uploadCurrentAsCloud();
+    expect(cloud.storage.has(`${uid}/assets/sig_old.png`)).toBe(false);
+  });
+});

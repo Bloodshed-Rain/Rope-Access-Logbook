@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DbClient } from '../db/client';
 import { CloudClient } from '../cloud/cloudClient';
 import { FileSystemAbstraction } from '../cloud/fsAbstraction';
@@ -162,7 +163,10 @@ export function createRestoreService(deps: RestoreDeps) {
     },
 
     async uploadCurrentAsCloud(): Promise<void> {
-      throw new Error('not_implemented');
+      const session = await cloud.getSession();
+      if (!session) throw new Error('not_authenticated');
+      await cloud.deletePrefix(`${session.user_id}/`);
+      await AsyncStorage.removeItem('logbook:last_uploaded_manifest');
     },
   };
 }
