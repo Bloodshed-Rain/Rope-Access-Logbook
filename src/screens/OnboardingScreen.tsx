@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Screen, Button, Input } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useCreateProfile } from '../hooks/useProfile';
@@ -10,6 +11,9 @@ type Step = 'welcome' | 'data-warning' | 'profile';
 
 export function OnboardingScreen() {
   const { colors, spacing, typography } = useTheme();
+  const nav = useNavigation();
+  const navTo = (name: string) =>
+    (nav as unknown as { navigate: (n: string) => void }).navigate(name);
   const [step, setStep] = useState<Step>('welcome');
   const [fullName, setFullName] = useState('');
   const [spratId, setSpratId] = useState('');
@@ -30,6 +34,11 @@ export function OnboardingScreen() {
           </Text>
           <Button title="Get started" onPress={() => setStep('data-warning')} style={{ marginTop: spacing.lg }} />
           <Button title="Skip" variant="ghost" onPress={() => setStep('profile')} />
+          <Pressable onPress={() => navTo('Auth')}>
+            <Text style={[typography.body, { color: colors.accent, textAlign: 'center', marginTop: spacing.base }]}>
+              Already have an account? Sign in
+            </Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -75,6 +84,17 @@ export function OnboardingScreen() {
           <Button title="Create profile" onPress={() => createProfile.mutate({
             full_name: fullName.trim(), sprat_id: spratId.trim(), level,
             cert_expires_on: certExpiresOn.trim(), default_employer: employer.trim(),
+          }, {
+            onSuccess: () => {
+              Alert.alert(
+                'Back up your logbook?',
+                'Sign in to keep your logbook safe in the cloud and restore it on a new phone. You can do this later from Profile.',
+                [
+                  { text: 'Not now', style: 'cancel' },
+                  { text: 'Sign up', onPress: () => navTo('Auth') },
+                ],
+              );
+            },
           })} disabled={!canSubmit} loading={createProfile.isPending} style={{ marginTop: spacing.lg }} />
         </ScrollView>
       </KeyboardAvoidingView>
