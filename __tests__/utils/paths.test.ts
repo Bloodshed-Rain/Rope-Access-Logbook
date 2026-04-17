@@ -16,8 +16,19 @@ describe('paths', () => {
     });
 
     it('returns input unchanged when prefix does not match and is not already relative', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
       const weird = 'content://com.example/photo/1';
       expect(normalizeAppPath(weird)).toBe(weird);
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('warns but returns input unchanged for file:// paths outside documentDirectory', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const outside = 'file:///var/mobile/OtherApp/file.jpg';
+      expect(normalizeAppPath(outside)).toBe(outside);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      warnSpy.mockRestore();
     });
   });
 

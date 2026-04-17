@@ -17,10 +17,12 @@ export function normalizeAppPath(path: string): string {
   if (!isAbsolute(path)) {
     return path;
   }
-  // Absolute but does not match docDir prefix — log and return as-is.
-  if (typeof console !== 'undefined') {
-    console.warn(`[paths] normalizeAppPath: path does not start with documentDirectory: ${path}`);
+  // content:// URIs (Android gallery) are valid non-docDir absolute paths — pass through silently.
+  if (path.startsWith('content://')) {
+    return path;
   }
+  // Unexpected file:// path outside documentDirectory — worth flagging as a possible bug.
+  console.warn(`[paths] normalizeAppPath: file path does not start with documentDirectory: ${path}`);
   return path;
 }
 
