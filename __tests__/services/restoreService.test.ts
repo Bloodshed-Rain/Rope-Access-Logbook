@@ -146,6 +146,83 @@ describe('restoreService.restore', () => {
     expect(fs.files.has('file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/signatures/sig-1.png')).toBe(true);
   });
 
+  it('reports asset_failed when a referenced asset is missing in Storage', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    const snap: CloudSnapshot = {
+      app_version: '1.0.0',
+      exported_at: '2026-04-16T12:00:00.000Z',
+      profile: {
+        id: 'p-1', full_name: 'T', sprat_id: 'S', level: 'II',
+        cert_expires_on: '2027-01-01', default_employer: 'E',
+        sprat_card_photo_path: null, last_backup_at: null,
+        photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
+        created_at: '2026-04-01', updated_at: '2026-04-01',
+      },
+      entries: [],
+      signatures: [],
+      schema_version: 1, cloud_schema_version: 1, backup_id: 'backup-x',
+      binary_manifest: {
+        'assets/sig_missing.png': {
+          sha256: 'deadbeef',
+          size_bytes: 100,
+          created_at: '2026-04-16T12:00:00.000Z',
+        },
+      },
+      photos_included: false,
+    };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(snap)));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    const r = await svc.restore();
+    expect(r.kind).toBe('restored');
+    if (r.kind === 'restored') {
+      expect(r.assets_failed).toContain('assets/sig_missing.png');
+    }
+  });
+
+  it('quarantines an asset with sha256 mismatch', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    const bytes = new TextEncoder().encode('actual-bytes');
+    const wrongSha = 'ff'.repeat(32);
+    cloud.storage.set(`${uid}/assets/sig_bad.png`, bytes);
+
+    const snap: CloudSnapshot = {
+      app_version: '1.0.0',
+      exported_at: '2026-04-16T12:00:00.000Z',
+      profile: {
+        id: 'p-1', full_name: 'T', sprat_id: 'S', level: 'II',
+        cert_expires_on: '2027-01-01', default_employer: 'E',
+        sprat_card_photo_path: null, last_backup_at: null,
+        photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
+        created_at: '2026-04-01', updated_at: '2026-04-01',
+      },
+      entries: [],
+      signatures: [],
+      schema_version: 1, cloud_schema_version: 1, backup_id: 'backup-y',
+      binary_manifest: {
+        'assets/sig_bad.png': { sha256: wrongSha, size_bytes: bytes.length, created_at: '2026-04-16T12:00:00.000Z' },
+      },
+      photos_included: false,
+    };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(snap)));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    const r = await svc.restore();
+    expect(r.kind).toBe('restored');
+    if (r.kind === 'restored') expect(r.assets_failed).toContain('assets/sig_bad.png');
+    expect(fs.files.has('file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/signatures/bad.png')).toBe(false);
+  });
+
   it('refuses restore when cloud_schema_version is newer than app supports', async () => {
     const db = await createTestClient();
     const cloud = createMockCloudClient();
