@@ -23,8 +23,8 @@ describe('signingService', () => {
     work_types: ['inspection'],
   };
 
-  beforeEach(() => {
-    db = createTestClient();
+  beforeEach(async () => {
+    db = await createTestClient();
     uuidCounter = 0;
     entriesService = createEntriesService(db, testUuid);
     signingService = createSigningService(db, testSha256, testUuid);

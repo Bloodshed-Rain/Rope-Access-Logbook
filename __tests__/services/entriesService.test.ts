@@ -20,8 +20,8 @@ describe('entriesService', () => {
     work_types: ['inspection', 'ndt'],
   };
 
-  beforeEach(() => {
-    db = createTestClient();
+  beforeEach(async () => {
+    db = await createTestClient();
     uuidCounter = 0;
     service = createEntriesService(db, testUuid);
   });

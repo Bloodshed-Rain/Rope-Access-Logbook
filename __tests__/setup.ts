@@ -3,7 +3,7 @@ import { DbClient } from '../src/db/client';
 import { SCHEMA_SQL } from '../src/db/schema';
 import { runSchemaMigrations } from '../src/db/migrations';
 
-export function createTestClient(): DbClient {
+export async function createTestClient(): Promise<DbClient> {
   const db = new BetterSqlite3(':memory:');
   db.pragma('journal_mode = WAL');
 
@@ -31,9 +31,9 @@ export function createTestClient(): DbClient {
     },
   };
 
-  // Run migrations as a no-op here since the schema already includes the new columns,
-  // but call it so the code path is exercised and stays green.
-  runSchemaMigrations(client);
+  // Exercise the migration path even on the canonical schema — catches
+  // schema.ts/migrations.ts drift and keeps the test client honest.
+  await runSchemaMigrations(client);
 
   return client;
 }
