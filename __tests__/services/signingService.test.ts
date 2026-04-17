@@ -1,3 +1,7 @@
+jest.mock('expo-file-system/legacy', () => ({
+  documentDirectory: 'file:///var/mobile/Containers/Data/Application/ABC123/Documents/',
+}));
+
 // __tests__/services/signingService.test.ts
 import { createTestClient } from '../setup';
 import { testSha256 } from '../testHash';
@@ -116,6 +120,40 @@ describe('signingService', () => {
       const sig = await signingService.getSignatureForEntry(entry.id);
       expect(sig).not.toBeNull();
       expect(sig!.supervisor_name).toBe('Jane');
+    });
+  });
+
+  describe('hash_version', () => {
+    it('new signatures are written with hash_version = 2', async () => {
+      const entry = await entriesService.createEntry(validEntry, 'II');
+      const sig = await signingService.signEntry({
+        entry_id: entry.id,
+        supervisor_name: 'Sup',
+        supervisor_cert_number: 'L3-X',
+        signature_png_path: '/sig.png',
+        device_id: 'd-1',
+      });
+      expect(sig.hash_version).toBe(2);
+    });
+
+    it('verifyIntegrity dispatches on stored hash_version', async () => {
+      const entry = await entriesService.createEntry({
+        ...validEntry,
+        photo_paths: ['file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/photos/a.jpg'],
+      }, 'II');
+      await signingService.signEntry({
+        entry_id: entry.id,
+        supervisor_name: 'Sup',
+        supervisor_cert_number: 'L3-X',
+        signature_png_path: '/sig.png',
+        device_id: 'd-1',
+      });
+      const v1Hash = await signingService.computeEntryHashForVersion(entry.id, 1);
+      await db.run('UPDATE signatures SET entry_hash = ?, hash_version = 1 WHERE entry_id = ?', [v1Hash, entry.id]);
+
+      const result = await signingService.verifyIntegrity(entry.id);
+      expect(result.valid).toBe(true);
+      expect(result.hashVersion).toBe(1);
     });
   });
 });
