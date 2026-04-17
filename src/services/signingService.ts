@@ -8,6 +8,9 @@ import { normalizeAppPath } from '../utils/paths';
 
 type UuidFn = () => string;
 
+// FROZEN: v1 algorithm is retained permanently so that signatures whose v1 hash
+// failed verification at migration time (and were left at hash_version=1) remain
+// checkable. Do not modify this function — changes would break existing v1 signatures.
 function entryRowToHashInputV1(row: EntryRow): Record<string, unknown> {
   return {
     id: row.id,
@@ -28,6 +31,8 @@ function entryRowToHashInputV1(row: EntryRow): Record<string, unknown> {
   };
 }
 
+// v2: normalizes photo_paths to relative form so hashes are portable across
+// device reinstalls (where documentDirectory's per-install UUID changes).
 function entryRowToHashInputV2(row: EntryRow): Record<string, unknown> {
   const parsedPaths: string[] = JSON.parse(row.photo_paths);
   const normalized = parsedPaths.map(normalizeAppPath);
@@ -56,7 +61,14 @@ export function createSigningService(db: DbClient, hashFn: HashFn = sha256, uuid
   async function computeEntryHash(entryId: string, version: number): Promise<string> {
     const row = await db.get<EntryRow>('SELECT * FROM entries WHERE id = ?', [entryId]);
     if (!row) throw new Error('Entry not found');
-    const input = version === 2 ? entryRowToHashInputV2(row) : entryRowToHashInputV1(row);
+    let input: Record<string, unknown>;
+    if (version === 2) {
+      input = entryRowToHashInputV2(row);
+    } else if (version === 1) {
+      input = entryRowToHashInputV1(row);
+    } else {
+      throw new Error(`Unsupported hash_version: ${version}. Please update the app.`);
+    }
     const canonical = canonicalize(input);
     return hashFn(canonical);
   }
