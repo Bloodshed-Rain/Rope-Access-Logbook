@@ -9,7 +9,7 @@ export function useSignatureForEntry(entryId: string) {
   return useQuery({ queryKey: ['signature', entryId], queryFn: () => getService().getSignatureForEntry(entryId), enabled: !!entryId });
 }
 
-export function useSignEntry() {
+export function useSignEntry(options?: { afterSign?: () => void }) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateSignatureInput) => getService().signEntry(input),
@@ -18,6 +18,7 @@ export function useSignEntry() {
       queryClient.invalidateQueries({ queryKey: ['entries', input.entry_id] });
       queryClient.invalidateQueries({ queryKey: ['signature', input.entry_id] });
       queryClient.invalidateQueries({ queryKey: ['totalWorkHours'] });
+      options?.afterSign?.();
     },
   });
 }
