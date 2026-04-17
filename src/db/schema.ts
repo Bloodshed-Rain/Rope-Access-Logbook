@@ -9,6 +9,9 @@ export const SCHEMA_SQL = `
     default_employer TEXT NOT NULL DEFAULT '',
     sprat_card_photo_path TEXT,
     last_backup_at TEXT,
+    photos_in_backup INTEGER NOT NULL DEFAULT 0,
+    last_cloud_backup_at TEXT,
+    last_uploaded_backup_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -44,6 +47,7 @@ export const SCHEMA_SQL = `
     gps_lat REAL,
     gps_lon REAL,
     entry_hash TEXT NOT NULL,
+    hash_version INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL
   );
 

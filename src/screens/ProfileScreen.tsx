@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
+import { useQueryClient } from '@tanstack/react-query';
 import { Screen, Card, Button, Banner } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile, useUpdateLastBackupAt } from '../hooks/useProfile';
@@ -10,6 +11,8 @@ import { createExportService } from '../services/exportService';
 import { createEntriesService } from '../services/entriesService';
 import { createSigningService } from '../services/signingService';
 import { getClient } from '../db/initialize';
+import { ProfileCloudSection } from '../components/ProfileCloudSection';
+import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import Constants from 'expo-constants';
 
 export function ProfileScreen() {
@@ -17,8 +20,19 @@ export function ProfileScreen() {
   const { data: profile } = useProfile();
   const { certExpiryStatus, daysSinceBackup } = useBackupReminder();
   const updateLastBackup = useUpdateLastBackupAt();
+  const queryClient = useQueryClient();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   if (!profile) return null;
+
+  async function changePhotosInBackup(v: boolean) {
+    const db = getClient();
+    await db.run(
+      'UPDATE profile SET photos_in_backup = ?, updated_at = ? WHERE id = ?',
+      [v ? 1 : 0, new Date().toISOString(), profile!.id],
+    );
+    queryClient.invalidateQueries({ queryKey: ['profile'] });
+  }
 
   const handleExportJson = async () => {
     const exportService = createExportService(getClient());
@@ -70,7 +84,19 @@ export function ProfileScreen() {
           <Button title="Export full logbook (JSON)" onPress={handleExportJson} variant="secondary" />
           <Button title="Export full logbook (PDF)" onPress={handleExportPdf} />
         </Card>
+        <ProfileCloudSection
+          db={getClient()}
+          profileId={profile.id}
+          photosInBackup={!!profile.photos_in_backup}
+          onChangePhotosInBackup={changePhotosInBackup}
+          onDeleteAccount={() => setDeleteModalOpen(true)}
+        />
       </ScrollView>
+      <DeleteAccountModal
+        visible={deleteModalOpen}
+        onDone={() => setDeleteModalOpen(false)}
+        db={getClient()}
+      />
     </Screen>
   );
 }

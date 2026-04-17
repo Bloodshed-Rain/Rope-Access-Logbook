@@ -12,9 +12,16 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useEntry } from '../hooks/useEntries';
 import { useSignEntry } from '../hooks/useSignatures';
 import { useBackupReminder } from '../hooks/useBackupReminder';
+import { useBackup } from '../hooks/useBackup';
 import { saveSignaturePng } from '../utils/fileStorage';
 import { generateId } from '../utils/uuid';
 import { RootStackParamList } from '../navigation/RootNavigator';
+import { getClient } from '../db/initialize';
+import { createSupabaseCloudClient } from '../cloud/supabaseClient';
+import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
+import { createExportService } from '../services/exportService';
+import { sha256 } from '../utils/hash';
+import { APP_VERSION } from '../constants';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SigRoute = RouteProp<RootStackParamList, 'Signature'>;
@@ -25,7 +32,19 @@ export function SignatureScreen() {
   const route = useRoute<SigRoute>();
   const entryId = route.params.entryId;
   const { data: entry } = useEntry(entryId);
-  const signEntry = useSignEntry();
+  const db = getClient();
+  const cloud = createSupabaseCloudClient();
+  const fs = createExpoFsAbstraction();
+  const backup = useBackup({
+    db,
+    cloud,
+    fs,
+    hash: sha256,
+    exportService: createExportService(db),
+    clock: () => new Date().toISOString(),
+    appVersion: APP_VERSION,
+  });
+  const signEntry = useSignEntry({ afterSign: () => backup.mutate() });
   const { showPostSigningNudge } = useBackupReminder();
   const sigRef = useRef<any>(null);
 

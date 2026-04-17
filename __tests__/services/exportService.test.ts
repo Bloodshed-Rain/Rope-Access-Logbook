@@ -12,8 +12,8 @@ describe('exportService', () => {
   let uuidCounter = 0;
   const testUuid = () => `id-${++uuidCounter}`;
 
-  beforeEach(() => {
-    db = createTestClient();
+  beforeEach(async () => {
+    db = await createTestClient();
     uuidCounter = 0;
   });
 

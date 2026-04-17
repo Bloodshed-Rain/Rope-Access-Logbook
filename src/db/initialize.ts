@@ -3,6 +3,9 @@ import * as SQLite from 'expo-sqlite';
 import { createExpoClient } from './expoClient';
 import { DbClient } from './client';
 import { SCHEMA_SQL } from './schema';
+import { runSchemaMigrations } from './migrations';
+import { runHashMigration } from './hashMigration';
+import { sha256 } from '../utils/hash';
 
 let clientInstance: DbClient | null = null;
 
@@ -21,6 +24,8 @@ export async function initializeDatabase(): Promise<DbClient> {
   }
 
   clientInstance = createExpoClient(db);
+  await runSchemaMigrations(clientInstance);
+  await runHashMigration(clientInstance, sha256);
   return clientInstance;
 }
 

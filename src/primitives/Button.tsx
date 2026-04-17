@@ -3,14 +3,20 @@ import { Pressable, Text, ViewStyle, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface ButtonProps {
-  title: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'ghost';
+  title: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   disabled?: boolean; loading?: boolean; style?: ViewStyle;
 }
 
 export function Button({ title, onPress, variant = 'primary', disabled = false, loading = false, style }: ButtonProps) {
   const { colors, spacing, typography, radii, touchTarget } = useTheme();
-  const bgColor = variant === 'primary' ? colors.accent : variant === 'secondary' ? colors.surface : 'transparent';
-  const textColor = variant === 'primary' ? colors.textInverse : variant === 'secondary' ? colors.navy : colors.accent;
+  const bgColor = variant === 'primary' ? colors.accent
+    : variant === 'secondary' ? colors.surface
+    : variant === 'danger' ? colors.error
+    : 'transparent';
+  const textColor = variant === 'primary' ? colors.textInverse
+    : variant === 'secondary' ? colors.navy
+    : variant === 'danger' ? colors.textInverse
+    : colors.accent;
   const borderColor = variant === 'secondary' ? colors.navy : 'transparent';
 
   return (

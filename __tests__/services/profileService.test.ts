@@ -17,8 +17,8 @@ describe('profileService', () => {
     default_employer: 'Acme Rope Co',
   };
 
-  beforeEach(() => {
-    db = createTestClient();
+  beforeEach(async () => {
+    db = await createTestClient();
     service = createProfileService(db, testUuid);
   });
 
