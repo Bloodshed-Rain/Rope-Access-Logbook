@@ -30,6 +30,7 @@ function rowToEntry(row: EntryRow): Entry {
     status: row.status,
     amends_entry_id: row.amends_entry_id,
     amendment_reason: row.amendment_reason,
+    pending_sign_request_id: row.pending_sign_request_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
