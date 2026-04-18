@@ -461,5 +461,13 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
       reqListeners.add(cb);
       return () => { reqListeners.delete(cb); };
     },
+
+    async downloadSignRequestAsset(bucketKey) {
+      if (!online) throw new Error('offline');
+      const fullKey = `sign-requests/${bucketKey}`;
+      const bytes = storage.get(fullKey);
+      if (!bytes) throw new Error(`not_found:${fullKey}`);
+      return bytes;
+    },
   };
 }

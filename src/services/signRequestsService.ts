@@ -170,7 +170,10 @@ export function createSignRequestsService(
     let localPngPath = '';
     if (row.signature_png_path) {
       try {
-        const bytes = await cloud.downloadObject(row.signature_png_path);
+        // signature_png_path is stored as "sign-requests/{id}/sig.png" — strip the bucket prefix
+        // before calling the bucket-specific download.
+        const bucketKey = (row.signature_png_path ?? '').replace(/^sign-requests\//, '');
+        const bytes = await cloud.downloadSignRequestAsset(bucketKey);
         let binary = '';
         for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
         const base64 = Buffer.from(binary, 'binary').toString('base64');

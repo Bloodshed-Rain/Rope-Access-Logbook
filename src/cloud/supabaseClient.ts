@@ -503,5 +503,12 @@ export function createSupabaseCloudClient(): CloudClient {
         sb.removeChannel(channel);
       };
     },
+
+    async downloadSignRequestAsset(bucketKey) {
+      const { data, error } = await sb.storage.from(SIGN_REQUESTS_BUCKET).download(bucketKey);
+      if (error) throw new Error(error.message);
+      const buf = await data.arrayBuffer();
+      return new Uint8Array(buf);
+    },
   };
 }
