@@ -100,9 +100,9 @@ describe('restoreService.restore', () => {
         created_at: '2026-04-01', updated_at: '2026-04-01',
       },
       entries: [{
-        id: 'e-1', date: '2026-04-10', employer: 'Emp', site: 'Site', client: 'Cli',
+        id: 'e-1', date_from: '2026-04-10', date_to: '2026-04-10', employer: 'Emp', site: 'Site', client: 'Cli',
         description: 'Work', work_hours: 8, tech_level_snapshot: 'II',
-        work_types: ['inspection'], equipment_notes: null, weather: null,
+        work_types: ['inspection'], other_work_description: null, equipment_notes: null, weather: null,
         photo_paths: [], status: 'signed', amends_entry_id: null, amendment_reason: null,
         created_at: '2026-04-10', updated_at: '2026-04-10',
       }],

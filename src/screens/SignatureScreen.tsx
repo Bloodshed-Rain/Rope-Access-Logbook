@@ -109,7 +109,7 @@ export function SignatureScreen() {
         <Card>
           <View style={{ gap: spacing.xs }}>
             <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Entry summary</Text>
-            <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.date} — {entry.site}</Text>
+            <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} → ${entry.date_to}`} — {entry.site}</Text>
             <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.work_hours}h · {entry.employer}</Text>
             <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>{entry.description}</Text>
           </View>

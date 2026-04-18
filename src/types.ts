@@ -33,7 +33,8 @@ export interface Profile {
 
 export interface Entry {
   id: string;
-  date: string;
+  date_from: string;
+  date_to: string;
   employer: string;
   site: string;
   client: string;
@@ -41,6 +42,7 @@ export interface Entry {
   work_hours: number;
   tech_level_snapshot: SpratLevel;
   work_types: WorkType[];
+  other_work_description: string | null;
   equipment_notes: string | null;
   weather: string | null;
   photo_paths: string[];
@@ -51,9 +53,14 @@ export interface Entry {
   updated_at: string;
 }
 
+// Kept on the DB row type (not on the domain Entry) so existing v1/v2-signed
+// entries remain hash-verifiable. New writes populate date = date_from to keep
+// the column in sync.
 export interface EntryRow {
   id: string;
   date: string;
+  date_from: string;
+  date_to: string;
   employer: string;
   site: string;
   client: string;
@@ -61,6 +68,7 @@ export interface EntryRow {
   work_hours: number;
   tech_level_snapshot: SpratLevel;
   work_types: string;
+  other_work_description: string | null;
   equipment_notes: string | null;
   weather: string | null;
   photo_paths: string;
@@ -87,13 +95,15 @@ export interface Signature {
 }
 
 export interface CreateEntryInput {
-  date: string;
-  employer: string;
-  site: string;
-  client: string;
-  description: string;
-  work_hours: number;
-  work_types: WorkType[];
+  date_from?: string;
+  date_to?: string;
+  employer?: string;
+  site?: string;
+  client?: string;
+  description?: string;
+  work_hours?: number;
+  work_types?: WorkType[];
+  other_work_description?: string | null;
   equipment_notes?: string;
   weather?: string;
   photo_paths?: string[];
@@ -102,13 +112,15 @@ export interface CreateEntryInput {
 }
 
 export interface UpdateEntryInput {
-  date?: string;
+  date_from?: string;
+  date_to?: string;
   employer?: string;
   site?: string;
   client?: string;
   description?: string;
   work_hours?: number;
   work_types?: WorkType[];
+  other_work_description?: string | null;
   equipment_notes?: string | null;
   weather?: string | null;
   photo_paths?: string[];

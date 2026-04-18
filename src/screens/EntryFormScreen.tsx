@@ -59,7 +59,7 @@ export function EntryFormScreen() {
 
   useEffect(() => {
     if (existingEntry) {
-      setDate(existingEntry.date);
+      setDate(existingEntry.date_from);
       setEmployer(existingEntry.employer);
       setSite(existingEntry.site);
       setClient(existingEntry.client);
@@ -107,12 +107,12 @@ export function EntryFormScreen() {
     } else if (isEdit && editId) {
       await updateEntry.mutateAsync({
         id: editId,
-        input: { date, employer, site, client, description, work_hours: hours, work_types: workTypes,
+        input: { date_from: date, date_to: date, employer, site, client, description, work_hours: hours, work_types: workTypes,
           equipment_notes: equipmentNotes || null, weather: weather || null, photo_paths: photoPaths },
       });
     } else {
       await createEntry.mutateAsync({
-        input: { date, employer, site, client, description, work_hours: hours, work_types: workTypes,
+        input: { date_from: date, date_to: date, employer, site, client, description, work_hours: hours, work_types: workTypes,
           equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
           photo_paths: photoPaths.length > 0 ? photoPaths : undefined },
         techLevel: profile.level,

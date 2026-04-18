@@ -20,7 +20,7 @@ describe('runHashMigration', () => {
     const signing = createSigningService(db, testSha256, testUuid);
 
     const entry = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
       photo_paths: ['file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/photos/a.jpg'],
     }, 'II');
@@ -48,7 +48,7 @@ describe('runHashMigration', () => {
     const signing = createSigningService(db, testSha256, testUuid);
 
     const entry = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({
@@ -71,7 +71,7 @@ describe('runHashMigration', () => {
     const entries = createEntriesService(db, testUuid);
     const signing = createSigningService(db, testSha256, testUuid);
     const entry = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({
@@ -99,7 +99,7 @@ describe('runHashMigration', () => {
     const signing = createSigningService(db, testSha256, testUuid);
 
     const entry = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({
@@ -123,7 +123,7 @@ describe('runHashMigration', () => {
     const signing = createSigningService(db, testSha256, testUuid);
 
     const entry = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({

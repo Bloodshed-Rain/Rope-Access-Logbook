@@ -19,6 +19,8 @@ export const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS entries (
     id TEXT PRIMARY KEY,
     date TEXT NOT NULL,
+    date_from TEXT,
+    date_to TEXT,
     employer TEXT NOT NULL,
     site TEXT NOT NULL,
     client TEXT NOT NULL,
@@ -26,6 +28,7 @@ export const SCHEMA_SQL = `
     work_hours REAL NOT NULL,
     tech_level_snapshot TEXT NOT NULL CHECK (tech_level_snapshot IN ('I', 'II', 'III')),
     work_types TEXT NOT NULL DEFAULT '[]',
+    other_work_description TEXT,
     equipment_notes TEXT,
     weather TEXT,
     photo_paths TEXT NOT NULL DEFAULT '[]',

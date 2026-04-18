@@ -10,10 +10,28 @@ import { renderSummaryPageHtml } from '../templates/summaryPageHtml';
 import { SpratLevel } from '../types';
 
 function rowToEntry(row: EntryRow): Entry {
+  const dateFrom = row.date_from ?? row.date;
+  const dateTo = row.date_to ?? row.date;
   return {
-    ...row,
+    id: row.id,
+    date_from: dateFrom,
+    date_to: dateTo,
+    employer: row.employer,
+    site: row.site,
+    client: row.client,
+    description: row.description,
+    work_hours: row.work_hours,
+    tech_level_snapshot: row.tech_level_snapshot,
     work_types: JSON.parse(row.work_types),
+    other_work_description: row.other_work_description,
+    equipment_notes: row.equipment_notes,
+    weather: row.weather,
     photo_paths: JSON.parse(row.photo_paths),
+    status: row.status,
+    amends_entry_id: row.amends_entry_id,
+    amendment_reason: row.amendment_reason,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
   };
 }
 
@@ -47,8 +65,12 @@ export function createExportService(db: DbClient) {
     ): Promise<string> {
       const signedEntries = entries.filter((e) => e.status === 'signed');
       const totalHours = signedEntries.reduce((sum, e) => sum + e.work_hours, 0);
-      const dates = signedEntries.map((e) => e.date).sort();
-      const dateRange = { earliest: dates[0] ?? 'N/A', latest: dates[dates.length - 1] ?? 'N/A' };
+      const froms = signedEntries.map((e) => e.date_from).sort();
+      const tos = signedEntries.map((e) => e.date_to).sort();
+      const dateRange = {
+        earliest: froms[0] ?? 'N/A',
+        latest: tos[tos.length - 1] ?? 'N/A',
+      };
 
       const sigMap = new Map<string, Signature>();
       for (const sig of signatures) sigMap.set(sig.entry_id, sig);
@@ -62,7 +84,7 @@ export function createExportService(db: DbClient) {
       const hoursByYear: Record<number, number> = {};
       const hoursByWorkType: Record<string, number> = {};
       for (const e of signedEntries) {
-        const year = parseInt(e.date.substring(0, 4));
+        const year = parseInt(e.date_from.substring(0, 4));
         hoursByYear[year] = (hoursByYear[year] ?? 0) + e.work_hours;
         for (const wt of e.work_types) {
           hoursByWorkType[wt] = (hoursByWorkType[wt] ?? 0) + e.work_hours;
@@ -72,7 +94,11 @@ export function createExportService(db: DbClient) {
       const amendments = entries.filter((e) => e.amends_entry_id && e.amendment_reason)
         .map((e) => {
           const original = entries.find((o) => o.id === e.amends_entry_id);
-          return { originalDate: original?.date ?? '?', amendmentDate: e.date, reason: e.amendment_reason! };
+          return {
+            originalDate: original?.date_from ?? '?',
+            amendmentDate: e.date_from,
+            reason: e.amendment_reason!,
+          };
         });
 
       const summaryHtml = renderSummaryPageHtml({ hoursByYear, hoursByWorkType, amendments });

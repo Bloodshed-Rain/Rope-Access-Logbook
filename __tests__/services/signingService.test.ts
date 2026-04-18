@@ -18,7 +18,8 @@ describe('signingService', () => {
   const testUuid = () => `id-${++uuidCounter}`;
 
   const validEntry: CreateEntryInput = {
-    date: '2026-04-15',
+    date_from: '2026-04-15',
+    date_to: '2026-04-15',
     employer: 'Acme',
     site: 'Site A',
     client: 'Client X',

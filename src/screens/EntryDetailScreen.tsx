@@ -61,7 +61,7 @@ export function EntryDetailScreen() {
           <Banner variant="info" message="Integrity: verified" />
         )}
         {entry.amends_entry_id && (
-          <Banner variant="info" message={`Amends entry from ${entry.date}`}
+          <Banner variant="info" message={`Amends entry from ${entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} to ${entry.date_to}`}`}
             actionLabel="View original"
             onAction={() => navigation.push('EntryDetail', { entryId: entry.amends_entry_id! })} />
         )}
@@ -73,7 +73,7 @@ export function EntryDetailScreen() {
 
         <Card style={{ gap: spacing.sm }}>
           <Text style={[typography.h2, { color: colors.textPrimary }]}>When & where</Text>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Date: {entry.date}</Text>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>Date: {entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} to ${entry.date_to}`}</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Site: {entry.site}</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Employer: {entry.employer}</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Client: {entry.client}</Text>
