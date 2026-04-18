@@ -22,6 +22,7 @@ import { MagicLinkWaitScreen } from '../screens/MagicLinkWaitScreen';
 import { CloudConflictScreen } from '../screens/CloudConflictScreen';
 import { SupervisorSearchScreen } from '../screens/SupervisorSearchScreen';
 import { InboxScreen } from '../screens/InboxScreen';
+import { SignRequestDetailScreen } from '../screens/SignRequestDetailScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -38,6 +39,7 @@ export type RootStackParamList = {
   MagicLinkWait: { email: string };
   CloudConflict: undefined;
   SupervisorSearch: undefined;
+  SignRequestDetail: { requestId: string };
 };
 
 export type TabParamList = { Logbook: undefined; Inbox: undefined; Profile: undefined; };
@@ -157,6 +159,7 @@ export function RootNavigator() {
             <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Sign in' }} />
             <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ title: 'Check your email' }} />
             <Stack.Screen name="SupervisorSearch" component={SupervisorSearchScreen} options={{ title: 'Add supervisor' }} />
+            <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
           </>
         )}
       </Stack.Navigator>
