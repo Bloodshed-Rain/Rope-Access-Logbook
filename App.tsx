@@ -11,6 +11,7 @@ import { colors } from './src/theme/tokens';
 import { createSupabaseCloudClient } from './src/cloud/supabaseClient';
 import { createExpoFsAbstraction } from './src/cloud/fsAbstraction';
 import { createCloudBackupService } from './src/services/cloudBackupService';
+import { createSupervisorConnectionsService } from './src/services/supervisorConnectionsService';
 import { createExportService } from './src/services/exportService';
 import { sha256 } from './src/utils/hash';
 import { APP_VERSION } from './src/constants';
@@ -44,6 +45,17 @@ export default function App() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
         svc.backup().catch(() => { /* swallow; errors surface via UI hooks */ });
+      }
+      if (state === 'active') {
+        (async () => {
+          try {
+            const conns = createSupervisorConnectionsService(db, cloud);
+            await conns.sync();
+            // signRequestsService.sync() added in a later task
+          } catch {
+            // best-effort, silent
+          }
+        })();
       }
     });
     return () => sub.remove();
