@@ -159,5 +159,23 @@ export function createSupabaseCloudClient(): CloudClient {
         return false;
       }
     },
+
+    // --- Supervisor accounts (stubbed; real impl in Task 34) ---
+    async listSupervisorConnections() { throw new Error('not_implemented'); },
+    async inviteSupervisorByEmail() { throw new Error('not_implemented'); },
+    async inviteSupervisorByUserId() { throw new Error('not_implemented'); },
+    async respondToConnection() { throw new Error('not_implemented'); },
+    async revokeConnection() { throw new Error('not_implemented'); },
+    async reinviteDeclinedConnection() { throw new Error('not_implemented'); },
+    subscribeConnections() { return () => {}; },
+    async upsertSupervisorDirectory() { throw new Error('not_implemented'); },
+    async deleteSupervisorDirectory() { throw new Error('not_implemented'); },
+    async searchSupervisors() { throw new Error('not_implemented'); },
+    async listSignRequests() { throw new Error('not_implemented'); },
+    async sendSignRequest() { throw new Error('not_implemented'); },
+    async signRequest() { throw new Error('not_implemented'); },
+    async declineRequest() { throw new Error('not_implemented'); },
+    async withdrawRequest() { throw new Error('not_implemented'); },
+    subscribeSignRequests() { return () => {}; },
   };
 }
