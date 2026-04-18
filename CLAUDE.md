@@ -46,7 +46,7 @@ supabase secrets set SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROL
 
 ### Persistence (`src/db/`)
 
-The `DbClient` interface in `client.ts` is the only DB abstraction. It exposes `run`, `get`, `getAll`, `exec` against parameterized SQL. The runtime implementation (`expoClient.ts`) wraps `expo-sqlite` and is instantiated by `initialize.ts`; tests use `better-sqlite3` in-memory via `__tests__/setup.ts`'s `createTestClient()`. Schema lives in `schema.ts` — three tables (`profile`, `entries`, `signatures`) plus four indexes. New columns are added idempotently by `migrations.ts` via guarded `PRAGMA table_info` + `ALTER TABLE`; the profile table currently carries `photos_in_backup`, `last_cloud_backup_at`, `last_uploaded_backup_id`, and the signatures table carries `hash_version`.
+The `DbClient` interface in `client.ts` is the only DB abstraction. It exposes `run`, `get`, `getAll`, `exec` against parameterized SQL. The runtime implementation (`expoClient.ts`) wraps `expo-sqlite` and is instantiated by `initialize.ts`; tests use `better-sqlite3` in-memory via `__tests__/setup.ts`'s `createTestClient()`. Schema lives in `schema.ts` — five tables (`profile`, `entries`, `signatures`, `supervisor_connections_cache`, `sign_requests_cache`) plus indexes. New columns are added idempotently by `migrations.ts` via guarded `PRAGMA table_info` + `ALTER TABLE`; the profile table currently carries `photos_in_backup`, `last_cloud_backup_at`, `last_uploaded_backup_id`, `supervisor_capability_enabled`, `supervisor_cert_number`, `supervisor_directory_visible`; the entries table carries `pending_sign_request_id` (with a partial index); the signatures table carries `hash_version`.
 
 Boot sequence, `initialize.ts::initializeDatabase()`:
 
@@ -69,6 +69,8 @@ Pure functions taking a `DbClient` (and, for cloud services, a `CloudClient` + `
 - `authService.ts` — thin façade over `CloudClient` for auth flows (`signInWithMagicLink`, `signInWithProvider`, `signOut`, `getSession`, `onAuthStateChange`, `deleteAccount`). Exists so UI never imports `CloudClient` directly.
 - `cloudBackupService.ts` — `backup()`, `getLastBackupStatus()`. See "Cloud backup" below.
 - `restoreService.ts` — `previewCloudState()`, `restore()`, `uploadCurrentAsCloud()`. See "Cloud backup" below.
+- `supervisorConnectionsService.ts` — `inviteSupervisor`, `acceptInvite`, `declineInvite`, `revokeConnection`, `searchDirectory`, `syncConnections`. See "Supervisor accounts" below.
+- `signRequestsService.ts` — `sendSignRequest`, `withdrawRequest`, `declineRequest`, `signRequest`, `applyIncomingSignature`, `syncSignRequests`. See "Supervisor accounts" below.
 
 Invariants the service layer enforces (these are contract, not convention):
 
@@ -84,7 +86,7 @@ Screens compose from the fixed primitive set in `src/primitives/index.ts` (`Scre
 
 Design tokens (`theme/tokens.ts`): spacing base 4px with an `xs|sm|md|base|lg|xl|xxl` scale, safety-orange `#FF6600` accent (primary CTAs, focus rings), SPRAT-navy `#003366` chrome (tab bar, headers), IRATA-red `#C8102E` for errors and amendments, Steel Gray `#4A4A4A` body text, Concrete Light `#F2F2F2` background. Touch targets: 48px minimum, 56px preferred — glove use is assumed. Typography is System-font-based with explicit `h1/h2/body/bodyBold/bodySmall/caption/mono` variants; `display` is the onboarding hero size.
 
-React Query hooks in `src/hooks/` wrap service calls: `useProfile`, `useEntries`, `useSignatures`, `useBackupReminder` (local reminders), `useAuthSession`, `useBackup`, `useBackupStatus`, `useRestore`. `useSignEntry` accepts an optional `afterSign` callback — `SignatureScreen` passes `() => backup.mutate()` to trigger a cloud backup as a post-sign side effect without any event-bus indirection.
+React Query hooks in `src/hooks/` wrap service calls: `useProfile`, `useEntries`, `useSignatures`, `useBackupReminder` (local reminders), `useAuthSession`, `useBackup`, `useBackupStatus`, `useRestore`, `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`. `useSignEntry` accepts an optional `afterSign` callback — `SignatureScreen` passes `() => backup.mutate()` to trigger a cloud backup as a post-sign side effect without any event-bus indirection.
 
 Composite `src/components/` are wider than a primitive but narrower than a screen — currently `ProfileCloudSection` and `DeleteAccountModal`, both mounted inside `ProfileScreen`.
 
@@ -144,9 +146,45 @@ Detection happens in `RootNavigator` using `useAuthSession`, `useCloudStatePrevi
 - **B — local empty, cloud has data**: download and rebuild the local DB. Presented as a restore prompt.
 - **C — both have data, `last_uploaded_backup_id != cloud.backup_id`** (or `last_uploaded_backup_id` is null): `CloudConflictScreen` blocks all other navigation until the user picks "Keep cloud, replace this device" or "Replace cloud with this device." No merge is offered — signed entries are immutable so merging is meaningless.
 
+## Supervisor accounts
+
+One account type. Every user has a profile and a logbook; any Level III tech can opt into the "I supervise others" capability via the toggle in `ProfileScreen`'s `SupervisorsSection`. Opting in requires a supervisor cert number and publishes a row to the searchable supervisor directory; opting out tombstones the directory row and fails any in-flight inbound requests. Remote signing flips the signer: the supervisor signs on their own device, the tech's local entry is updated via `applyIncomingSignature`.
+
+Unlike cloud backup, this feature uses Postgres. Three tables in Supabase — the first server-side relational state in the project — provisioned by `supabase/migrations/20260417_supervisor_accounts.sql`:
+
+- `supervisor_connections` — tech↔supervisor pair, status `pending | accepted | declined | revoked`. RLS: both parties can read, only the initiating tech can insert, either party can update the status column per side-specific rules.
+- `sign_requests` — one entry awaiting a remote signature, carries a snapshot of entry content so the supervisor can review without the tech's DB. Status `pending | signed | declined | withdrawn | expired`. RLS: both parties can read; tech inserts; supervisor signs/declines; tech withdraws.
+- `supervisor_directory` — opt-in search surface. RLS: any authenticated user can SELECT visible rows; only owner can upsert/delete their own row.
+
+A second Storage bucket `sign-requests` holds request-scoped assets (signature PNG after signing, entry photos attached to the request). RLS joins against `sign_requests` so only the two parties to a given request can read/write under `{request_id}/`. Provisioned in the same migration.
+
+### Services
+
+Both factory-pattern, pure functions over `DbClient + CloudClient + FileSystemAbstraction + HashFn + clock`:
+
+- `supervisorConnectionsService.ts` — `inviteSupervisor`, `acceptInvite`, `declineInvite`, `revokeConnection`, `searchDirectory`, `syncConnections`. Directory search hits the cloud; everything else mutates Postgres and mirrors into the local cache.
+- `signRequestsService.ts` — `sendSignRequest`, `withdrawRequest`, `declineRequest`, `signRequest`, `applyIncomingSignature`, `syncSignRequests`. `applyIncomingSignature` is the tech-side counterpart: fetches a signed request, downloads the signature PNG from the `sign-requests` bucket to local storage, and writes the local `signatures` row.
+
+`utils/entryPayloadHash.ts::computeEntryHashFromPayload` mirrors `entryRowToHashInputV3` for hashing entries from the remote-signing payload rather than a local row. **It forces `status: 'signed'` on the hash input because `verifyIntegrity` rehashes the local row *after* `applyIncomingSignature` flips status to 'signed'** — without this forcing, every remote-signed entry would appear tampered on the tech's device.
+
+### Hooks and UI
+
+React Query hooks: `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`. New screens: `InboxScreen` (pending invites + incoming sign requests; conditionally added as a bottom tab only when the user has supervisor capability enabled), `SignRequestDetailScreen` (supervisor-side review + sign), `SupervisorSearchScreen` (tech-side directory search). `ProfileScreen` gained `SupervisorsSection`. `EntryForm`, `EntryDetail`, and `LogbookScreen` gained send-for-signature surfaces plus pending/declined/awaiting status chips and banners.
+
+### Local SQLite deltas
+
+Two new cache tables: `supervisor_connections_cache` and `sign_requests_cache` — mirrors of the authoritative Postgres state, consulted by list screens for offline-read. New profile columns: `supervisor_capability_enabled`, `supervisor_cert_number`, `supervisor_directory_visible`. New entries column: `pending_sign_request_id` (partial index: `WHERE pending_sign_request_id IS NOT NULL`). All added idempotently via `runSchemaMigrations`.
+
+### Invariants
+
+- **Entry lock**: an entry with `pending_sign_request_id != null` is read-only. `entriesService.updateEntry` and `deleteEntry` both throw. Withdrawing or declining the request clears the lock.
+- **Sign-request insert ordering (real Supabase)**: `sendSignRequest` generates a UUID client-side, INSERTs the `sign_requests` row **first** (so the Storage RLS join against `sign_requests.id` resolves), **then** uploads assets under `{request_id}/`. The mock reverses this for test simplicity — do not take the mock ordering as authoritative.
+- **Realtime**: `subscribeConnections` and `subscribeSignRequests` use Supabase Realtime against the supervisor tables (added to the `supabase_realtime` publication in the migration). The mock fires sync callbacks synchronously.
+- **Offline**: supervisor-accounts **writes require online** and fail fast with a "connection required" banner. Reads serve from the SQLite cache.
+
 ## Testing
 
-The suite currently has **12 test files / 92 tests** (`__tests__/services/` × 8, `__tests__/db/` × 2, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
+The suite currently has **17 test files / 132 tests** (`__tests__/services/` × 13, `__tests__/db/` × 2, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
 
 Cloud tests use `createMockCloudClient()` + `createMockFs()`. The jest config (`jest.config.js`) uses the `jest-expo` preset and `transformIgnorePatterns` tuned to leave RN / Expo packages untransformed. Individual service test files mock `expo-file-system/legacy` with a stable `documentDirectory` (see the top of `signingService.test.ts`) so `normalizeAppPath` behaves deterministically; `@react-native-async-storage/async-storage` is mocked with an in-memory map as part of the jest-expo preset.
 
@@ -169,13 +207,18 @@ All persistent images live under `FileSystem.documentDirectory/logbook/` with su
 ## Known state
 
 - `npx tsc --noEmit` is clean. `supabase/` is excluded from the app's tsconfig — the `delete-account` Edge Function is Deno code (URL imports, `Deno` global) and doesn't participate in the app type check.
-- `npx jest` is clean: 92 passed, 12 suites.
+- `npx jest` is clean: 132 passed, 17 suites (run with `--runInBand` if you see flakes from parallel mock-cloud state).
 
 ## Not yet implemented
 
 These features are part of this app's scope but not yet built. They are not deferred sub-projects or future add-ons — they are unfinished pieces of the same product. Requests to build any of them are in-scope work, not scope bumps.
 
-- **Supervisor accounts and remote signing** — the supervisor signs on their own device instead of the tech's. Requires account roles, an invite/pair flow, signature-request plumbing, and a new signing surface on the supervisor side.
+- **Supervisor accounts — Part B server-side plumbing** — the in-app flow is implemented (see "Supervisor accounts" above), but the server-side polish is deferred:
+  - Edge Functions: `invite-supervisor` (calls `auth.admin.inviteUserByEmail` so a tech can invite a supervisor who doesn't have an account yet), `search-supervisors` (rate-limited wrapper around directory search — 20 searches per tech per day, post-decline cooldown is already enforced by a Postgres trigger), `cleanup-request-assets` (deletes the `sign-requests/{request_id}/` folder when a request hits a terminal state).
+  - `pg_cron` jobs: hourly `pending → expired` transition on `sign_requests.expires_at < now()`; daily hard-delete of terminal-state rows older than 90 days.
+  - `delete-account` Edge Function cascade: on account deletion, flip the deleting user's in-flight `sign_requests` to `declined` or `withdrawn` per role before the auth.users row is removed.
+  - Supervisor-side photo download: `SignRequestDetailScreen` currently renders tech-local photo paths that don't resolve on the supervisor's device. Need to download from the `sign-requests` bucket to a local cache and show from there.
+  - Form auto-save before "Send for signature": the tech can tap Send without saving recent edits, and those edits don't reach the supervisor. Either auto-save on Send or disable the button while the form is dirty.
 - **Cryptographic keypair signing** — true non-repudiation (per-user or per-signature keypairs), replacing the current SHA-256 content-hash trust model. Paired device attestation is likely.
 - **Live multi-device sync** — continuous sync rather than the current triggered snapshot backup. Concurrent edits on two devices currently produce Scenario C and require explicit resolution.
 - **Org / company accounts with admin roles** — multi-user tenant model, admin dashboards, org-scoped policy.
