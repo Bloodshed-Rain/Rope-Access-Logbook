@@ -168,7 +168,7 @@ All persistent images live under `FileSystem.documentDirectory/logbook/` with su
 
 ## Known state
 
-- `npx tsc --noEmit` **currently fails** with 8 errors, all in `supabase/functions/delete-account/index.ts`. The file is Deno/Edge-Function code using URL imports and the `Deno` global — it's deploy-time code, not app code. The file needs to be excluded from the app's `tsconfig.json` (or given a `// @ts-nocheck` directive) before `tsc --noEmit` is clean again. Not blocking tests.
+- `npx tsc --noEmit` is clean. `supabase/` is excluded from the app's tsconfig — the `delete-account` Edge Function is Deno code (URL imports, `Deno` global) and doesn't participate in the app type check.
 - `npx jest` is clean: 92 passed, 12 suites.
 
 ## Not yet implemented
