@@ -5,7 +5,7 @@ import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 import { CloudSnapshot, CloudStatePreview } from '../types';
 import { rehydrateAppPath } from '../utils/paths';
 
-const MAX_CLOUD_SCHEMA_VERSION = 1;
+const MAX_CLOUD_SCHEMA_VERSION = 2;
 const MAX_DB_SCHEMA_VERSION = 1;
 
 export interface RestoreDeps {

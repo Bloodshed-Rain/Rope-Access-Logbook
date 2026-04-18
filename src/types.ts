@@ -175,7 +175,7 @@ export interface BinaryManifest {
 }
 
 export interface CloudSnapshot extends JsonBackup {
-  cloud_schema_version: 1;
+  cloud_schema_version: 1 | 2;
   backup_id: string;
   binary_manifest: BinaryManifest;
   photos_included: boolean;

@@ -118,7 +118,7 @@ export function createCloudBackupService(deps: CloudBackupDeps) {
       profile: profileForSnapshot,
       entries: entriesForSnapshot,
       signatures: signaturesForSnapshot,
-      cloud_schema_version: 1,
+      cloud_schema_version: 2,
       backup_id,
       binary_manifest,
       photos_included: photosIncluded,

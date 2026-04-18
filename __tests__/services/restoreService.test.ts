@@ -249,6 +249,74 @@ describe('restoreService.restore', () => {
   });
 });
 
+describe('restoreService — v1 snapshot back-compat', () => {
+  it('backfills date_from / date_to from legacy `date` when importing a v1 snapshot', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    // Construct a v1-shaped snapshot: entries carry `date`, no date_from/date_to/other_work_description.
+    const legacySnap = {
+      app_version: '1.0.0',
+      exported_at: '2026-04-16T12:00:00.000Z',
+      profile: {
+        id: 'p-1', full_name: 'T', sprat_id: 'S', level: 'II',
+        cert_expires_on: '2027-01-01', default_employer: 'E',
+        sprat_card_photo_path: null, last_backup_at: null,
+        photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
+        created_at: '2026-04-01', updated_at: '2026-04-01',
+      },
+      entries: [{
+        id: 'e-legacy', date: '2026-03-05', employer: 'Emp', site: 'Site', client: 'Cli',
+        description: 'Legacy work', work_hours: 8, tech_level_snapshot: 'II',
+        work_types: ['inspection'],
+        equipment_notes: null, weather: null, photo_paths: [],
+        status: 'signed', amends_entry_id: null, amendment_reason: null,
+        created_at: '2026-03-05', updated_at: '2026-03-05',
+      }],
+      signatures: [],
+      schema_version: 1, cloud_schema_version: 1, backup_id: 'backup-legacy',
+      binary_manifest: {},
+      photos_included: false,
+    };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(legacySnap)));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    const result = await svc.restore();
+    expect(result.kind).toBe('restored');
+
+    const row = await db.get<{ date_from: string; date_to: string; other_work_description: string | null }>(
+      'SELECT date_from, date_to, other_work_description FROM entries WHERE id = ?',
+      ['e-legacy'],
+    );
+    expect(row?.date_from).toBe('2026-03-05');
+    expect(row?.date_to).toBe('2026-03-05');
+    expect(row?.other_work_description).toBeNull();
+  });
+
+  it('accepts cloud_schema_version 2 and refuses 3', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    const v2Snap = makeSnapshot({ cloud_schema_version: 2, backup_id: 'b-v2' });
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(v2Snap)));
+    const r1 = await createRestoreService({ db, cloud, fs, appVersion: '1.0.0' }).restore();
+    expect(r1.kind).toBe('restored');
+
+    const db2 = await createTestClient();
+    const v3Snap = { ...makeSnapshot(), cloud_schema_version: 3 };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(v3Snap)));
+    const r2 = await createRestoreService({ db: db2, cloud, fs, appVersion: '1.0.0' }).restore();
+    expect(r2.kind).toBe('version_too_new');
+    if (r2.kind === 'version_too_new') expect(r2.which).toBe('cloud');
+  });
+});
+
 describe('restoreService.uploadCurrentAsCloud', () => {
   it('overwrites cloud snapshot and wipes orphan assets', async () => {
     const db = await createTestClient();
