@@ -92,17 +92,27 @@ export function RootNavigator() {
   if (isLoading) return null;
   if (profile && session !== null && sessionLoading) return null;
 
+  // Themed default header: navy chrome, white title/chevrons. Individual
+  // screens can opt out via `headerShown: false` (Onboarding, Main, Conflict).
+  const defaultScreenOptions = {
+    headerShown: true,
+    headerStyle: { backgroundColor: colors.navy },
+    headerTintColor: colors.textInverse,
+    headerTitleStyle: { fontWeight: '700' as const },
+    headerBackTitle: 'Back',
+  };
+
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={defaultScreenOptions}>
         {!profile ? (
           <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: true, title: 'Sign in' }} />
-            <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ headerShown: true, title: 'Check your email' }} />
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Sign in' }} />
+            <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ title: 'Check your email' }} />
           </>
         ) : conflict ? (
-          <Stack.Screen name="CloudConflict" options={{ gestureEnabled: false }}>
+          <Stack.Screen name="CloudConflict" options={{ headerShown: false, gestureEnabled: false }}>
             {() => (
               <CloudConflictScreen
                 db={getClient()}
@@ -114,12 +124,18 @@ export function RootNavigator() {
           </Stack.Screen>
         ) : (
           <>
-            <Stack.Screen name="Main" component={TabNavigator} />
-            <Stack.Screen name="EntryForm" component={EntryFormScreen} options={{ presentation: 'modal' }} />
-            <Stack.Screen name="EntryDetail" component={EntryDetailScreen} />
-            <Stack.Screen name="Signature" component={SignatureScreen} />
-            <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: true, title: 'Sign in' }} />
-            <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ headerShown: true, title: 'Check your email' }} />
+            {/* The Main tabs host their own navy header inside LogbookScreen /
+                ProfileScreen, so the stack header stays off for that route. */}
+            <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="EntryForm"
+              component={EntryFormScreen}
+              options={{ presentation: 'modal', title: 'Entry', headerBackTitle: 'Close' }}
+            />
+            <Stack.Screen name="EntryDetail" component={EntryDetailScreen} options={{ title: 'Entry detail' }} />
+            <Stack.Screen name="Signature" component={SignatureScreen} options={{ title: 'Sign entry' }} />
+            <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Sign in' }} />
+            <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ title: 'Check your email' }} />
           </>
         )}
       </Stack.Navigator>
