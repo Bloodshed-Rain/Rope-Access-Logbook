@@ -1,5 +1,5 @@
 // src/screens/EntryFormScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,10 +7,17 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { copyPhotoToAppStorage } from '../utils/fileStorage';
-import { Screen, Button, Input, Textarea, Chip } from '../primitives';
+import { Screen, Button, Input, Textarea, Chip, Banner, Card, ListRow } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useEntry, useCreateEntry, useUpdateEntry, useCreateAmendment } from '../hooks/useEntries';
+import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
+import { useSignRequests } from '../hooks/useSignRequests';
+import { useAuthSession } from '../hooks/useAuthSession';
+import { getClient } from '../db/initialize';
+import { createSupabaseCloudClient } from '../cloud/supabaseClient';
+import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
+import { sha256 } from '../utils/hash';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { WorkType } from '../types';
 
@@ -70,6 +77,18 @@ export function EntryFormScreen() {
   const [weather, setWeather] = useState('');
   const [amendmentReason, setAmendmentReason] = useState('');
   const [photoPaths, setPhotoPaths] = useState<string[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+
+  const db = useMemo(() => getClient(), []);
+  const cloud = useMemo(() => createSupabaseCloudClient(), []);
+  const fs = useMemo(() => createExpoFsAbstraction(), []);
+  const conns = useSupervisorConnections({ db, cloud });
+  const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
+  const { session } = useAuthSession(cloud);
+
+  const accepted = (conns.query.data ?? []).filter(
+    (c) => c.tech_user_id === session?.user_id && c.status === 'accepted' && c.supervisor_user_id,
+  );
 
   useEffect(() => {
     if (existingEntry) {
@@ -281,6 +300,72 @@ export function EntryFormScreen() {
           <Input label="Equipment / rigging notes" value={equipmentNotes} onChangeText={setEquipmentNotes} />
           <Input label="Weather / conditions" value={weather} onChangeText={setWeather} />
           <Button title={`Add photo (${photoPaths.length}/5)`} variant="secondary" onPress={handleAddPhoto} />
+
+          {isEdit && existingEntry && existingEntry.status === 'draft' && (
+            existingEntry.pending_sign_request_id ? (
+              <Banner
+                variant="info"
+                message="Awaiting signature"
+                actionLabel="Withdraw"
+                onAction={async () => {
+                  try {
+                    await signReqs.withdraw.mutateAsync(existingEntry.pending_sign_request_id!);
+                  } catch (e: any) {
+                    Alert.alert('Could not withdraw', e.message);
+                  }
+                }}
+              />
+            ) : (
+              <>
+                {(() => {
+                  const entryIsComplete =
+                    !!dateFrom && !!dateTo && parseFloat(workHours || '0') > 0 && !!description.trim();
+                  return (
+                    <Button
+                      title="Send for signature"
+                      variant="secondary"
+                      onPress={() => setShowPicker(true)}
+                      disabled={!entryIsComplete || accepted.length === 0}
+                    />
+                  );
+                })()}
+                {accepted.length === 0 && (
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Add a supervisor in your profile before requesting a signature.
+                  </Text>
+                )}
+                {showPicker && (
+                  <Card>
+                    <Text style={[typography.bodyBold, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
+                      Pick a supervisor
+                    </Text>
+                    {accepted.map((c) => (
+                      <ListRow
+                        key={c.id}
+                        title={c.supervisor_display_name ?? c.invited_email}
+                        subtitle="Tap to send"
+                        onPress={async () => {
+                          try {
+                            await signReqs.send.mutateAsync({
+                              entry_id: existingEntry.id,
+                              connection_id: c.id,
+                              supervisor_user_id: c.supervisor_user_id!,
+                            });
+                            setShowPicker(false);
+                            navigation.goBack();
+                          } catch (e: any) {
+                            Alert.alert('Could not send', e.message);
+                          }
+                        }}
+                      />
+                    ))}
+                    <View style={{ height: spacing.xs }} />
+                    <Button title="Cancel" variant="ghost" onPress={() => setShowPicker(false)} />
+                  </Card>
+                )}
+              </>
+            )
+          )}
 
           <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
             <Button title={isEdit ? 'Save' : 'Save as draft'} onPress={handleSave} disabled={!canSubmit}
