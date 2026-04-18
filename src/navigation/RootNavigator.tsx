@@ -50,16 +50,18 @@ function TabNavigator() {
       tabBarStyle: {
         backgroundColor: colors.navy,
         borderTopColor: colors.navy,
-        paddingTop: 4,
-        height: 60,
+        paddingTop: 10,
+        paddingBottom: 10,
+        height: 84,
       },
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+      tabBarLabelStyle: { fontSize: 13, fontWeight: '600', marginTop: 4 },
+      tabBarIconStyle: { marginBottom: 2 },
       headerShown: false,
     }}>
       <Tab.Screen name="Logbook" component={LogbookScreen}
-        options={{ tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} /> }} />
+        options={{ tabBarIcon: ({ color }) => <BookOpen color={color} size={30} /> }} />
       <Tab.Screen name="Profile" component={ProfileScreen}
-        options={{ tabBarIcon: ({ color, size }) => <User color={color} size={size} /> }} />
+        options={{ tabBarIcon: ({ color }) => <User color={color} size={30} /> }} />
     </Tab.Navigator>
   );
 }
