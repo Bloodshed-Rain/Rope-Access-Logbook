@@ -213,3 +213,11 @@ create policy "sign_requests_insert_sup_signature"
         and auth.uid() = r.supervisor_user_id
     )
   );
+
+-- ============================================================================
+-- Realtime publication — enable Supabase Realtime for both new tables.
+-- Without this, subscribeConnections / subscribeSignRequests will subscribe
+-- silently but receive no events.
+-- ============================================================================
+alter publication supabase_realtime add table supervisor_connections;
+alter publication supabase_realtime add table sign_requests;
