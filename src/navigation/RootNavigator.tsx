@@ -1,4 +1,5 @@
 import React from 'react';
+import { Pressable, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -130,7 +131,15 @@ export function RootNavigator() {
             <Stack.Screen
               name="EntryForm"
               component={EntryFormScreen}
-              options={{ presentation: 'modal', title: 'Entry', headerBackTitle: 'Close' }}
+              options={({ navigation }) => ({
+                presentation: 'modal',
+                title: 'Entry',
+                headerLeft: () => (
+                  <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
+                    <Text style={{ color: colors.textInverse, fontSize: 16, fontWeight: '600' }}>Close</Text>
+                  </Pressable>
+                ),
+              })}
             />
             <Stack.Screen name="EntryDetail" component={EntryDetailScreen} options={{ title: 'Entry detail' }} />
             <Stack.Screen name="Signature" component={SignatureScreen} options={{ title: 'Sign entry' }} />

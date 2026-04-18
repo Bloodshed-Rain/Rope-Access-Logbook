@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, View, Text } from 'react-native';
 import * as Linking from 'expo-linking';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { initializeDatabase, getClient } from './src/db/initialize';
@@ -72,8 +73,10 @@ export default function App() {
     );
   }
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider><RootNavigator /></ThemeProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider><RootNavigator /></ThemeProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
