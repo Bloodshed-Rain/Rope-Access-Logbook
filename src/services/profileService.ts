@@ -2,8 +2,31 @@
 import { DbClient } from '../db/client';
 import { Profile, CreateProfileInput, UpdateProfileInput } from '../types';
 import { generateId } from '../utils/uuid';
+import { CloudClient } from '../cloud/cloudClient';
 
 type UuidFn = () => string;
+
+// Raw row shape returned by SQLite: INTEGER columns come back as 0|1 rather than
+// true|false. The domain `Profile` type exposes them as booleans, so `getProfile`
+// converts before returning.
+type ProfileRow = Omit<
+  Profile,
+  'photos_in_backup' | 'supervisor_capability_enabled' | 'supervisor_directory_visible'
+> & {
+  photos_in_backup: number;
+  supervisor_capability_enabled: number;
+  supervisor_directory_visible: number;
+};
+
+function rowToProfile(row: ProfileRow | null | undefined): Profile | null {
+  if (!row) return null;
+  return {
+    ...row,
+    photos_in_backup: !!row.photos_in_backup,
+    supervisor_capability_enabled: !!row.supervisor_capability_enabled,
+    supervisor_directory_visible: !!row.supervisor_directory_visible,
+  };
+}
 
 export function createProfileService(db: DbClient, uuid: UuidFn = generateId) {
   return {
@@ -19,7 +42,8 @@ export function createProfileService(db: DbClient, uuid: UuidFn = generateId) {
     },
 
     async getProfile(): Promise<Profile | null> {
-      return db.get<Profile>('SELECT * FROM profile LIMIT 1');
+      const row = await db.get<ProfileRow>('SELECT * FROM profile LIMIT 1');
+      return rowToProfile(row ?? null);
     },
 
     async updateProfile(input: UpdateProfileInput): Promise<Profile> {
@@ -50,6 +74,45 @@ export function createProfileService(db: DbClient, uuid: UuidFn = generateId) {
         'UPDATE profile SET last_backup_at = ?, updated_at = ? WHERE id = (SELECT id FROM profile LIMIT 1)',
         [timestamp, new Date().toISOString()],
       );
+    },
+
+    async enableSupervisorCapability(
+      certNumber: string,
+      displayName: string,
+      directoryVisible: boolean,
+      cloud: CloudClient,
+    ): Promise<void> {
+      const now = new Date().toISOString();
+      await db.run(
+        `UPDATE profile SET supervisor_capability_enabled = 1,
+                            supervisor_cert_number = ?,
+                            supervisor_directory_visible = ?,
+                            updated_at = ?
+         WHERE id = (SELECT id FROM profile LIMIT 1)`,
+        [certNumber, directoryVisible ? 1 : 0, now],
+      );
+      if (directoryVisible) {
+        await cloud.upsertSupervisorDirectory({
+          display_name: displayName,
+          sprat_cert_number: certNumber,
+          visible: true,
+        });
+      }
+    },
+
+    async disableSupervisorCapability(
+      pendingRequestCount: number,
+      cloud: CloudClient,
+    ): Promise<void> {
+      if (pendingRequestCount > 0) throw new Error('pending_requests_exist');
+      const now = new Date().toISOString();
+      await db.run(
+        `UPDATE profile SET supervisor_capability_enabled = 0,
+                            updated_at = ?
+         WHERE id = (SELECT id FROM profile LIMIT 1)`,
+        [now],
+      );
+      await cloud.deleteSupervisorDirectory();
     },
   };
 }
