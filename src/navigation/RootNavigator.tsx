@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, User } from 'lucide-react-native';
+import { BookOpen, User, Inbox } from 'lucide-react-native';
 import { useProfile } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';
 import { useBackupStatus } from '../hooks/useBackupStatus';
@@ -21,6 +21,7 @@ import { AuthScreen } from '../screens/AuthScreen';
 import { MagicLinkWaitScreen } from '../screens/MagicLinkWaitScreen';
 import { CloudConflictScreen } from '../screens/CloudConflictScreen';
 import { SupervisorSearchScreen } from '../screens/SupervisorSearchScreen';
+import { InboxScreen } from '../screens/InboxScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -39,12 +40,12 @@ export type RootStackParamList = {
   SupervisorSearch: undefined;
 };
 
-export type TabParamList = { Logbook: undefined; Profile: undefined; };
+export type TabParamList = { Logbook: undefined; Inbox: undefined; Profile: undefined; };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TabNavigator() {
+function TabNavigator({ showInbox }: { showInbox: boolean }) {
   return (
     <Tab.Navigator screenOptions={{
       tabBarActiveTintColor: colors.accent,
@@ -62,6 +63,10 @@ function TabNavigator() {
     }}>
       <Tab.Screen name="Logbook" component={LogbookScreen}
         options={{ tabBarIcon: ({ color }) => <BookOpen color={color} size={30} /> }} />
+      {showInbox ? (
+        <Tab.Screen name="Inbox" component={InboxScreen}
+          options={{ tabBarIcon: ({ color }) => <Inbox color={color} size={30} /> }} />
+      ) : null}
       <Tab.Screen name="Profile" component={ProfileScreen}
         options={{ tabBarIcon: ({ color }) => <User color={color} size={30} /> }} />
     </Tab.Navigator>
@@ -131,7 +136,9 @@ export function RootNavigator() {
           <>
             {/* The Main tabs host their own navy header inside LogbookScreen /
                 ProfileScreen, so the stack header stays off for that route. */}
-            <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="Main" options={{ headerShown: false }}>
+              {() => <TabNavigator showInbox={!!profile?.supervisor_capability_enabled} />}
+            </Stack.Screen>
             <Stack.Screen
               name="EntryForm"
               component={EntryFormScreen}
