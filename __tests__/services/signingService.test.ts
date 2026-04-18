@@ -18,7 +18,8 @@ describe('signingService', () => {
   const testUuid = () => `id-${++uuidCounter}`;
 
   const validEntry: CreateEntryInput = {
-    date: '2026-04-15',
+    date_from: '2026-04-15',
+    date_to: '2026-04-15',
     employer: 'Acme',
     site: 'Site A',
     client: 'Client X',
@@ -49,6 +50,78 @@ describe('signingService', () => {
       expect(signature.entry_hash.length).toBe(64);
       const updated = await entriesService.getEntry(entry.id);
       expect(updated!.status).toBe('signed');
+    });
+
+    it('stamps new signatures with hash_version 3', async () => {
+      const entry = await entriesService.createEntry(validEntry, 'II');
+      const sig = await signingService.signEntry({
+        entry_id: entry.id,
+        supervisor_name: 'Jane',
+        supervisor_cert_number: 'L3-X',
+        signature_png_path: '/sig.png',
+        device_id: 'd',
+      });
+      expect(sig.hash_version).toBe(3);
+    });
+
+    it('rejects signing when date_from is missing', async () => {
+      const entry = await entriesService.createEntry({}, 'II');
+      // createEntry defaults date_from to today; null it out at the row level.
+      await db.run('UPDATE entries SET date_from = NULL WHERE id = ?', [entry.id]);
+      await expect(
+        signingService.signEntry({
+          entry_id: entry.id, supervisor_name: 'Jane', supervisor_cert_number: 'L3-X',
+          signature_png_path: '/sig.png', device_id: 'd',
+        }),
+      ).rejects.toThrow('missing_required');
+    });
+
+    it('rejects signing when date_to is missing', async () => {
+      const entry = await entriesService.createEntry(validEntry, 'II');
+      await db.run('UPDATE entries SET date_to = NULL WHERE id = ?', [entry.id]);
+      await expect(
+        signingService.signEntry({
+          entry_id: entry.id, supervisor_name: 'Jane', supervisor_cert_number: 'L3-X',
+          signature_png_path: '/sig.png', device_id: 'd',
+        }),
+      ).rejects.toThrow('missing_required');
+    });
+
+    it('rejects signing when work_hours is 0', async () => {
+      const entry = await entriesService.createEntry({ ...validEntry, work_hours: 0 }, 'II');
+      await expect(
+        signingService.signEntry({
+          entry_id: entry.id, supervisor_name: 'Jane', supervisor_cert_number: 'L3-X',
+          signature_png_path: '/sig.png', device_id: 'd',
+        }),
+      ).rejects.toThrow('missing_required');
+    });
+
+    it('rejects signing when description is blank', async () => {
+      const entry = await entriesService.createEntry({ ...validEntry, description: '   ' }, 'II');
+      await expect(
+        signingService.signEntry({
+          entry_id: entry.id, supervisor_name: 'Jane', supervisor_cert_number: 'L3-X',
+          signature_png_path: '/sig.png', device_id: 'd',
+        }),
+      ).rejects.toThrow('missing_required');
+    });
+
+    it('accepts signing when only the four required fields are present', async () => {
+      const entry = await entriesService.createEntry(
+        {
+          date_from: '2026-04-15',
+          date_to: '2026-04-15',
+          description: 'Some work',
+          work_hours: 4,
+        },
+        'II',
+      );
+      const sig = await signingService.signEntry({
+        entry_id: entry.id, supervisor_name: 'Jane', supervisor_cert_number: 'L3-X',
+        signature_png_path: '/sig.png', device_id: 'd',
+      });
+      expect(sig.hash_version).toBe(3);
     });
 
     it('throws when signing an already-signed entry', async () => {
@@ -124,7 +197,7 @@ describe('signingService', () => {
   });
 
   describe('hash_version', () => {
-    it('new signatures are written with hash_version = 2', async () => {
+    it('new signatures are written with hash_version = 3', async () => {
       const entry = await entriesService.createEntry(validEntry, 'II');
       const sig = await signingService.signEntry({
         entry_id: entry.id,
@@ -133,7 +206,7 @@ describe('signingService', () => {
         signature_png_path: '/sig.png',
         device_id: 'd-1',
       });
-      expect(sig.hash_version).toBe(2);
+      expect(sig.hash_version).toBe(3);
     });
 
     it('verifyIntegrity dispatches on stored hash_version', async () => {
@@ -184,8 +257,27 @@ describe('signingService', () => {
         device_id: 'd-1',
       });
       await expect(
-        signingService.computeEntryHashForVersion(entry.id, 3),
+        signingService.computeEntryHashForVersion(entry.id, 99),
       ).rejects.toThrow(/Unsupported hash_version/);
+    });
+
+    it('v2 and v3 produce different hashes for the same row', async () => {
+      const entry = await entriesService.createEntry({
+        ...validEntry,
+        date_from: '2026-04-15',
+        date_to: '2026-04-20',
+        other_work_description: 'paint stripping',
+      }, 'II');
+      await signingService.signEntry({
+        entry_id: entry.id,
+        supervisor_name: 'Sup',
+        supervisor_cert_number: 'L3-X',
+        signature_png_path: '/sig.png',
+        device_id: 'd-1',
+      });
+      const v2Hash = await signingService.computeEntryHashForVersion(entry.id, 2);
+      const v3Hash = await signingService.computeEntryHashForVersion(entry.id, 3);
+      expect(v2Hash).not.toBe(v3Hash);
     });
   });
 });

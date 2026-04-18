@@ -31,7 +31,8 @@ function entryRowToHashInputV1(row: EntryRow): Record<string, unknown> {
   };
 }
 
-// v2: normalizes photo_paths to relative form so hashes are portable across
+// FROZEN: v2 algorithm is retained permanently for the same reason as v1.
+// v2 normalizes photo_paths to relative form so hashes are portable across
 // device reinstalls (where documentDirectory's per-install UUID changes).
 function entryRowToHashInputV2(row: EntryRow): Record<string, unknown> {
   const parsedPaths: string[] = JSON.parse(row.photo_paths);
@@ -55,14 +56,43 @@ function entryRowToHashInputV2(row: EntryRow): Record<string, unknown> {
   };
 }
 
-export const CURRENT_HASH_VERSION = 2;
+// v3: replaces the single `date` field with `date_from` / `date_to` (entries
+// can span a range) and adds `other_work_description`. New signatures use v3;
+// older v1/v2 signatures keep verifying against their respective algorithms.
+function entryRowToHashInputV3(row: EntryRow): Record<string, unknown> {
+  const parsedPaths: string[] = JSON.parse(row.photo_paths);
+  const normalized = parsedPaths.map(normalizeAppPath);
+  return {
+    id: row.id,
+    date_from: row.date_from,
+    date_to: row.date_to,
+    employer: row.employer,
+    site: row.site,
+    client: row.client,
+    description: row.description,
+    work_hours: row.work_hours,
+    tech_level_snapshot: row.tech_level_snapshot,
+    work_types: row.work_types,
+    other_work_description: row.other_work_description,
+    equipment_notes: row.equipment_notes,
+    weather: row.weather,
+    photo_paths: normalized,
+    status: row.status,
+    amends_entry_id: row.amends_entry_id,
+    amendment_reason: row.amendment_reason,
+  };
+}
+
+export const CURRENT_HASH_VERSION = 3;
 
 export function createSigningService(db: DbClient, hashFn: HashFn = sha256, uuid: UuidFn = generateId) {
   async function computeEntryHash(entryId: string, version: number): Promise<string> {
     const row = await db.get<EntryRow>('SELECT * FROM entries WHERE id = ?', [entryId]);
     if (!row) throw new Error('Entry not found');
     let input: Record<string, unknown>;
-    if (version === 2) {
+    if (version === 3) {
+      input = entryRowToHashInputV3(row);
+    } else if (version === 2) {
       input = entryRowToHashInputV2(row);
     } else if (version === 1) {
       input = entryRowToHashInputV1(row);
@@ -78,6 +108,13 @@ export function createSigningService(db: DbClient, hashFn: HashFn = sha256, uuid
       const entry = await db.get<EntryRow>('SELECT * FROM entries WHERE id = ?', [input.entry_id]);
       if (!entry) throw new Error('Entry not found');
       if (entry.status !== 'draft') throw new Error('Entry is not in draft status');
+
+      // Service-layer sign-time validation. Drafts can be saved at any level of
+      // completeness, but a signature attests to the minimum viable work record:
+      // a date range, non-zero hours, and a description.
+      if (!entry.date_from || !entry.date_to || entry.work_hours <= 0 || !entry.description?.trim()) {
+        throw new Error('missing_required');
+      }
 
       const now = new Date().toISOString();
       const id = uuid();

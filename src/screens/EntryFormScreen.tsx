@@ -1,10 +1,11 @@
 // src/screens/EntryFormScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { copyPhotoToAppStorage } from '../utils/fileStorage';
 import { Screen, Button, Input, Textarea, Chip } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
@@ -28,6 +29,14 @@ const WORK_TYPES: { value: WorkType; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+function toISODate(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+function fromISODate(s: string): Date {
+  return new Date(`${s}T12:00:00Z`);
+}
+
 export function EntryFormScreen() {
   const { colors, spacing, typography } = useTheme();
   const navigation = useNavigation<Nav>();
@@ -45,13 +54,18 @@ export function EntryFormScreen() {
   const isEdit = !!editId;
   const isAmend = !!amendId;
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const today = toISODate(new Date());
+  const [dateFrom, setDateFrom] = useState<string>(today);
+  const [dateTo, setDateTo] = useState<string>(today);
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
   const [employer, setEmployer] = useState(profile?.default_employer ?? '');
   const [site, setSite] = useState('');
   const [client, setClient] = useState('');
   const [description, setDescription] = useState('');
   const [workHours, setWorkHours] = useState('');
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
+  const [otherWorkDescription, setOtherWorkDescription] = useState('');
   const [equipmentNotes, setEquipmentNotes] = useState('');
   const [weather, setWeather] = useState('');
   const [amendmentReason, setAmendmentReason] = useState('');
@@ -59,13 +73,15 @@ export function EntryFormScreen() {
 
   useEffect(() => {
     if (existingEntry) {
-      setDate(existingEntry.date);
+      setDateFrom(existingEntry.date_from);
+      setDateTo(existingEntry.date_to);
       setEmployer(existingEntry.employer);
       setSite(existingEntry.site);
       setClient(existingEntry.client);
       setDescription(existingEntry.description);
-      setWorkHours(String(existingEntry.work_hours));
+      setWorkHours(existingEntry.work_hours > 0 ? String(existingEntry.work_hours) : '');
       setWorkTypes(existingEntry.work_types);
+      setOtherWorkDescription(existingEntry.other_work_description ?? '');
       setEquipmentNotes(existingEntry.equipment_notes ?? '');
       setWeather(existingEntry.weather ?? '');
       setPhotoPaths(existingEntry.photo_paths ?? []);
@@ -91,30 +107,56 @@ export function EntryFormScreen() {
     setWorkTypes((prev) => (prev.includes(wt) ? prev.filter((t) => t !== wt) : [...prev, wt]));
   };
 
-  const canSubmit = date && employer && site && client && description && workHours && workTypes.length > 0
-    && (!isAmend || amendmentReason.trim());
+  const onChangeFrom = (_e: DateTimePickerEvent, d?: Date) => {
+    if (Platform.OS !== 'ios') setShowFromPicker(false);
+    if (d) {
+      const iso = toISODate(d);
+      setDateFrom(iso);
+      // Keep the range valid: if from > to, bump to.
+      if (iso > dateTo) setDateTo(iso);
+    }
+  };
+
+  const onChangeTo = (_e: DateTimePickerEvent, d?: Date) => {
+    if (Platform.OS !== 'ios') setShowToPicker(false);
+    if (d) setDateTo(toISODate(d));
+  };
+
+  // Save button is always enabled except for amendments, which require a reason.
+  // Signing (separate screen) enforces the four required fields server-side.
+  const canSubmit = !isAmend || !!amendmentReason.trim();
 
   const handleSave = async () => {
     if (!profile) return;
-    const hours = parseFloat(workHours);
-    if (isNaN(hours) || hours <= 0) {
+    const hours = workHours.trim() === '' ? 0 : parseFloat(workHours);
+    if (workHours.trim() !== '' && (isNaN(hours) || hours < 0)) {
       Alert.alert('Invalid hours', 'Please enter a valid number of work hours.');
       return;
     }
+
+    const otherText = workTypes.includes('other') && otherWorkDescription.trim()
+      ? otherWorkDescription.trim()
+      : null;
 
     if (isAmend && amendId) {
       await createAmendment.mutateAsync({ entryId: amendId, reason: amendmentReason.trim(), techLevel: profile.level });
     } else if (isEdit && editId) {
       await updateEntry.mutateAsync({
         id: editId,
-        input: { date, employer, site, client, description, work_hours: hours, work_types: workTypes,
-          equipment_notes: equipmentNotes || null, weather: weather || null, photo_paths: photoPaths },
+        input: {
+          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
+          work_hours: hours, work_types: workTypes, other_work_description: otherText,
+          equipment_notes: equipmentNotes || null, weather: weather || null, photo_paths: photoPaths,
+        },
       });
     } else {
       await createEntry.mutateAsync({
-        input: { date, employer, site, client, description, work_hours: hours, work_types: workTypes,
+        input: {
+          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
+          work_hours: hours, work_types: workTypes, other_work_description: otherText,
           equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
-          photo_paths: photoPaths.length > 0 ? photoPaths : undefined },
+          photo_paths: photoPaths.length > 0 ? photoPaths : undefined,
+        },
         techLevel: profile.level,
       });
     }
@@ -124,6 +166,20 @@ export function EntryFormScreen() {
   };
 
   const title = isAmend ? 'Amend entry' : isEdit ? 'Edit entry' : 'New entry';
+  const spanDays = Math.max(
+    1,
+    Math.round(
+      (fromISODate(dateTo).getTime() - fromISODate(dateFrom).getTime()) / (24 * 60 * 60 * 1000),
+    ) + 1,
+  );
+  const hoursLabel = spanDays > 1
+    ? `Hours worked across this ${spanDays}-day span`
+    : 'Hours worked';
+  const hoursPlaceholder = spanDays > 1 ? String(spanDays * 8) : '8';
+
+  const needed = (
+    <Text style={[typography.caption, { color: colors.accent }]}>needed to sign</Text>
+  );
 
   return (
     <Screen>
@@ -137,13 +193,67 @@ export function EntryFormScreen() {
           )}
 
           <Text style={[typography.h2, { color: colors.textSecondary }]}>When & where</Text>
-          <Input label="Date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
+
+          <View style={{ gap: spacing.xs }}>
+            <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>From</Text>
+            <Pressable
+              onPress={() => setShowFromPicker(true)}
+              style={{
+                borderWidth: 2, borderColor: colors.border, borderRadius: 10,
+                paddingHorizontal: spacing.base, paddingVertical: spacing.base,
+                backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
+              }}>
+              <Text style={[typography.body, { color: colors.textPrimary }]}>{dateFrom}</Text>
+            </Pressable>
+            {needed}
+            {showFromPicker && (
+              <DateTimePicker
+                value={fromISODate(dateFrom)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={onChangeFrom}
+              />
+            )}
+          </View>
+
+          <View style={{ gap: spacing.xs }}>
+            <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>To</Text>
+            <Pressable
+              onPress={() => setShowToPicker(true)}
+              style={{
+                borderWidth: 2, borderColor: colors.border, borderRadius: 10,
+                paddingHorizontal: spacing.base, paddingVertical: spacing.base,
+                backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
+              }}>
+              <Text style={[typography.body, { color: colors.textPrimary }]}>{dateTo}</Text>
+            </Pressable>
+            {needed}
+            {showToPicker && (
+              <DateTimePicker
+                value={fromISODate(dateTo)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                minimumDate={fromISODate(dateFrom)}
+                onChange={onChangeTo}
+              />
+            )}
+          </View>
+
           <Input label="Employer" value={employer} onChangeText={setEmployer} />
           <Input label="Job site / location" value={site} onChangeText={setSite} />
           <Input label="Client / project" value={client} onChangeText={setClient} />
 
           <Text style={[typography.h2, { color: colors.textSecondary }]}>Work</Text>
-          <Input label="Work hours" value={workHours} onChangeText={setWorkHours} keyboardType="decimal-pad" placeholder="8" />
+          <View style={{ gap: spacing.xs }}>
+            <Input
+              label={hoursLabel}
+              value={workHours}
+              onChangeText={setWorkHours}
+              keyboardType="decimal-pad"
+              placeholder={hoursPlaceholder}
+            />
+            {needed}
+          </View>
 
           <View style={{ gap: spacing.xs }}>
             <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Type of work</Text>
@@ -152,9 +262,20 @@ export function EntryFormScreen() {
                 <Chip key={wt.value} label={wt.label} selected={workTypes.includes(wt.value)} onPress={() => toggleWorkType(wt.value)} />
               ))}
             </View>
+            {workTypes.includes('other') && (
+              <Input
+                label="Describe the other work"
+                value={otherWorkDescription}
+                onChangeText={setOtherWorkDescription}
+                placeholder="e.g. paint stripping"
+              />
+            )}
           </View>
 
-          <Textarea label="Description of work" value={description} onChangeText={setDescription} placeholder="What did you do today?" />
+          <View style={{ gap: spacing.xs }}>
+            <Textarea label="Description of work" value={description} onChangeText={setDescription} placeholder="What did you do?" />
+            {needed}
+          </View>
 
           <Text style={[typography.h2, { color: colors.textSecondary }]}>Optional</Text>
           <Input label="Equipment / rigging notes" value={equipmentNotes} onChangeText={setEquipmentNotes} />
@@ -162,7 +283,7 @@ export function EntryFormScreen() {
           <Button title={`Add photo (${photoPaths.length}/5)`} variant="secondary" onPress={handleAddPhoto} />
 
           <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
-            <Button title="Save as draft" onPress={handleSave} disabled={!canSubmit}
+            <Button title={isEdit ? 'Save' : 'Save as draft'} onPress={handleSave} disabled={!canSubmit}
               loading={createEntry.isPending || updateEntry.isPending || createAmendment.isPending}
               style={{ flex: 1 }} />
             <Button title="Cancel" variant="ghost" onPress={() => navigation.goBack()} style={{ flex: 1 }} />

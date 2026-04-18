@@ -55,7 +55,7 @@ describe('cloudBackupService.backup — Scenario A', () => {
     );
 
     const entry = await entries.createEntry({
-      date: '2026-04-01', employer: 'Emp', site: 'Site', client: 'Cli', description: 'Desc',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'Emp', site: 'Site', client: 'Cli', description: 'Desc',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
 
@@ -168,7 +168,7 @@ describe('cloudBackupService.backup — deltas and lifecycle', () => {
       'sig',
     );
     const entry = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({
@@ -211,7 +211,7 @@ describe('cloudBackupService.backup — deltas and lifecycle', () => {
     fs.writeStringSync(sigPath1, 'sig1');
     fs.writeStringSync(sigPath2, 'sig2');
     const e1 = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({
@@ -235,7 +235,7 @@ describe('cloudBackupService.backup — deltas and lifecycle', () => {
     const attemptsBefore = cloud.getUploadAttempts(firstSigKey);
 
     const e2 = await entries.createEntry({
-      date: '2026-04-02', employer: 'E', site: 'S', client: 'C', description: 'D2',
+      date_from: '2026-04-02', date_to: '2026-04-02', employer: 'E', site: 'S', client: 'C', description: 'D2',
       work_hours: 6, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({
@@ -272,7 +272,7 @@ describe('cloudBackupService.backup — deltas and lifecycle', () => {
     fs.writeStringSync(sigPath, 'sig');
     fs.writeStringSync(photoPath, 'photo');
     const e1 = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
       photo_paths: [photoPath],
     }, 'II');
@@ -321,7 +321,7 @@ describe('cloudBackupService.backup — error handling', () => {
     const sigPath = 'file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/signatures/s1.png';
     fs.writeStringSync(sigPath, 'sig');
     const e1 = await entries.createEntry({
-      date: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
+      date_from: '2026-04-01', date_to: '2026-04-01', employer: 'E', site: 'S', client: 'C', description: 'D',
       work_hours: 8, work_types: ['inspection'],
     }, 'II');
     await signing.signEntry({

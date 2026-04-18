@@ -7,7 +7,7 @@ import SignatureCanvas from 'react-native-signature-canvas';
 import * as Haptics from 'expo-haptics';
 import * as Device from 'expo-device';
 import * as Location from 'expo-location';
-import { Screen, Button, Input, Card } from '../primitives';
+import { Screen, Button, Input, Card, Banner } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry } from '../hooks/useEntries';
 import { useSignEntry } from '../hooks/useSignatures';
@@ -55,7 +55,14 @@ export function SignatureScreen() {
 
   if (!entry) return null;
 
-  const canSign = supervisorName.trim() && certNumber.trim() && signatureData;
+  const missingEntryFields: string[] = [];
+  if (!entry.date_from) missingEntryFields.push('start date');
+  if (!entry.date_to) missingEntryFields.push('end date');
+  if (!entry.work_hours || entry.work_hours <= 0) missingEntryFields.push('hours');
+  if (!entry.description?.trim()) missingEntryFields.push('description');
+  const entryReady = missingEntryFields.length === 0;
+
+  const canSign = entryReady && supervisorName.trim() && certNumber.trim() && signatureData;
 
   const handleSign = async () => {
     if (!signatureData) return;
@@ -95,7 +102,14 @@ export function SignatureScreen() {
       navigation.goBack();
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Signing failed', err.message);
+      if (err?.message === 'missing_required') {
+        Alert.alert(
+          'Entry is incomplete',
+          'Fill in dates, hours, and a description on the entry before signing.',
+        );
+      } else {
+        Alert.alert('Signing failed', err.message);
+      }
     } finally {
       setSigning(false);
     }
@@ -106,10 +120,19 @@ export function SignatureScreen() {
       <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl }}>
         <Text style={[typography.h1, { color: colors.textPrimary }]}>Supervisor signature</Text>
 
+        {!entryReady && (
+          <Banner
+            variant="warning"
+            message={`Add ${missingEntryFields.join(', ')} to the entry before signing.`}
+            actionLabel="Edit entry"
+            onAction={() => navigation.navigate('EntryForm', { entryId: entry.id })}
+          />
+        )}
+
         <Card>
           <View style={{ gap: spacing.xs }}>
             <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Entry summary</Text>
-            <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.date} — {entry.site}</Text>
+            <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} → ${entry.date_to}`} — {entry.site}</Text>
             <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.work_hours}h · {entry.employer}</Text>
             <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>{entry.description}</Text>
           </View>

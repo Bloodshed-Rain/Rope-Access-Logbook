@@ -22,4 +22,17 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
   if (!(await hasColumn(db, 'signatures', 'hash_version'))) {
     await db.exec('ALTER TABLE signatures ADD COLUMN hash_version INTEGER NOT NULL DEFAULT 1');
   }
+  if (!(await hasColumn(db, 'entries', 'date_from'))) {
+    await db.exec('ALTER TABLE entries ADD COLUMN date_from TEXT');
+  }
+  if (!(await hasColumn(db, 'entries', 'date_to'))) {
+    await db.exec('ALTER TABLE entries ADD COLUMN date_to TEXT');
+  }
+  if (!(await hasColumn(db, 'entries', 'other_work_description'))) {
+    await db.exec('ALTER TABLE entries ADD COLUMN other_work_description TEXT');
+  }
+  // Backfill: existing rows have `date` but null `date_from`/`date_to`.
+  // Set range = single date. Idempotent — only touches unmigrated rows.
+  await db.exec("UPDATE entries SET date_from = date WHERE date_from IS NULL");
+  await db.exec("UPDATE entries SET date_to = date WHERE date_to IS NULL");
 }

@@ -5,7 +5,7 @@ import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 import { CloudSnapshot, CloudStatePreview } from '../types';
 import { rehydrateAppPath } from '../utils/paths';
 
-const MAX_CLOUD_SCHEMA_VERSION = 1;
+const MAX_CLOUD_SCHEMA_VERSION = 2;
 const MAX_DB_SCHEMA_VERSION = 1;
 
 export interface RestoreDeps {
@@ -118,14 +118,23 @@ export function createRestoreService(deps: RestoreDeps) {
 
         for (const e of snap.entries) {
           const rehydratedPhotos = e.photo_paths.map(rehydrateAppPath);
+          // Back-compat: a v1 cloud snapshot serialized entries with a single
+          // `date` field and no range or other-work-description columns.
+          const legacy = e as unknown as { date?: string };
+          const dateFrom = e.date_from ?? legacy.date ?? '';
+          const dateTo = e.date_to ?? legacy.date ?? dateFrom;
+          const otherDesc = e.other_work_description ?? null;
+          // `date` stays populated from date_from so v1/v2 hashes on restored
+          // signed entries keep verifying.
           await db.run(
-            `INSERT INTO entries (id, date, employer, site, client, description, work_hours,
-              tech_level_snapshot, work_types, equipment_notes, weather, photo_paths, status,
+            `INSERT INTO entries (id, date, date_from, date_to, employer, site, client, description, work_hours,
+              tech_level_snapshot, work_types, other_work_description, equipment_notes, weather, photo_paths, status,
               amends_entry_id, amendment_reason, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-              e.id, e.date, e.employer, e.site, e.client, e.description, e.work_hours,
-              e.tech_level_snapshot, JSON.stringify(e.work_types),
+              e.id, dateFrom, dateFrom, dateTo,
+              e.employer, e.site, e.client, e.description, e.work_hours,
+              e.tech_level_snapshot, JSON.stringify(e.work_types), otherDesc,
               e.equipment_notes, e.weather, JSON.stringify(rehydratedPhotos),
               e.status, e.amends_entry_id, e.amendment_reason,
               e.created_at, e.updated_at,

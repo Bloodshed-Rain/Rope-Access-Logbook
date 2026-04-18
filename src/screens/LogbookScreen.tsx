@@ -32,8 +32,8 @@ export function LogbookScreen() {
   const renderEntry = ({ item }: { item: Entry }) => (
     <AnimatedRow>
       <ListRow
-        title={`${item.date} — ${item.site}`}
-        subtitle={`${item.work_hours}h · ${item.employer}`}
+        title={`${item.date_from === item.date_to ? item.date_from : `${item.date_from} → ${item.date_to}`} — ${item.site || 'No site'}`}
+        subtitle={`${item.work_hours}h · ${item.employer || 'No employer'}`}
         right={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <Badge status={item.status} />

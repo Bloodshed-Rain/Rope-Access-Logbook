@@ -11,7 +11,8 @@ describe('entriesService', () => {
   const testUuid = () => `entry-${++uuidCounter}`;
 
   const validInput: CreateEntryInput = {
-    date: '2026-04-15',
+    date_from: '2026-04-15',
+    date_to: '2026-04-15',
     employer: 'Acme Rope Co',
     site: 'Bridge Tower A',
     client: 'DOT',
@@ -58,11 +59,11 @@ describe('entriesService', () => {
 
   describe('listEntries', () => {
     it('returns entries in reverse chronological order', async () => {
-      await service.createEntry({ ...validInput, date: '2026-01-01' }, 'II');
-      await service.createEntry({ ...validInput, date: '2026-06-01' }, 'II');
-      await service.createEntry({ ...validInput, date: '2026-03-15' }, 'II');
+      await service.createEntry({ ...validInput, date_from: '2026-01-01', date_to: '2026-01-01' }, 'II');
+      await service.createEntry({ ...validInput, date_from: '2026-06-01', date_to: '2026-06-01' }, 'II');
+      await service.createEntry({ ...validInput, date_from: '2026-03-15', date_to: '2026-03-15' }, 'II');
       const entries = await service.listEntries();
-      expect(entries.map((e) => e.date)).toEqual(['2026-06-01', '2026-03-15', '2026-01-01']);
+      expect(entries.map((e) => e.date_from)).toEqual(['2026-06-01', '2026-03-15', '2026-01-01']);
     });
   });
 
@@ -114,9 +115,9 @@ describe('entriesService', () => {
 
   describe('getTotalWorkHours', () => {
     it('sums work hours for signed entries in a given year', async () => {
-      await service.createEntry({ ...validInput, date: '2026-03-01', work_hours: 8 }, 'II');
-      await service.createEntry({ ...validInput, date: '2026-04-01', work_hours: 6 }, 'II');
-      await service.createEntry({ ...validInput, date: '2025-12-31', work_hours: 10 }, 'II');
+      await service.createEntry({ ...validInput, date_from: '2026-03-01', date_to: '2026-03-01', work_hours: 8 }, 'II');
+      await service.createEntry({ ...validInput, date_from: '2026-04-01', date_to: '2026-04-01', work_hours: 6 }, 'II');
+      await service.createEntry({ ...validInput, date_from: '2025-12-31', date_to: '2025-12-31', work_hours: 10 }, 'II');
       await db.run("UPDATE entries SET status = 'signed'");
       const total = await service.getTotalWorkHours(2026);
       expect(total).toBe(14);

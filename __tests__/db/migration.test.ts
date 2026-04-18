@@ -56,4 +56,51 @@ describe('runSchemaMigrations', () => {
     const row = await db.get<{ hash_version: number }>('SELECT hash_version FROM signatures WHERE id = ?', ['s-1']);
     expect(row?.hash_version).toBe(1);
   });
+
+  it('adds date_from / date_to / other_work_description columns to entries', async () => {
+    const db = createLegacyTestClient();
+    await runSchemaMigrations(db);
+    const cols = await listColumns(db, 'entries');
+    expect(cols).toContain('date_from');
+    expect(cols).toContain('date_to');
+    expect(cols).toContain('other_work_description');
+  });
+
+  it('backfills date_from / date_to from date on existing entries', async () => {
+    const db = createLegacyTestClient();
+    await db.run(
+      `INSERT INTO entries (id, date, employer, site, client, description, work_hours, tech_level_snapshot, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['e-old', '2026-03-10', 'Emp', 'Site', 'Cli', 'Desc', 8, 'II', '2026-03-10', '2026-03-10'],
+    );
+    await runSchemaMigrations(db);
+    const row = await db.get<{ date_from: string; date_to: string }>(
+      'SELECT date_from, date_to FROM entries WHERE id = ?',
+      ['e-old'],
+    );
+    expect(row?.date_from).toBe('2026-03-10');
+    expect(row?.date_to).toBe('2026-03-10');
+  });
+
+  it('does not overwrite date_from / date_to on second run', async () => {
+    const db = createLegacyTestClient();
+    await db.run(
+      `INSERT INTO entries (id, date, employer, site, client, description, work_hours, tech_level_snapshot, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['e-old', '2026-03-10', 'Emp', 'Site', 'Cli', 'Desc', 8, 'II', '2026-03-10', '2026-03-10'],
+    );
+    await runSchemaMigrations(db);
+    // User later widens the range on this entry.
+    await db.run(
+      'UPDATE entries SET date_from = ?, date_to = ? WHERE id = ?',
+      ['2026-03-10', '2026-03-15', 'e-old'],
+    );
+    await runSchemaMigrations(db);
+    const row = await db.get<{ date_from: string; date_to: string }>(
+      'SELECT date_from, date_to FROM entries WHERE id = ?',
+      ['e-old'],
+    );
+    expect(row?.date_from).toBe('2026-03-10');
+    expect(row?.date_to).toBe('2026-03-15');
+  });
 });
