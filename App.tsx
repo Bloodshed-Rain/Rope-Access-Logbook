@@ -12,6 +12,7 @@ import { createSupabaseCloudClient } from './src/cloud/supabaseClient';
 import { createExpoFsAbstraction } from './src/cloud/fsAbstraction';
 import { createCloudBackupService } from './src/services/cloudBackupService';
 import { createSupervisorConnectionsService } from './src/services/supervisorConnectionsService';
+import { createSignRequestsService } from './src/services/signRequestsService';
 import { createExportService } from './src/services/exportService';
 import { sha256 } from './src/utils/hash';
 import { APP_VERSION } from './src/constants';
@@ -51,7 +52,8 @@ export default function App() {
           try {
             const conns = createSupervisorConnectionsService(db, cloud);
             await conns.sync();
-            // signRequestsService.sync() added in a later task
+            const signReqs = createSignRequestsService(db, cloud, fs, sha256);
+            await signReqs.sync();
           } catch {
             // best-effort, silent
           }
