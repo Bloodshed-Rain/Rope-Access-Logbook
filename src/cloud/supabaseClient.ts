@@ -200,10 +200,11 @@ export function createSupabaseCloudClient(): CloudClient {
         .select('*')
         .single();
       if (error) throw new Error(error.message);
-      // TODO(part-b): invoke 'invite-supervisor' Edge Function to send the actual
-      // invitation email via auth.admin.inviteUserByEmail. For now the signup
-      // trigger (resolve_supervisor_invites_on_signup) backfills supervisor_user_id
-      // when the invited email signs up.
+      try {
+        await sb.functions.invoke('invite-supervisor', { body: { email } });
+      } catch {
+        // Non-fatal: connection row exists, invite email is a convenience.
+      }
       return data as SupervisorConnection;
     },
 
