@@ -174,28 +174,7 @@ Step 1 ensures the other party sees a clean terminal status via Realtime/sync ra
 
 ## 6. Client: Supervisor-side Photo Download in `SignRequestDetailScreen`
 
-When the supervisor opens a sign request, `entry.photo_paths` contains the tech's local paths that don't resolve on the supervisor's device.
-
-### Behavior
-
-1. On screen mount, iterate the `assets_manifest` on the `SignRequest` object. Keys starting with `photo_` are entry photos.
-2. For each photo key, call `cloud.downloadSignRequestAsset(bucketKey)` (stripping the `sign-requests/` bucket prefix as needed).
-3. Write the downloaded bytes to `FileSystem.cacheDirectory` as a temp file.
-4. Track per-photo state: `loading` | `loaded` (with local temp URI) | `failed`.
-5. Render:
-   - `loading`: `ActivityIndicator` in a 100x100 placeholder.
-   - `loaded`: `Image` with the temp URI.
-   - `failed`: gray placeholder with "Photo unavailable" text.
-
-### No persistence
-
-Temp files live in `cacheDirectory` — OS-managed, auto-cleaned. Re-opening the request re-downloads. No manual cleanup needed.
-
-### Where the mapping lives
-
-The `assets_manifest` on the stored `SignRequest` row contains **final rewritten keys** (e.g. `sign-requests/{request_id}/photo_e1_0.jpg`), not `PENDING` placeholders. `supabaseClient.ts::sendSignRequest` rewrites the manifest before inserting the row. To get the bucket-relative path for `downloadSignRequestAsset`, strip the `sign-requests/` prefix from each manifest key, yielding `{request_id}/photo_e1_0.jpg`.
-
-The mock's `sendSignRequest` does NOT rewrite keys (it stores the `PENDING` form). The photo download logic should handle both: strip `sign-requests/` or `sign-requests/PENDING/` prefix, then use the remainder as the bucket key. Alternatively, iterate `entry.photo_paths` by index and reconstruct the expected key as `{request_id}/photo_{entry_id}_{index}.{ext}` — this is deterministic and sidesteps the manifest key format question.
+**Superseded by `2026-04-19-supervisor-photo-download-design.md`.** That spec replaces the approach below (lazy download into `cacheDirectory`) with eager sync-time downloads into `logbook/signrequest_photos/`, sha256 verification against the manifest, and lifecycle cleanup on terminal sign-request states. Refer to the new spec; this section is preserved as history.
 
 ---
 
