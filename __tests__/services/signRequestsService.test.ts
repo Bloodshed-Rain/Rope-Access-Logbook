@@ -529,3 +529,32 @@ describe('getLocalPhotoPathsFromCache', () => {
     expect(result).toEqual({ paths: [], missingCount: 0, pending: false });
   });
 });
+
+test('sync top-up cleanup skips already-cleaned terminal rows', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 1);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+  const supService = makeSupervisorService(techCloud, db, fs);
+  await supService.sync();
+  techCloud.actAs(techSession);
+  await techService.withdraw(req.id);
+  techCloud.actAs(supSession);
+  await supService.sync();                // main-loop cleanup runs; column is now NULL
+
+  // Pre-condition: row is cached as withdrawn with null column.
+  const pre = await db.get<{ status: string; local_photo_paths_json: string | null }>(
+    'SELECT status, local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(pre?.status).toBe('withdrawn');
+  expect(pre?.local_photo_paths_json).toBeNull();
+
+  const filesBefore = fs.files.size;
+  await supService.sync();
+
+  const post = await db.get<{ local_photo_paths_json: string | null }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(post?.local_photo_paths_json).toBeNull();
+  expect(fs.files.size).toBe(filesBefore);
+});

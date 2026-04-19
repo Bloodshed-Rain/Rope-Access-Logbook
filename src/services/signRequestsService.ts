@@ -38,11 +38,24 @@ export function createSignRequestsService(
   uuid: UuidFn = generateId,
 ) {
   async function cacheRow(row: SignRequest): Promise<void> {
+    // INSERT OR REPLACE would wipe local_photo_paths_json because it's not in
+    // the column list. ON CONFLICT DO UPDATE preserves it across status changes.
     await db.run(
-      `INSERT OR REPLACE INTO sign_requests_cache
+      `INSERT INTO sign_requests_cache
          (id, tech_user_id, supervisor_user_id, entry_id, status,
           decline_reason, signed_at, created_at, expires_at, updated_at, payload_json)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)
+       ON CONFLICT(id) DO UPDATE SET
+         tech_user_id = excluded.tech_user_id,
+         supervisor_user_id = excluded.supervisor_user_id,
+         entry_id = excluded.entry_id,
+         status = excluded.status,
+         decline_reason = excluded.decline_reason,
+         signed_at = excluded.signed_at,
+         created_at = excluded.created_at,
+         expires_at = excluded.expires_at,
+         updated_at = excluded.updated_at,
+         payload_json = excluded.payload_json`,
       [
         row.id, row.tech_user_id, row.supervisor_user_id,
         (row.entry_payload as Entry).id, row.status, row.decline_reason,
@@ -316,7 +329,8 @@ export function createSignRequestsService(
     const rows = await db.getAll<{ payload_json: string }>(
       `SELECT payload_json FROM sign_requests_cache
         WHERE supervisor_user_id = ?
-          AND status IN ('signed','declined','withdrawn','expired')`,
+          AND status IN ('signed','declined','withdrawn','expired')
+          AND local_photo_paths_json IS NOT NULL`,
       [uid],
     );
     for (const r of rows) {
