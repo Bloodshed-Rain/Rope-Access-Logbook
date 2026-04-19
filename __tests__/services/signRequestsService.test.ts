@@ -216,7 +216,7 @@ test('downloadRequestPhotos writes all photos locally and persists paths', async
   expect(JSON.parse(cached!.local_photo_paths_json)).toEqual(result.localPaths);
 });
 
-test('downloadRequestPhotos is idempotent — second call is a no-op', async () => {
+test('downloadRequestPhotos is idempotent — second call skips cloud for already-cached photos', async () => {
   const { service: techService, cloud: techCloud, db, fs } = await setup();
   await seedEntryWithPhotos(db, fs, 2);
   await seedAcceptedConnection(techCloud);
@@ -228,12 +228,18 @@ test('downloadRequestPhotos is idempotent — second call is a no-op', async () 
   const first = await supService.downloadRequestPhotos(req);
   expect(first.failed).toEqual([]);
 
-  // Tamper with the mock's storage: if download runs again we'd catch it.
-  const storageSize = (techCloud as any).storage.size;
+  // Remove cloud-side photo bytes after the first pass. If the idempotency
+  // branch (local file + matching sha => skip) is working, the second call
+  // serves from disk and never touches the cloud. If it were broken, the
+  // second call would try to re-download the (now-missing) keys and fail.
+  const storage = (techCloud as any).storage as Map<string, Uint8Array>;
+  const photoKeys = [...storage.keys()].filter(k => /\/photo_e1_\d+\.jpg$/.test(k));
+  expect(photoKeys.length).toBe(2);
+  for (const k of photoKeys) storage.delete(k);
+
   const second = await supService.downloadRequestPhotos(req);
   expect(second.failed).toEqual([]);
   expect(second.localPaths).toEqual(first.localPaths);
-  expect((techCloud as any).storage.size).toBe(storageSize);
 });
 
 test('downloadRequestPhotos quarantines photos with sha256 mismatch', async () => {
