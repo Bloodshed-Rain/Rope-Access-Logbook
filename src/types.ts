@@ -27,6 +27,9 @@ export interface Profile {
   photos_in_backup: boolean;
   last_cloud_backup_at: string | null;
   last_uploaded_backup_id: string | null;
+  supervisor_capability_enabled: boolean;
+  supervisor_cert_number: string | null;
+  supervisor_directory_visible: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +52,7 @@ export interface Entry {
   status: EntryStatus;
   amends_entry_id: string | null;
   amendment_reason: string | null;
+  pending_sign_request_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +79,7 @@ export interface EntryRow {
   status: EntryStatus;
   amends_entry_id: string | null;
   amendment_reason: string | null;
+  pending_sign_request_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -213,6 +218,69 @@ export interface CloudStatePreview {
 }
 
 export type ConflictChoice = 'keep_cloud' | 'replace_cloud';
+
+// --- Supervisor accounts ---
+
+export type SupervisorConnectionStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
+
+export interface SupervisorConnection {
+  id: string;
+  tech_user_id: string;
+  supervisor_user_id: string | null;   // null until email-invited supervisor signs up
+  status: SupervisorConnectionStatus;
+  invited_email: string;
+  supervisor_display_name: string | null;
+  declined_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SignRequestStatus = 'pending' | 'signed' | 'declined' | 'withdrawn' | 'expired';
+
+export interface SignRequestAssetManifestEntry {
+  sha256: string;
+  size_bytes: number;
+}
+
+export interface SignRequest {
+  id: string;
+  tech_user_id: string;
+  supervisor_user_id: string;
+  connection_id: string;
+  entry_payload: Entry;                  // frozen snapshot
+  assets_manifest: Record<string, SignRequestAssetManifestEntry>;
+  status: SignRequestStatus;
+  decline_reason: string | null;
+  signature_png_path: string | null;     // storage key, set when signed
+  supervisor_name_snapshot: string | null;
+  supervisor_cert_number_snapshot: string | null;
+  entry_hash: string | null;
+  hash_version: number | null;
+  signed_device_id: string | null;
+  signed_gps_lat: number | null;
+  signed_gps_lon: number | null;
+  created_at: string;
+  expires_at: string;
+  signed_at: string | null;
+  updated_at: string;
+}
+
+export interface SupervisorDirectoryEntry {
+  user_id: string;
+  display_name: string;
+  sprat_cert_number: string;
+  visible: boolean;
+  updated_at: string;
+}
+
+export type SupervisorSearchKind = 'email' | 'sprat_id' | 'name';
+
+export interface SupervisorSearchResult {
+  user_id: string;
+  display_name: string;
+  sprat_cert_number: string;             // masked on name search, full on sprat_id search
+  sprat_cert_number_is_masked: boolean;
+}
 
 export type HashFn = (input: string) => Promise<string>;
 export type UuidFn = () => string;

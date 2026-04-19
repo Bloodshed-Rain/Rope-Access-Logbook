@@ -40,6 +40,9 @@ export function LogbookScreen() {
             {item.amends_entry_id && (
               <Text style={[typography.caption, { color: colors.statusAmended }]}>amends</Text>
             )}
+            {item.pending_sign_request_id && (
+              <Text style={[typography.caption, { color: colors.accent }]}>awaiting</Text>
+            )}
           </View>
         }
         onPress={() => navigation.navigate('EntryDetail', { entryId: item.id })}

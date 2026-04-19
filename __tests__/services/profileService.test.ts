@@ -1,8 +1,9 @@
 // __tests__/services/profileService.test.ts
 import { createTestClient } from '../setup';
+import { createMockCloudClient } from '../cloudMock';
 import { createProfileService } from '../../src/services/profileService';
 import { DbClient } from '../../src/db/client';
-import { Profile, CreateProfileInput } from '../../src/types';
+import { Profile, CreateProfileInput, AuthSession } from '../../src/types';
 
 describe('profileService', () => {
   let db: DbClient;
@@ -77,6 +78,50 @@ describe('profileService', () => {
       await service.updateLastBackupAt(ts);
       const profile = await service.getProfile();
       expect(profile!.last_backup_at).toBe(ts);
+    });
+  });
+
+  describe('supervisor capability', () => {
+    const session: AuthSession = {
+      user_id: 'u',
+      email: 'e@x.com',
+      access_token: 't',
+      refresh_token: 'r',
+      expires_at: Date.now() + 3600_000,
+    };
+
+    it('enable/disable updates profile and calls directory upsert/delete', async () => {
+      await service.createProfile(validInput);
+      const cloud = createMockCloudClient({ initialSession: session });
+
+      await service.enableSupervisorCapability('L3-11111', 'Test Tech', true, cloud);
+      const p = await service.getProfile();
+      expect(p?.supervisor_capability_enabled).toBe(true);
+      expect(p?.supervisor_cert_number).toBe('L3-11111');
+      expect(p?.supervisor_directory_visible).toBe(true);
+      expect(cloud.directory.get('u')?.sprat_cert_number).toBe('L3-11111');
+
+      await service.disableSupervisorCapability(0, cloud);
+      const p2 = await service.getProfile();
+      expect(p2?.supervisor_capability_enabled).toBe(false);
+      expect(cloud.directory.has('u')).toBe(false);
+    });
+
+    it('disable is blocked when pending requests exist', async () => {
+      await service.createProfile(validInput);
+      const cloud = createMockCloudClient({ initialSession: session });
+      await expect(service.disableSupervisorCapability(1, cloud)).rejects.toThrow(
+        'pending_requests_exist',
+      );
+    });
+
+    it('enableSupervisorCapability with directoryVisible=false does NOT upsert directory', async () => {
+      await service.createProfile(validInput);
+      const cloud = createMockCloudClient({ initialSession: session });
+      await service.enableSupervisorCapability('L3-22222', 'Test Tech', false, cloud);
+      const p = await service.getProfile();
+      expect(p?.supervisor_directory_visible).toBe(false);
+      expect(cloud.directory.has('u')).toBe(false);
     });
   });
 });

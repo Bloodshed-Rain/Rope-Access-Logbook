@@ -12,6 +12,7 @@ import { createEntriesService } from '../services/entriesService';
 import { createSigningService } from '../services/signingService';
 import { getClient } from '../db/initialize';
 import { ProfileCloudSection } from '../components/ProfileCloudSection';
+import { SupervisorsSection } from '../components/SupervisorsSection';
 import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import Constants from 'expo-constants';
 
@@ -84,6 +85,7 @@ export function ProfileScreen() {
           <Button title="Export full logbook (JSON)" onPress={handleExportJson} variant="secondary" />
           <Button title="Export full logbook (PDF)" onPress={handleExportPdf} />
         </Card>
+        <SupervisorsSection />
         <ProfileCloudSection
           db={getClient()}
           profileId={profile.id}

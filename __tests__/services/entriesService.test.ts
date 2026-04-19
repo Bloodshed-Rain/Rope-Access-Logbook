@@ -79,6 +79,12 @@ describe('entriesService', () => {
       await db.run("UPDATE entries SET status = 'signed' WHERE id = ?", ['entry-1']);
       await expect(service.updateEntry('entry-1', { description: 'nope' })).rejects.toThrow('Cannot modify a signed entry');
     });
+
+    it('throws when entry has pending_sign_request_id', async () => {
+      await service.createEntry(validInput, 'II');
+      await db.run('UPDATE entries SET pending_sign_request_id = ? WHERE id = ?', ['req1', 'entry-1']);
+      await expect(service.updateEntry('entry-1', { description: 'x' })).rejects.toThrow('entry_locked_pending_request');
+    });
   });
 
   describe('deleteEntry', () => {
@@ -93,6 +99,12 @@ describe('entriesService', () => {
       await service.createEntry(validInput, 'II');
       await db.run("UPDATE entries SET status = 'signed' WHERE id = ?", ['entry-1']);
       await expect(service.deleteEntry('entry-1')).rejects.toThrow('Cannot delete a signed entry');
+    });
+
+    it('throws when entry has pending_sign_request_id', async () => {
+      await service.createEntry(validInput, 'II');
+      await db.run('UPDATE entries SET pending_sign_request_id = ? WHERE id = ?', ['req1', 'entry-1']);
+      await expect(service.deleteEntry('entry-1')).rejects.toThrow('entry_locked_pending_request');
     });
   });
 

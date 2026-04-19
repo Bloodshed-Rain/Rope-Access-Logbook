@@ -1,9 +1,10 @@
 import React from 'react';
+import { Pressable, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, User } from 'lucide-react-native';
+import { BookOpen, User, Inbox } from 'lucide-react-native';
 import { useProfile } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';
 import { useBackupStatus } from '../hooks/useBackupStatus';
@@ -19,6 +20,9 @@ import { SignatureScreen } from '../screens/SignatureScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { MagicLinkWaitScreen } from '../screens/MagicLinkWaitScreen';
 import { CloudConflictScreen } from '../screens/CloudConflictScreen';
+import { SupervisorSearchScreen } from '../screens/SupervisorSearchScreen';
+import { InboxScreen } from '../screens/InboxScreen';
+import { SignRequestDetailScreen } from '../screens/SignRequestDetailScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -34,14 +38,16 @@ export type RootStackParamList = {
   Auth: undefined;
   MagicLinkWait: { email: string };
   CloudConflict: undefined;
+  SupervisorSearch: undefined;
+  SignRequestDetail: { requestId: string };
 };
 
-export type TabParamList = { Logbook: undefined; Profile: undefined; };
+export type TabParamList = { Logbook: undefined; Inbox: undefined; Profile: undefined; };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TabNavigator() {
+function TabNavigator({ showInbox }: { showInbox: boolean }) {
   return (
     <Tab.Navigator screenOptions={{
       tabBarActiveTintColor: colors.accent,
@@ -49,16 +55,22 @@ function TabNavigator() {
       tabBarStyle: {
         backgroundColor: colors.navy,
         borderTopColor: colors.navy,
-        paddingTop: 4,
-        height: 60,
+        paddingTop: 10,
+        paddingBottom: 10,
+        height: 84,
       },
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+      tabBarLabelStyle: { fontSize: 13, fontWeight: '600', marginTop: 4 },
+      tabBarIconStyle: { marginBottom: 2 },
       headerShown: false,
     }}>
       <Tab.Screen name="Logbook" component={LogbookScreen}
-        options={{ tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} /> }} />
+        options={{ tabBarIcon: ({ color }) => <BookOpen color={color} size={30} /> }} />
+      {showInbox ? (
+        <Tab.Screen name="Inbox" component={InboxScreen}
+          options={{ tabBarIcon: ({ color }) => <Inbox color={color} size={30} /> }} />
+      ) : null}
       <Tab.Screen name="Profile" component={ProfileScreen}
-        options={{ tabBarIcon: ({ color, size }) => <User color={color} size={size} /> }} />
+        options={{ tabBarIcon: ({ color }) => <User color={color} size={30} /> }} />
     </Tab.Navigator>
   );
 }
@@ -126,16 +138,28 @@ export function RootNavigator() {
           <>
             {/* The Main tabs host their own navy header inside LogbookScreen /
                 ProfileScreen, so the stack header stays off for that route. */}
-            <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="Main" options={{ headerShown: false }}>
+              {() => <TabNavigator showInbox={!!profile?.supervisor_capability_enabled} />}
+            </Stack.Screen>
             <Stack.Screen
               name="EntryForm"
               component={EntryFormScreen}
-              options={{ presentation: 'modal', title: 'Entry', headerBackTitle: 'Close' }}
+              options={({ navigation }) => ({
+                presentation: 'modal',
+                title: 'Entry',
+                headerLeft: () => (
+                  <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
+                    <Text style={{ color: colors.textInverse, fontSize: 16, fontWeight: '600' }}>Close</Text>
+                  </Pressable>
+                ),
+              })}
             />
             <Stack.Screen name="EntryDetail" component={EntryDetailScreen} options={{ title: 'Entry detail' }} />
             <Stack.Screen name="Signature" component={SignatureScreen} options={{ title: 'Sign entry' }} />
             <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Sign in' }} />
             <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ title: 'Check your email' }} />
+            <Stack.Screen name="SupervisorSearch" component={SupervisorSearchScreen} options={{ title: 'Add supervisor' }} />
+            <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
           </>
         )}
       </Stack.Navigator>

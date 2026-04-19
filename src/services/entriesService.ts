@@ -29,6 +29,7 @@ function rowToEntry(row: EntryRow): Entry {
     status: row.status,
     amends_entry_id: row.amends_entry_id,
     amendment_reason: row.amendment_reason,
+    pending_sign_request_id: row.pending_sign_request_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -74,6 +75,7 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
       const existing = await this.getEntry(id);
       if (!existing) throw new Error('Entry not found');
       if (existing.status === 'signed') throw new Error('Cannot modify a signed entry');
+      if (existing.pending_sign_request_id) throw new Error('entry_locked_pending_request');
 
       const fields: string[] = [];
       const values: unknown[] = [];
@@ -118,6 +120,7 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
         if (hasSignedAmendment) throw new Error('Cannot delete an entry with a signed amendment');
         throw new Error('Cannot delete a signed entry');
       }
+      if (entry.pending_sign_request_id) throw new Error('entry_locked_pending_request');
       await db.run('DELETE FROM entries WHERE id = ?', [id]);
     },
 

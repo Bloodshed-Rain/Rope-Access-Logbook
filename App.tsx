@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, View, Text } from 'react-native';
 import * as Linking from 'expo-linking';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { initializeDatabase, getClient } from './src/db/initialize';
@@ -10,6 +11,8 @@ import { colors } from './src/theme/tokens';
 import { createSupabaseCloudClient } from './src/cloud/supabaseClient';
 import { createExpoFsAbstraction } from './src/cloud/fsAbstraction';
 import { createCloudBackupService } from './src/services/cloudBackupService';
+import { createSupervisorConnectionsService } from './src/services/supervisorConnectionsService';
+import { createSignRequestsService } from './src/services/signRequestsService';
 import { createExportService } from './src/services/exportService';
 import { sha256 } from './src/utils/hash';
 import { APP_VERSION } from './src/constants';
@@ -44,6 +47,18 @@ export default function App() {
       if (state === 'background') {
         svc.backup().catch(() => { /* swallow; errors surface via UI hooks */ });
       }
+      if (state === 'active') {
+        (async () => {
+          try {
+            const conns = createSupervisorConnectionsService(db, cloud);
+            await conns.sync();
+            const signReqs = createSignRequestsService(db, cloud, fs, sha256);
+            await signReqs.sync();
+          } catch {
+            // best-effort, silent
+          }
+        })();
+      }
     });
     return () => sub.remove();
   }, [dbReady]);
@@ -72,8 +87,10 @@ export default function App() {
     );
   }
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider><RootNavigator /></ThemeProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider><RootNavigator /></ThemeProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

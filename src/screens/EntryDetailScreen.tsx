@@ -1,5 +1,5 @@
 // src/screens/EntryDetailScreen.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Alert, Image } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +9,11 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useEntry, useDeleteEntry, useAmendmentForEntry } from '../hooks/useEntries';
 import { useSignatureForEntry, useVerifyIntegrity } from '../hooks/useSignatures';
 import { useProfile } from '../hooks/useProfile';
+import { useSignRequests } from '../hooks/useSignRequests';
+import { getClient } from '../db/initialize';
+import { createSupabaseCloudClient } from '../cloud/supabaseClient';
+import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
+import { sha256 } from '../utils/hash';
 import { RootStackParamList } from '../navigation/RootNavigator';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -26,6 +31,12 @@ export function EntryDetailScreen() {
   const { data: amendment } = useAmendmentForEntry(entryId);
   const { data: profile } = useProfile();
   const deleteEntry = useDeleteEntry();
+
+  const db = useMemo(() => getClient(), []);
+  const cloud = useMemo(() => createSupabaseCloudClient(), []);
+  const fs = useMemo(() => createExpoFsAbstraction(), []);
+  const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
+  const myRequest = (signReqs.query.data ?? []).find((r) => r.entry_payload.id === entryId);
 
   if (!entry) return null;
 
@@ -69,6 +80,30 @@ export function EntryDetailScreen() {
           <Banner variant="info" message="This entry has been amended"
             actionLabel="View amendment"
             onAction={() => navigation.push('EntryDetail', { entryId: amendment.id })} />
+        )}
+        {myRequest?.status === 'pending' && (
+          <Banner
+            variant="info"
+            message="Awaiting supervisor signature"
+            actionLabel="Withdraw"
+            onAction={() => signReqs.withdraw.mutate(myRequest.id)}
+          />
+        )}
+        {myRequest?.status === 'declined' && (
+          <Banner
+            variant="warning"
+            message={`Declined: ${myRequest.decline_reason ?? '(no reason)'}`}
+            actionLabel="Edit"
+            onAction={() => navigation.navigate('EntryForm', { entryId: entry.id })}
+          />
+        )}
+        {myRequest?.status === 'expired' && (
+          <Banner
+            variant="warning"
+            message="Signature request expired"
+            actionLabel="Resend"
+            onAction={() => navigation.navigate('EntryForm', { entryId: entry.id })}
+          />
         )}
 
         <Card style={{ gap: spacing.sm }}>
