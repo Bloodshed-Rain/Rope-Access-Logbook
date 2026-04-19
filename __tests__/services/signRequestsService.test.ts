@@ -331,8 +331,20 @@ test('cleanupRequestPhotos is a no-op when nothing was downloaded', async () => 
   });
   const supService = makeSupervisorService(techCloud, db, fs);
 
-  // Should not throw, even though no cache row for supervisor yet / no files.
+  // sendRequest already cached the row (via cacheRow); the column is NULL
+  // and no photos have been downloaded. cleanup must not throw AND must
+  // not produce any observable state change.
+  const filesBefore = fs.files.size;
   await expect(supService.cleanupRequestPhotos(req)).resolves.toBeUndefined();
+
+  const post = await db.get<{ local_photo_paths_json: string | null }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(post?.local_photo_paths_json).toBeNull();
+
+  const photoFiles = [...fs.files.keys()].filter(k =>
+    k.includes(`/signrequest_photos/${req.id}/`));
+  expect(photoFiles).toHaveLength(0);
+  expect(fs.files.size).toBe(filesBefore);
 });
 
 test('downloadRequestPhotos aligns output to entry.photo_paths length even when manifest has gaps', async () => {
