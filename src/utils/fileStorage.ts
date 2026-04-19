@@ -56,9 +56,9 @@ export async function saveSignRequestPhoto(
   basename: string,
   bytes: Uint8Array,
 ): Promise<string> {
-  const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
+  const destPath = signRequestPhotoPath(requestId, basename);
+  const dir = destPath.slice(0, destPath.lastIndexOf('/') + 1);
   await fs.ensureDir(dir);
-  const destPath = `${dir}${basename}`;
   await fs.writeBytes(destPath, bytes);
   return destPath;
 }
@@ -66,13 +66,7 @@ export async function saveSignRequestPhoto(
 export async function deleteSignRequestPhotosDir(
   fs: FileSystemAbstraction,
   requestId: string,
-  knownPaths: string[] = [],
 ): Promise<void> {
-  for (const p of knownPaths) {
-    if (p) {
-      try { await fs.deletePath(p); } catch {}
-    }
-  }
   const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
   try { await fs.deletePath(dir); } catch {}
 }

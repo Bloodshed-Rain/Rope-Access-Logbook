@@ -21,7 +21,18 @@ export function createMockFs(): MockFs {
     },
     async writeBytes(path, bytes) { files.set(path, bytes); },
     async exists(path) { return files.has(path); },
-    async deletePath(path) { files.delete(path); },
+    async deletePath(path) {
+      // Match production (expo-file-system/legacy) semantics: deleting a path
+      // that ends with '/' is treated as a recursive directory delete — remove
+      // every entry whose key is prefixed by the path.
+      if (path.endsWith('/')) {
+        for (const k of [...files.keys()]) {
+          if (k.startsWith(path)) files.delete(k);
+        }
+        return;
+      }
+      files.delete(path);
+    },
     async ensureDir(_path) { /* no-op */ },
     async getSha256(path) {
       const b = files.get(path);
