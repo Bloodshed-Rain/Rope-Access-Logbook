@@ -34,7 +34,7 @@ Two new exports on `signRequestsService`:
     - Compute the target local path: `{documentDirectory}logbook/signrequest_photos/{row.id}/{basename}`.
     - **Idempotency check**: if the target file already exists and `fs.getSha256(target)` matches `manifest[key].sha256`, skip download; set `localPaths[i]` to the existing path and continue.
     - Otherwise, call `cloud.downloadSignRequestAsset(bucketKey)` to get `Uint8Array`.
-    - Write bytes via `saveSignRequestPhoto(row.id, basename, base64)` (this encodes bytes→base64 at the call site and writes to disk).
+    - Write bytes via `saveSignRequestPhoto(fs, row.id, basename, bytes)`.
     - Compute `fs.getSha256(target)`; compare with `manifest[key].sha256`. Mismatch → delete target file, add `i` to `failed`.
     - Match → set `localPaths[i]` to the returned absolute path.
 4. Persist the result to `sign_requests_cache` (wrapped in try/catch — DB failure does not rethrow):
@@ -49,39 +49,47 @@ Two new exports on `signRequestsService`:
 
 ### `cleanupRequestPhotos(row: SignRequest): Promise<void>`
 
-1. Call `deleteSignRequestPhotosDir(row.id)` — removes `{documentDirectory}logbook/signrequest_photos/{row.id}/` recursively. No-op if missing.
-2. `UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?`.
-3. Never throws.
+1. Read `local_photo_paths_json` from `sign_requests_cache` for `row.id`. If non-null, parse and pass the path array to `deleteSignRequestPhotosDir` as `knownPaths`; otherwise pass `[]`.
+2. Call `deleteSignRequestPhotosDir(fs, row.id, knownPaths)` — deletes each known file, then the directory. No-op on missing entries.
+3. `UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?`.
+4. Never throws (outer try/catch wraps the whole body).
 
 ## 4. File storage helpers
 
-Add to `src/utils/fileStorage.ts`:
+Add to `src/utils/fileStorage.ts`. These helpers route through the `FileSystemAbstraction` (not `expo-file-system/legacy` directly) so test `createMockFs()` can serve both the write and the subsequent `getSha256(path)` read from the same in-memory store. This is a departure from the existing `saveSignaturePng` / `copyPhotoToAppStorage` pattern and is deliberate — it's why signature-PNG tests can't verify the local write happened.
 
 ```ts
+import { FileSystemAbstraction } from '../cloud/fsAbstraction';
+
 const SIGNREQUEST_PHOTOS_DIR = `${LOGBOOK_DIR}signrequest_photos/`;
 
 export async function saveSignRequestPhoto(
+  fs: FileSystemAbstraction,
   requestId: string,
   basename: string,
-  base64Data: string,
+  bytes: Uint8Array,
 ): Promise<string> {
   const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
-  await ensureDir(dir);
+  await fs.ensureDir(dir);
   const destPath = `${dir}${basename}`;
-  await FileSystem.writeAsStringAsync(destPath, base64Data, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  await fs.writeBytes(destPath, bytes);
   return destPath;
 }
 
-export async function deleteSignRequestPhotosDir(requestId: string): Promise<void> {
-  const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
-  const info = await FileSystem.getInfoAsync(dir);
-  if (info.exists) {
-    await FileSystem.deleteAsync(dir, { idempotent: true });
+export async function deleteSignRequestPhotosDir(
+  fs: FileSystemAbstraction,
+  requestId: string,
+  knownPaths: string[] = [],
+): Promise<void> {
+  for (const p of knownPaths) {
+    if (p) { try { await fs.deletePath(p); } catch {} }
   }
+  const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
+  try { await fs.deletePath(dir); } catch {}
 }
 ```
+
+Rationale for `knownPaths` on delete: the in-memory test mock stores individual file keys with no concept of a "directory." Deleting `dir` alone leaves orphan keys. The runtime `expo-file-system` recursive delete cleans everything on device; passing the manifest's local paths lets the mock prove the cleanup path is hooked up.
 
 ## 5. Schema
 
