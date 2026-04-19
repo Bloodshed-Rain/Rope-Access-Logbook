@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { View, Text, ScrollView, Alert, Image } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { Screen, Card, Button, Banner, Input } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSignRequests } from '../hooks/useSignRequests';
+import { getLocalPhotoPathsFromCache } from '../services/signRequestsService';
 import { useProfile } from '../hooks/useProfile';
 import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
@@ -35,6 +36,23 @@ export function SignRequestDetailScreen() {
   const sigRef = useRef<any>(null);
 
   const req = (signReqs.query.data ?? []).find((r) => r.id === route.params.requestId);
+
+  const [photoView, setPhotoView] = useState<{ paths: string[]; missingCount: number; pending: boolean }>(
+    { paths: [], missingCount: 0, pending: true },
+  );
+
+  useEffect(() => {
+    if (!req) return;
+    let cancelled = false;
+    (async () => {
+      const row = await db.get<{ local_photo_paths_json: string | null }>(
+        'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+      if (cancelled || !row) return;
+      setPhotoView(getLocalPhotoPathsFromCache(row));
+    })();
+    return () => { cancelled = true; };
+  }, [req?.id, signReqs.query.dataUpdatedAt, db]);
+
   if (!req || !profile) return null;
   const entry = req.entry_payload;
 
@@ -120,14 +138,39 @@ export function SignRequestDetailScreen() {
 
         {entry.photo_paths.length > 0 && (
           <Card>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, marginBottom: spacing.xs }]}>
-              Photos (images reside on the tech's device; upload/download of the request's copies is not yet wired up)
+            <Text style={[typography.bodyBold, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
+              Photos
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-              {entry.photo_paths.map((p, i) => (
-                <Image key={i} source={{ uri: p }} style={{ width: 100, height: 100, borderRadius: 6 }} />
-              ))}
+              {Array.from({ length: entry.photo_paths.length }).map((_, i) => {
+                const localPath = photoView.pending ? '' : (photoView.paths[i] ?? '');
+                if (localPath) {
+                  return <Image key={i} source={{ uri: localPath }} style={{ width: 100, height: 100, borderRadius: 6 }} />;
+                }
+                return (
+                  <View
+                    key={i}
+                    style={{
+                      width: 100, height: 100, borderRadius: 6,
+                      backgroundColor: colors.slateLightest, alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={[typography.caption, { color: colors.textSecondary, textAlign: 'center' }]}>
+                      {photoView.pending ? 'Loading…' : 'Photo unavailable'}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
+            {photoView.pending && (
+              <Banner variant="info" message="Downloading photos…" />
+            )}
+            {!photoView.pending && photoView.missingCount > 0 && (
+              <Banner
+                variant="warning"
+                message={`${photoView.missingCount} of ${entry.photo_paths.length} photos couldn't be downloaded. Will retry on next sync.`}
+              />
+            )}
           </Card>
         )}
 
