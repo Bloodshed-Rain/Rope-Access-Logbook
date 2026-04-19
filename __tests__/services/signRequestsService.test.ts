@@ -446,6 +446,45 @@ test('sync top-up pass downloads photos for pre-existing supervisor pending rows
   expect(cached?.local_photo_paths_json).not.toBeNull();
 });
 
+test('sync main-loop cleanup branch fires when the supervisor first learns of a terminal row', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 1);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  const supService = makeSupervisorService(techCloud, db, fs);
+  await supService.sync(); // cache the row, download photos
+
+  const before = await db.get<{ local_photo_paths_json: string }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  const beforePaths = JSON.parse(before!.local_photo_paths_json) as string[];
+  expect(beforePaths.every(p => fs.files.has(p))).toBe(true);
+
+  // Tech withdraws the request — this bumps updated_at on the cloud row.
+  techCloud.actAs(techSession);
+  await techService.withdraw(req.id);
+  techCloud.actAs(supSession);
+
+  // Simulate a device that has lost its local cache of this row (e.g., the
+  // supervisor reinstalled the app or pruned local state). This forces the
+  // supervisor's next sync to discover the withdrawn row via the cloud
+  // delta fetch, which makes the main-loop cleanup branch — not the
+  // top-up pass — the path that fires.
+  await db.run('DELETE FROM sign_requests_cache WHERE id = ?', [req.id]);
+
+  await supService.sync();
+
+  // Main-loop branch must have re-cached the row (cacheRow runs first) and
+  // then cleaned up the photos.
+  const after = await db.get<{ status: string; local_photo_paths_json: string | null }>(
+    'SELECT status, local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(after?.status).toBe('withdrawn');
+  expect(after?.local_photo_paths_json).toBeNull();
+  for (const p of beforePaths) expect(fs.files.has(p)).toBe(false);
+});
+
 test('sync does not download photos for tech-side pending rows', async () => {
   const { service: techService, cloud: techCloud, db, fs } = await setup();
   await seedEntryWithPhotos(db, fs, 2);
