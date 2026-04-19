@@ -18,11 +18,6 @@ WebBrowser.maybeCompleteAuthSession();
 const BUCKET = 'logbook-backups';
 const SIGN_REQUESTS_BUCKET = 'sign-requests';
 
-function maskCert(cert: string): string {
-  if (cert.length <= 4) return cert;
-  return cert.slice(0, 2) + '-***' + cert.slice(-2);
-}
-
 async function getUid(client: SupabaseClient): Promise<string> {
   const { data } = await client.auth.getSession();
   if (!data.session) throw new Error('not_authenticated');
@@ -326,44 +321,14 @@ export function createSupabaseCloudClient(): CloudClient {
     },
 
     async searchSupervisors(kind, query) {
-      const uid = await getUid(sb);
-      const q = query.trim();
-      if (kind === 'sprat_id') {
-        const { data, error } = await sb
-          .from('supervisor_directory')
-          .select('*')
-          .eq('visible', true)
-          .eq('sprat_cert_number', q)
-          .neq('user_id', uid)
-          .limit(10);
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((d) => ({
-          user_id: d.user_id,
-          display_name: d.display_name,
-          sprat_cert_number: d.sprat_cert_number,
-          sprat_cert_number_is_masked: false,
-        }));
-      }
-      if (kind === 'name') {
-        if (q.length < 3) return [];
-        const { data, error } = await sb
-          .from('supervisor_directory')
-          .select('*')
-          .eq('visible', true)
-          .ilike('display_name', `${q}%`)
-          .neq('user_id', uid)
-          .limit(10);
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((d) => ({
-          user_id: d.user_id,
-          display_name: d.display_name,
-          sprat_cert_number: maskCert(d.sprat_cert_number),
-          sprat_cert_number_is_masked: true,
-        }));
-      }
-      // 'email' search: not supported in directory (invite flow goes via
-      // inviteSupervisorByEmail). Matches the mock.
-      return [];
+      const response = await sb.functions.invoke<{ results?: Array<{ user_id: string; display_name: string; sprat_cert_number: string; sprat_cert_number_is_masked: boolean }>; error?: string }>('search-supervisors', {
+        body: { kind, query },
+      });
+      if (response.error) throw new Error(typeof response.error === 'string' ? response.error : response.error.message);
+      const data = response.data;
+      if (data?.error === 'rate_limited') throw new Error('rate_limited');
+      if (data?.error) throw new Error(data.error);
+      return data?.results ?? [];
     },
 
     // --- Sign requests ---
