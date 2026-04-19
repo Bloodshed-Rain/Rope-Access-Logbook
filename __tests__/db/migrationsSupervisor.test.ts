@@ -37,4 +37,21 @@ describe('supervisor-accounts migrations', () => {
     await runSchemaMigrations(db);
     await runSchemaMigrations(db);
   });
+
+  test('adds local_photo_paths_json to sign_requests_cache on legacy DB', async () => {
+    const db = createLegacyTestClient();
+    await runSchemaMigrations(db);
+    const cols = await db.getAll<{ name: string }>(
+      "PRAGMA table_info(sign_requests_cache)"
+    );
+    expect(cols.map(c => c.name)).toContain('local_photo_paths_json');
+  });
+
+  test('canonical schema has local_photo_paths_json on sign_requests_cache', async () => {
+    const db = await createTestClient();
+    const cols = await db.getAll<{ name: string }>(
+      "PRAGMA table_info(sign_requests_cache)"
+    );
+    expect(cols.map(c => c.name)).toContain('local_photo_paths_json');
+  });
 });

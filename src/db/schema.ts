@@ -86,7 +86,8 @@ export const SCHEMA_SQL = `
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    payload_json TEXT NOT NULL
+    payload_json TEXT NOT NULL,
+    local_photo_paths_json TEXT
   );
 
   -- idx_entries_pending_sign_request lives in migrations.ts only. It references

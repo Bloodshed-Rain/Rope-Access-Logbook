@@ -81,4 +81,7 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
   await db.exec(`CREATE INDEX IF NOT EXISTS idx_entries_pending_sign_request ON entries(pending_sign_request_id) WHERE pending_sign_request_id IS NOT NULL;`);
   await db.exec(`CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_status ON sign_requests_cache(status);`);
   await db.exec(`CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_entry ON sign_requests_cache(entry_id);`);
+  if (!(await hasColumn(db, 'sign_requests_cache', 'local_photo_paths_json'))) {
+    await db.exec('ALTER TABLE sign_requests_cache ADD COLUMN local_photo_paths_json TEXT');
+  }
 }
