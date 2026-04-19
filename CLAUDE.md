@@ -150,7 +150,7 @@ Detection happens in `RootNavigator` using `useAuthSession`, `useCloudStatePrevi
 
 One account type. Every user has a profile and a logbook; any Level III tech can opt into the "I supervise others" capability via the toggle in `ProfileScreen`'s `SupervisorsSection`. Opting in requires a supervisor cert number and publishes a row to the searchable supervisor directory; opting out tombstones the directory row and fails any in-flight inbound requests. Remote signing flips the signer: the supervisor signs on their own device, the tech's local entry is updated via `applyIncomingSignature`.
 
-Unlike cloud backup, this feature uses Postgres. Three tables in Supabase — the first server-side relational state in the project — provisioned by `supabase/migrations/20260417_supervisor_accounts.sql`:
+Unlike cloud backup, this feature uses Postgres. Three tables in Supabase — the first server-side relational state in the project — provisioned by `supabase/migrations/20260418_supervisor_accounts.sql`:
 
 - `supervisor_connections` — tech↔supervisor pair, status `pending | accepted | declined | revoked`. RLS: both parties can read, only the initiating tech can insert, either party can update the status column per side-specific rules.
 - `sign_requests` — one entry awaiting a remote signature, carries a snapshot of entry content so the supervisor can review without the tech's DB. Status `pending | signed | declined | withdrawn | expired`. RLS: both parties can read; tech inserts; supervisor signs/declines; tech withdraws.
@@ -184,7 +184,7 @@ Two new cache tables: `supervisor_connections_cache` and `sign_requests_cache` �
 
 ## Testing
 
-The suite currently has **17 test files / 132 tests** (`__tests__/services/` × 13, `__tests__/db/` × 2, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
+The suite currently has **17 test files / 132 tests** (`__tests__/services/` × 12, `__tests__/db/` × 3, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
 
 Cloud tests use `createMockCloudClient()` + `createMockFs()`. The jest config (`jest.config.js`) uses the `jest-expo` preset and `transformIgnorePatterns` tuned to leave RN / Expo packages untransformed. Individual service test files mock `expo-file-system/legacy` with a stable `documentDirectory` (see the top of `signingService.test.ts`) so `normalizeAppPath` behaves deterministically; `@react-native-async-storage/async-storage` is mocked with an in-memory map as part of the jest-expo preset.
 
@@ -213,8 +213,8 @@ All persistent images live under `FileSystem.documentDirectory/logbook/` with su
 
 These features are part of this app's scope but not yet built. They are not deferred sub-projects or future add-ons — they are unfinished pieces of the same product. Requests to build any of them are in-scope work, not scope bumps.
 
-- **Supervisor accounts — Part B server-side plumbing** — the in-app flow is implemented (see "Supervisor accounts" above), but the server-side polish is deferred:
-  - Edge Functions: `invite-supervisor` (calls `auth.admin.inviteUserByEmail` so a tech can invite a supervisor who doesn't have an account yet), `search-supervisors` (rate-limited wrapper around directory search — 20 searches per tech per day, post-decline cooldown is already enforced by a Postgres trigger), `cleanup-request-assets` (deletes the `sign-requests/{request_id}/` folder when a request hits a terminal state).
+- **Supervisor accounts — remaining server-side plumbing** — the in-app flow is implemented (see "Supervisor accounts" above), and the `invite-supervisor` and `search-supervisors` Edge Functions are now in-tree under `supabase/functions/`. Still deferred:
+  - Edge Function: `cleanup-request-assets` (deletes the `sign-requests/{request_id}/` folder when a request hits a terminal state).
   - `pg_cron` jobs: hourly `pending → expired` transition on `sign_requests.expires_at < now()`; daily hard-delete of terminal-state rows older than 90 days.
   - `delete-account` Edge Function cascade: on account deletion, flip the deleting user's in-flight `sign_requests` to `declined` or `withdrawn` per role before the auth.users row is removed.
   - Supervisor-side photo download: `SignRequestDetailScreen` currently renders tech-local photo paths that don't resolve on the supervisor's device. Need to download from the `sign-requests` bucket to a local cache and show from there.
