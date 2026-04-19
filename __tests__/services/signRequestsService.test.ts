@@ -369,6 +369,100 @@ test('downloadRequestPhotos aligns output to entry.photo_paths length even when 
   expect(result.localPaths[2]).not.toBe('');
 });
 
+// ===== Task 6: sync extensions =====
+
+test('sync downloads photos for new supervisor-side pending rows', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 2);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  const supService = makeSupervisorService(techCloud, db, fs);
+  // The supervisor's local cache starts empty.
+  await db.run('DELETE FROM sign_requests_cache');
+
+  await supService.sync();
+
+  const cached = await db.get<{ local_photo_paths_json: string }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  const paths = JSON.parse(cached!.local_photo_paths_json) as string[];
+  expect(paths).toHaveLength(2);
+  for (const p of paths) expect(fs.files.has(p)).toBe(true);
+});
+
+test('sync calls cleanupRequestPhotos when a supervisor-side row hits a terminal state', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 1);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+  const supService = makeSupervisorService(techCloud, db, fs);
+  await supService.sync(); // downloads photos
+
+  const before = await db.get<{ local_photo_paths_json: string }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  const beforePaths = JSON.parse(before!.local_photo_paths_json) as string[];
+  expect(beforePaths.every(p => fs.files.has(p))).toBe(true);
+
+  // Tech withdraws the request.
+  techCloud.actAs(techSession);
+  await techService.withdraw(req.id);
+  techCloud.actAs(supSession);
+
+  await supService.sync();
+
+  const after = await db.get<{ local_photo_paths_json: string | null }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(after?.local_photo_paths_json).toBeNull();
+  for (const p of beforePaths) expect(fs.files.has(p)).toBe(false);
+});
+
+test('sync top-up pass downloads photos for pre-existing supervisor pending rows with null column', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 2);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  const supService = makeSupervisorService(techCloud, db, fs);
+  await supService.sync(); // populates cache + downloads
+
+  // Simulate a pre-existing row whose photos were never downloaded
+  // (e.g., cached before this feature shipped).
+  await db.run(
+    'UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?', [req.id]);
+  // Also remove the on-disk files, since we're simulating they never existed.
+  const paths = [...fs.files.keys()].filter(k => k.includes(`/signrequest_photos/${req.id}/`));
+  for (const p of paths) fs.files.delete(p);
+
+  await supService.sync();
+
+  const cached = await db.get<{ local_photo_paths_json: string | null }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(cached?.local_photo_paths_json).not.toBeNull();
+});
+
+test('sync does not download photos for tech-side pending rows', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 2);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  // The tech is syncing their own outgoing request. They should NOT get
+  // a supervisor-side cache of the photos (they already have the originals).
+  await techService.sync();
+
+  const cached = await db.get<{ local_photo_paths_json: string | null }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(cached?.local_photo_paths_json).toBeNull();
+});
+
 // ===== Task 5: getLocalPhotoPathsFromCache =====
 
 describe('getLocalPhotoPathsFromCache', () => {

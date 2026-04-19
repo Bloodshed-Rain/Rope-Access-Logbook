@@ -295,15 +295,61 @@ export function createSignRequestsService(
     } catch {}
   }
 
+  async function topUpPendingPhotos(): Promise<void> {
+    const uid = cloud.getCurrentUserId();
+    if (!uid) return;
+    const rows = await db.getAll<{ payload_json: string }>(
+      `SELECT payload_json FROM sign_requests_cache
+        WHERE status = 'pending'
+          AND supervisor_user_id = ?
+          AND local_photo_paths_json IS NULL`,
+      [uid],
+    );
+    for (const r of rows) {
+      try { await downloadRequestPhotos(JSON.parse(r.payload_json) as SignRequest); } catch {}
+    }
+  }
+
+  async function topUpTerminalCleanup(): Promise<void> {
+    const uid = cloud.getCurrentUserId();
+    if (!uid) return;
+    const rows = await db.getAll<{ payload_json: string }>(
+      `SELECT payload_json FROM sign_requests_cache
+        WHERE supervisor_user_id = ?
+          AND status IN ('signed','declined','withdrawn','expired')`,
+      [uid],
+    );
+    for (const r of rows) {
+      try { await cleanupRequestPhotos(JSON.parse(r.payload_json) as SignRequest); } catch {}
+    }
+  }
+
   async function sync(): Promise<void> {
+    await topUpPendingPhotos();
+    await topUpTerminalCleanup();
+
     const since = await getMaxUpdatedAt();
     const rows = await cloud.listSignRequests(since);
     const currentUid = cloud.getCurrentUserId();
     for (const r of rows) {
       await cacheRow(r);
+
+      if (currentUid && r.supervisor_user_id === currentUid && r.status === 'pending') {
+        try { await downloadRequestPhotos(r); } catch {}
+      }
+
       if (currentUid && r.tech_user_id === currentUid && r.status === 'signed') {
         await applyIncomingSignature(r);
       }
+
+      if (
+        currentUid && r.supervisor_user_id === currentUid &&
+        (r.status === 'signed' || r.status === 'declined' ||
+         r.status === 'withdrawn' || r.status === 'expired')
+      ) {
+        try { await cleanupRequestPhotos(r); } catch {}
+      }
+
       if (currentUid && r.tech_user_id === currentUid &&
           (r.status === 'withdrawn' || r.status === 'declined' || r.status === 'expired')) {
         const entryId = (r.entry_payload as Entry).id;
