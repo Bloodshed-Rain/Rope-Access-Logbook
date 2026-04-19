@@ -163,3 +163,150 @@ test('sign uploads PNG, transitions row to signed with v3 hash', async () => {
   expect(result.hash_version).toBe(3);
   expect(result.supervisor_name_snapshot).toBe('Sup Name');
 });
+
+// ===== Task: downloadRequestPhotos =====
+
+function makeSupervisorService(techCloud: ReturnType<typeof createMockCloudClient>, db: DbClient, fs: ReturnType<typeof createMockFs>) {
+  // Switch the session on the same cloud instance so the closure-captured storage
+  // and requests Maps remain shared between the tech and supervisor calls.
+  // Creating a second CloudClient and overwriting its `.storage` property doesn't
+  // work because downloadSignRequestAsset captures `storage` by closure, not via
+  // `this.storage`, so the assignment is a no-op on the function's behavior.
+  techCloud.actAs(supSession);
+  let uuidCounter = 1000;
+  const testUuid = () => `sup-uuid-${++uuidCounter}`;
+  return createSignRequestsService(db, techCloud, fs, testSha256, undefined, testUuid);
+}
+
+async function seedEntryWithPhotos(db: DbClient, fs: ReturnType<typeof createMockFs>, photoCount: number) {
+  const paths: string[] = [];
+  for (let i = 0; i < photoCount; i++) {
+    const p = `file:///tmp/test/logbook/photos/e1_${i}.jpg`;
+    const bytes = new Uint8Array([1, 2, 3, i]);
+    fs.files.set(p, bytes);
+    paths.push(p);
+  }
+  await db.run(
+    `INSERT INTO entries (id, date, date_from, date_to, employer, site, client, description, work_hours, tech_level_snapshot, work_types, photo_paths, status, created_at, updated_at)
+     VALUES ('e1','2026-03-01','2026-03-01','2026-03-01','Acme','Site','Client','Desc',8,'II','["inspection"]',?,'draft','2026-03-01','2026-03-01')`,
+    [JSON.stringify(paths)],
+  );
+}
+
+test('downloadRequestPhotos writes all photos locally and persists paths', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 3);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  const supService = makeSupervisorService(techCloud, db, fs);
+  const result = await supService.downloadRequestPhotos(req);
+
+  expect(result.failed).toEqual([]);
+  expect(result.localPaths).toHaveLength(3);
+  for (const p of result.localPaths) {
+    expect(p).toMatch(new RegExp(`/logbook/signrequest_photos/${req.id}/photo_e1_\\d+\\.jpg$`));
+    expect(fs.files.has(p)).toBe(true);
+  }
+
+  const cached = await db.get<{ local_photo_paths_json: string }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(JSON.parse(cached!.local_photo_paths_json)).toEqual(result.localPaths);
+});
+
+test('downloadRequestPhotos is idempotent — second call is a no-op', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 2);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+  const supService = makeSupervisorService(techCloud, db, fs);
+
+  const first = await supService.downloadRequestPhotos(req);
+  expect(first.failed).toEqual([]);
+
+  // Tamper with the mock's storage: if download runs again we'd catch it.
+  const storageSize = (techCloud as any).storage.size;
+  const second = await supService.downloadRequestPhotos(req);
+  expect(second.failed).toEqual([]);
+  expect(second.localPaths).toEqual(first.localPaths);
+  expect((techCloud as any).storage.size).toBe(storageSize);
+});
+
+test('downloadRequestPhotos quarantines photos with sha256 mismatch', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 2);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  // Corrupt the manifest sha256 for index 1 so the downloaded bytes don't match.
+  const corrupt = { ...req, assets_manifest: { ...req.assets_manifest } } as SignRequest;
+  const keys = Object.keys(corrupt.assets_manifest);
+  const badKey = keys.find(k => k.endsWith('_1.jpg'))!;
+  (corrupt.assets_manifest as any)[badKey] = {
+    ...(corrupt.assets_manifest as any)[badKey],
+    sha256: 'deadbeef'.repeat(8),
+  };
+
+  const supService = makeSupervisorService(techCloud, db, fs);
+  const result = await supService.downloadRequestPhotos(corrupt);
+
+  expect(result.failed).toEqual([1]);
+  expect(result.localPaths[0]).not.toBe('');
+  expect(result.localPaths[1]).toBe('');
+
+  // Quarantined file must not linger on disk.
+  for (const [path, _] of fs.files.entries()) {
+    if (path.includes(`/signrequest_photos/${req.id}/`) && path.endsWith('_1.jpg')) {
+      throw new Error(`Expected quarantined file to be deleted: ${path}`);
+    }
+  }
+});
+
+test('downloadRequestPhotos handles download failure per-index without rethrowing', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 2);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  // Delete one key from the mock storage to force a download failure.
+  const storage = (techCloud as any).storage as Map<string, Uint8Array>;
+  const doomed = [...storage.keys()].find(k => k.endsWith('_0.jpg'))!;
+  storage.delete(doomed);
+
+  const supService = makeSupervisorService(techCloud, db, fs);
+  const result = await supService.downloadRequestPhotos(req);
+
+  expect(result.failed).toEqual([0]);
+  expect(result.localPaths[0]).toBe('');
+  expect(result.localPaths[1]).not.toBe('');
+});
+
+test('downloadRequestPhotos aligns output to entry.photo_paths length even when manifest has gaps', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 3);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+
+  // Drop the middle manifest entry to simulate a gap.
+  const trimmed = { ...req, assets_manifest: { ...req.assets_manifest } } as SignRequest;
+  const midKey = Object.keys(trimmed.assets_manifest).find(k => k.endsWith('_1.jpg'))!;
+  delete (trimmed.assets_manifest as any)[midKey];
+
+  const supService = makeSupervisorService(techCloud, db, fs);
+  const result = await supService.downloadRequestPhotos(trimmed);
+
+  expect(result.localPaths).toHaveLength(3);
+  expect(result.localPaths[0]).not.toBe('');
+  expect(result.localPaths[1]).toBe('');
+  expect(result.localPaths[2]).not.toBe('');
+});

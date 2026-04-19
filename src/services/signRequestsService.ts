@@ -3,7 +3,11 @@ import { CloudClient } from '../cloud/cloudClient';
 import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 import { Entry, EntryRow, SignRequest, HashFn, Signature } from '../types';
 import { computeEntryHashFromPayload } from '../utils/entryPayloadHash';
-import { saveSignaturePng } from '../utils/fileStorage';
+import {
+  saveSignaturePng,
+  saveSignRequestPhoto,
+  signRequestPhotoPath,
+} from '../utils/fileStorage';
 import { generateId } from '../utils/uuid';
 
 type Clock = () => string;
@@ -209,6 +213,64 @@ export function createSignRequestsService(
     return (await db.get<Signature>('SELECT * FROM signatures WHERE id = ?', [sigId]))!;
   }
 
+  const PHOTO_BASENAME_RE = /^photo_[^_]+_(\d+)\.[^.]+$/;
+
+  function parsePhotoIndex(basename: string): number | null {
+    const m = basename.match(PHOTO_BASENAME_RE);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return Number.isInteger(n) ? n : null;
+  }
+
+  async function downloadRequestPhotos(row: SignRequest): Promise<{ localPaths: string[]; failed: number[] }> {
+    const entry = row.entry_payload as Entry;
+    const count = entry.photo_paths.length;
+    const localPaths: string[] = new Array(count).fill('');
+    const failed: number[] = [];
+
+    const manifest = row.assets_manifest as Record<string, { sha256: string; size_bytes: number }>;
+    for (const [key, meta] of Object.entries(manifest ?? {})) {
+      const basename = key.split('/').pop() ?? '';
+      const idx = parsePhotoIndex(basename);
+      if (idx === null || idx < 0 || idx >= count) continue;
+
+      try {
+        const bucketKey = key.replace(/^sign-requests\//, '');
+        const targetPath = signRequestPhotoPath(row.id, basename);
+
+        if (await fs.exists(targetPath)) {
+          const existingSha = await fs.getSha256(targetPath);
+          if (existingSha === meta.sha256) {
+            localPaths[idx] = targetPath;
+            continue;
+          }
+          try { await fs.deletePath(targetPath); } catch {}
+        }
+
+        const bytes = await cloud.downloadSignRequestAsset(bucketKey);
+        const writtenPath = await saveSignRequestPhoto(fs, row.id, basename, bytes);
+        const writtenSha = await fs.getSha256(writtenPath);
+        if (writtenSha !== meta.sha256) {
+          try { await fs.deletePath(writtenPath); } catch {}
+          failed.push(idx);
+          continue;
+        }
+        localPaths[idx] = writtenPath;
+      } catch {
+        failed.push(idx);
+      }
+    }
+
+    try {
+      await db.run(
+        'UPDATE sign_requests_cache SET local_photo_paths_json = ? WHERE id = ?',
+        [JSON.stringify(localPaths), row.id],
+      );
+    } catch {}
+
+    return { localPaths, failed };
+  }
+
   async function sync(): Promise<void> {
     const since = await getMaxUpdatedAt();
     const rows = await cloud.listSignRequests(since);
@@ -242,5 +304,6 @@ export function createSignRequestsService(
     decline,
     sign,
     applyIncomingSignature,
+    downloadRequestPhotos,
   };
 }
