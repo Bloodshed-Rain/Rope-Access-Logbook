@@ -564,14 +564,7 @@ In `src/services/signRequestsService.ts`, after `downloadRequestPhotos`:
 ```ts
 async function cleanupRequestPhotos(row: SignRequest): Promise<void> {
   try {
-    const cached = await db.get<{ local_photo_paths_json: string | null }>(
-      'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?',
-      [row.id],
-    );
-    const knownPaths: string[] = cached?.local_photo_paths_json
-      ? (JSON.parse(cached.local_photo_paths_json) as string[])
-      : [];
-    await deleteSignRequestPhotosDir(fs, row.id, knownPaths);
+    await deleteSignRequestPhotosDir(fs, row.id);
     await db.run(
       'UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?',
       [row.id],
@@ -579,6 +572,8 @@ async function cleanupRequestPhotos(row: SignRequest): Promise<void> {
   } catch {}
 }
 ```
+
+`deleteSignRequestPhotosDir` recursively deletes the request's photo directory via `fs.deletePath(dir)`. The in-memory test mock honors trailing-slash paths as recursive prefix-deletes, matching the on-device `expo-file-system.deleteAsync({recursive:true})` semantics.
 
 Export it from the service:
 

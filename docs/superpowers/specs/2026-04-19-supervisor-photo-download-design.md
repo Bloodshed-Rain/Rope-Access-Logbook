@@ -49,10 +49,9 @@ Two new exports on `signRequestsService`:
 
 ### `cleanupRequestPhotos(row: SignRequest): Promise<void>`
 
-1. Read `local_photo_paths_json` from `sign_requests_cache` for `row.id`. If non-null, parse and pass the path array to `deleteSignRequestPhotosDir` as `knownPaths`; otherwise pass `[]`.
-2. Call `deleteSignRequestPhotosDir(fs, row.id, knownPaths)` — deletes each known file, then the directory. No-op on missing entries.
-3. `UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?`.
-4. Never throws (outer try/catch wraps the whole body).
+1. Call `deleteSignRequestPhotosDir(fs, row.id)` — recursively removes `logbook/signrequest_photos/{row.id}/`. No-op on missing dir.
+2. `UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?`.
+3. Never throws (outer try/catch wraps the whole body).
 
 ## 4. File storage helpers
 
@@ -63,15 +62,19 @@ import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 
 const SIGNREQUEST_PHOTOS_DIR = `${LOGBOOK_DIR}signrequest_photos/`;
 
+export function signRequestPhotoPath(requestId: string, basename: string): string {
+  return `${SIGNREQUEST_PHOTOS_DIR}${requestId}/${basename}`;
+}
+
 export async function saveSignRequestPhoto(
   fs: FileSystemAbstraction,
   requestId: string,
   basename: string,
   bytes: Uint8Array,
 ): Promise<string> {
-  const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
+  const destPath = signRequestPhotoPath(requestId, basename);
+  const dir = destPath.slice(0, destPath.lastIndexOf('/') + 1);
   await fs.ensureDir(dir);
-  const destPath = `${dir}${basename}`;
   await fs.writeBytes(destPath, bytes);
   return destPath;
 }
@@ -79,17 +82,13 @@ export async function saveSignRequestPhoto(
 export async function deleteSignRequestPhotosDir(
   fs: FileSystemAbstraction,
   requestId: string,
-  knownPaths: string[] = [],
 ): Promise<void> {
-  for (const p of knownPaths) {
-    if (p) { try { await fs.deletePath(p); } catch {} }
-  }
   const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
   try { await fs.deletePath(dir); } catch {}
 }
 ```
 
-Rationale for `knownPaths` on delete: the in-memory test mock stores individual file keys with no concept of a "directory." Deleting `dir` alone leaves orphan keys. The runtime `expo-file-system` recursive delete cleans everything on device; passing the manifest's local paths lets the mock prove the cleanup path is hooked up.
+`deleteSignRequestPhotosDir` is a single directory-level delete. Runtime `expo-file-system.deleteAsync` is recursive on directories. The test mock (`__tests__/fsMock.ts`) treats paths ending with `/` as recursive prefix-deletes so this single call also works in-memory.
 
 ## 5. Schema
 
