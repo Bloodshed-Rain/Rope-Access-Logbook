@@ -6,6 +6,7 @@ import { computeEntryHashFromPayload } from '../utils/entryPayloadHash';
 import {
   saveSignaturePng,
   saveSignRequestPhoto,
+  deleteSignRequestPhotosDir,
   signRequestPhotoPath,
 } from '../utils/fileStorage';
 import { generateId } from '../utils/uuid';
@@ -271,6 +272,16 @@ export function createSignRequestsService(
     return { localPaths, failed };
   }
 
+  async function cleanupRequestPhotos(row: SignRequest): Promise<void> {
+    try {
+      await deleteSignRequestPhotosDir(fs, row.id);
+      await db.run(
+        'UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?',
+        [row.id],
+      );
+    } catch {}
+  }
+
   async function sync(): Promise<void> {
     const since = await getMaxUpdatedAt();
     const rows = await cloud.listSignRequests(since);
@@ -305,5 +316,6 @@ export function createSignRequestsService(
     sign,
     applyIncomingSignature,
     downloadRequestPhotos,
+    cleanupRequestPhotos,
   };
 }

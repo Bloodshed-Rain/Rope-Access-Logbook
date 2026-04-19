@@ -295,6 +295,46 @@ test('downloadRequestPhotos handles download failure per-index without rethrowin
   expect(result.localPaths[1]).not.toBe('');
 });
 
+// ===== Task 4: cleanupRequestPhotos =====
+
+test('cleanupRequestPhotos deletes cached files and nulls the column', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 2);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+  const supService = makeSupervisorService(techCloud, db, fs);
+  const dl = await supService.downloadRequestPhotos(req);
+
+  // Pre-condition: files exist, column is set.
+  for (const p of dl.localPaths) expect(fs.files.has(p)).toBe(true);
+  const pre = await db.get<{ local_photo_paths_json: string | null }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(pre?.local_photo_paths_json).not.toBeNull();
+
+  await supService.cleanupRequestPhotos(req);
+
+  // Post-condition: files gone, column is null.
+  for (const p of dl.localPaths) expect(fs.files.has(p)).toBe(false);
+  const post = await db.get<{ local_photo_paths_json: string | null }>(
+    'SELECT local_photo_paths_json FROM sign_requests_cache WHERE id = ?', [req.id]);
+  expect(post?.local_photo_paths_json).toBeNull();
+});
+
+test('cleanupRequestPhotos is a no-op when nothing was downloaded', async () => {
+  const { service: techService, cloud: techCloud, db, fs } = await setup();
+  await seedEntryWithPhotos(db, fs, 1);
+  await seedAcceptedConnection(techCloud);
+  const req = await techService.sendRequest({
+    entry_id: 'e1', connection_id: 'c1', supervisor_user_id: supSession.user_id,
+  });
+  const supService = makeSupervisorService(techCloud, db, fs);
+
+  // Should not throw, even though no cache row for supervisor yet / no files.
+  await expect(supService.cleanupRequestPhotos(req)).resolves.toBeUndefined();
+});
+
 test('downloadRequestPhotos aligns output to entry.photo_paths length even when manifest has gaps', async () => {
   const { service: techService, cloud: techCloud, db, fs } = await setup();
   await seedEntryWithPhotos(db, fs, 3);
