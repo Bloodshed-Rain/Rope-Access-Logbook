@@ -89,7 +89,11 @@ export const SCHEMA_SQL = `
     payload_json TEXT NOT NULL
   );
 
-  CREATE INDEX IF NOT EXISTS idx_entries_pending_sign_request ON entries(pending_sign_request_id) WHERE pending_sign_request_id IS NOT NULL;
+  -- idx_entries_pending_sign_request lives in migrations.ts only. It references
+  -- the pending_sign_request_id column added by runSchemaMigrations, which runs
+  -- AFTER this SCHEMA_SQL block. Creating it here would fail on devices upgrading
+  -- from a pre-supervisor-accounts schema because the column doesn't yet exist
+  -- when CREATE TABLE IF NOT EXISTS above no-ops on an existing entries table.
   CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_status ON sign_requests_cache(status);
   CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_entry ON sign_requests_cache(entry_id);
 `;

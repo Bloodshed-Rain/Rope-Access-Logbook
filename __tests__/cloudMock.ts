@@ -70,8 +70,11 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
     return `mock_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
   }
 
+  let monotonicMs = Date.now();
   function nowIso(): string {
-    return new Date().toISOString();
+    const now = Date.now();
+    monotonicMs = Math.max(monotonicMs + 1, now);
+    return new Date(monotonicMs).toISOString();
   }
 
   function fireConn(row: MockConnRow) {
