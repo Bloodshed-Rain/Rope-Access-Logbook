@@ -16,6 +16,19 @@ type UuidFn = () => string;
 
 const EXPIRATION_DAYS = 30;
 
+export function getLocalPhotoPathsFromCache(row: { local_photo_paths_json: string | null }): {
+  paths: string[];
+  missingCount: number;
+  pending: boolean;
+} {
+  if (row.local_photo_paths_json == null) {
+    return { paths: [], missingCount: 0, pending: true };
+  }
+  const paths = JSON.parse(row.local_photo_paths_json) as string[];
+  const missingCount = paths.filter(p => p === '').length;
+  return { paths, missingCount, pending: false };
+}
+
 export function createSignRequestsService(
   db: DbClient,
   cloud: CloudClient,

@@ -1,7 +1,7 @@
 import { createTestClient } from '../setup';
 import { createMockCloudClient } from '../cloudMock';
 import { createMockFs } from '../fsMock';
-import { createSignRequestsService } from '../../src/services/signRequestsService';
+import { createSignRequestsService, getLocalPhotoPathsFromCache } from '../../src/services/signRequestsService';
 import { testSha256 } from '../testHash';
 import { AuthSession, Entry, SignRequest } from '../../src/types';
 import { DbClient } from '../../src/db/client';
@@ -367,4 +367,32 @@ test('downloadRequestPhotos aligns output to entry.photo_paths length even when 
   expect(result.localPaths[0]).not.toBe('');
   expect(result.localPaths[1]).toBe('');
   expect(result.localPaths[2]).not.toBe('');
+});
+
+// ===== Task 5: getLocalPhotoPathsFromCache =====
+
+describe('getLocalPhotoPathsFromCache', () => {
+  test('returns pending when column is null', () => {
+    const result = getLocalPhotoPathsFromCache({ local_photo_paths_json: null });
+    expect(result).toEqual({ paths: [], missingCount: 0, pending: true });
+  });
+
+  test('parses paths and counts empty slots', () => {
+    const json = JSON.stringify([
+      '/abs/a.jpg',
+      '',
+      '/abs/c.jpg',
+    ]);
+    const result = getLocalPhotoPathsFromCache({ local_photo_paths_json: json });
+    expect(result).toEqual({
+      paths: ['/abs/a.jpg', '', '/abs/c.jpg'],
+      missingCount: 1,
+      pending: false,
+    });
+  });
+
+  test('handles empty array', () => {
+    const result = getLocalPhotoPathsFromCache({ local_photo_paths_json: '[]' });
+    expect(result).toEqual({ paths: [], missingCount: 0, pending: false });
+  });
 });
