@@ -83,4 +83,5 @@ export interface CloudClient {
   withdrawRequest(id: string): Promise<SignRequest>;
   subscribeSignRequests(callback: (row: SignRequest) => void): () => void;
   downloadSignRequestAsset(bucketKey: string): Promise<Uint8Array>;
+  cleanupRequestAssets(requestId: string): Promise<void>;
 }

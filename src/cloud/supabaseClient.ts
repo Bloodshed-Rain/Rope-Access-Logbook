@@ -476,5 +476,11 @@ export function createSupabaseCloudClient(): CloudClient {
       const buf = await data.arrayBuffer();
       return new Uint8Array(buf);
     },
+
+    async cleanupRequestAssets(requestId) {
+      await sb.functions.invoke('cleanup-request-assets', {
+        body: { request_id: requestId },
+      });
+    },
   };
 }

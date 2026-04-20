@@ -150,12 +150,14 @@ export function createSignRequestsService(
       'UPDATE entries SET pending_sign_request_id = NULL, updated_at = ? WHERE id = ? AND pending_sign_request_id = ?',
       [clock(), entryId, row.id],
     );
+    try { await cloud.cleanupRequestAssets(id); } catch {}
     return row;
   }
 
   async function decline(id: string, reason: string): Promise<SignRequest> {
     const row = await cloud.declineRequest(id, reason);
     await cacheRow(row);
+    try { await cloud.cleanupRequestAssets(id); } catch {}
     return row;
   }
 
@@ -237,6 +239,7 @@ export function createSignRequestsService(
       `UPDATE entries SET status='signed', pending_sign_request_id=NULL, updated_at=? WHERE id=?`,
       [now, entry.id],
     );
+    try { await cloud.cleanupRequestAssets(row.id); } catch {}
     return (await db.get<Signature>('SELECT * FROM signatures WHERE id = ?', [sigId]))!;
   }
 
