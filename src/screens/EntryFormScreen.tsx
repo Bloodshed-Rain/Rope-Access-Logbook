@@ -184,6 +184,42 @@ export function EntryFormScreen() {
     navigation.goBack();
   };
 
+  /** Save current form state and return the entry ID. Used by both Save and Send-for-signature. */
+  const saveEntry = async (): Promise<string> => {
+    if (!profile) throw new Error('profile_not_loaded');
+    const hours = workHours.trim() === '' ? 0 : parseFloat(workHours);
+    if (workHours.trim() !== '' && (isNaN(hours) || hours < 0)) {
+      throw new Error('invalid_hours');
+    }
+
+    const otherText = workTypes.includes('other') && otherWorkDescription.trim()
+      ? otherWorkDescription.trim()
+      : null;
+
+    if (isEdit && editId) {
+      await updateEntry.mutateAsync({
+        id: editId,
+        input: {
+          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
+          work_hours: hours, work_types: workTypes, other_work_description: otherText,
+          equipment_notes: equipmentNotes || null, weather: weather || null, photo_paths: photoPaths,
+        },
+      });
+      return editId;
+    } else {
+      const created = await createEntry.mutateAsync({
+        input: {
+          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
+          work_hours: hours, work_types: workTypes, other_work_description: otherText,
+          equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
+          photo_paths: photoPaths.length > 0 ? photoPaths : undefined,
+        },
+        techLevel: profile.level,
+      });
+      return typeof created === 'string' ? created : (created as any).id;
+    }
+  };
+
   const title = isAmend ? 'Amend entry' : isEdit ? 'Edit entry' : 'New entry';
   const spanDays = Math.max(
     1,
@@ -346,15 +382,20 @@ export function EntryFormScreen() {
                         subtitle="Tap to send"
                         onPress={async () => {
                           try {
+                            const entryId = await saveEntry();
                             await signReqs.send.mutateAsync({
-                              entry_id: existingEntry.id,
+                              entry_id: entryId,
                               connection_id: c.id,
                               supervisor_user_id: c.supervisor_user_id!,
                             });
                             setShowPicker(false);
                             navigation.goBack();
                           } catch (e: any) {
-                            Alert.alert('Could not send', e.message);
+                            if (e.message === 'invalid_hours') {
+                              Alert.alert('Invalid hours', 'Please enter a valid number of work hours.');
+                            } else {
+                              Alert.alert('Could not send', e.message);
+                            }
                           }
                         }}
                       />
