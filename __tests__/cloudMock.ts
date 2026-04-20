@@ -501,5 +501,15 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
         if (key.startsWith(prefix)) storage.delete(key);
       }
     },
+
+    async registerPushToken(token) {
+      if (!online) throw new Error('offline');
+      // mock success
+    },
+
+    async unregisterPushToken() {
+      if (!online) throw new Error('offline');
+      // mock success
+    },
   };
 }

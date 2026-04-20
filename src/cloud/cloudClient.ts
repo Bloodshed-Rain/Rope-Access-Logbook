@@ -84,4 +84,8 @@ export interface CloudClient {
   subscribeSignRequests(callback: (row: SignRequest) => void): () => void;
   downloadSignRequestAsset(bucketKey: string): Promise<Uint8Array>;
   cleanupRequestAssets(requestId: string): Promise<void>;
+
+  // Push Notifications
+  registerPushToken(token: string): Promise<void>;
+  unregisterPushToken(): Promise<void>;
 }

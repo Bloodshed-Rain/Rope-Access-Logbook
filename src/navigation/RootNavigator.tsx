@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { useEntries } from '../hooks/useEntries';
 import { useBackupStatus } from '../hooks/useBackupStatus';
 import { useCloudStatePreview } from '../hooks/useRestore';
 import { useAuthSession } from '../hooks/useAuthSession';
+import { useNotifications } from '../hooks/useNotifications';
 import { colors } from '../theme/tokens';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { LogbookScreen } from '../screens/LogbookScreen';
@@ -43,6 +44,8 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = { Logbook: undefined; Inbox: undefined; Profile: undefined; };
+
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -78,6 +81,7 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
 export function RootNavigator() {
   const { data: profile, isLoading } = useProfile();
   const cloud = React.useMemo(() => createSupabaseCloudClient(), []);
+  useNotifications(cloud);
   const fs = React.useMemo(() => createExpoFsAbstraction(), []);
   const { session, loading: sessionLoading } = useAuthSession(cloud);
   const db = profile ? getClient() : null;
@@ -115,7 +119,7 @@ export function RootNavigator() {
   };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={defaultScreenOptions}>
         {!profile ? (
           <>

@@ -482,5 +482,17 @@ export function createSupabaseCloudClient(): CloudClient {
         body: { request_id: requestId },
       });
     },
+
+    async registerPushToken(token) {
+      const uid = await getUid(sb);
+      const { error } = await sb.from('push_tokens').upsert({ user_id: uid, expo_push_token: token }, { onConflict: 'user_id' });
+      if (error) throw new Error(`push_tokens_upsert:${error.message}`);
+    },
+
+    async unregisterPushToken() {
+      const uid = await getUid(sb);
+      const { error } = await sb.from('push_tokens').delete().eq('user_id', uid);
+      if (error) throw new Error(`push_tokens_delete:${error.message}`);
+    },
   };
 }

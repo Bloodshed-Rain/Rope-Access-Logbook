@@ -3,6 +3,7 @@ import { DbClient } from '../db/client';
 import { Profile, CreateProfileInput, UpdateProfileInput } from '../types';
 import { generateId } from '../utils/uuid';
 import { CloudClient } from '../cloud/cloudClient';
+import { scheduleCertExpiryNotifications } from '../utils/notifications';
 
 type UuidFn = () => string;
 
@@ -66,6 +67,13 @@ export function createProfileService(db: DbClient, uuid: UuidFn = generateId) {
       values.push(profile.id);
 
       await db.run(`UPDATE profile SET ${fields.join(', ')} WHERE id = ?`, values);
+      
+      if (input.cert_expires_on) {
+        try {
+          await scheduleCertExpiryNotifications(input.cert_expires_on);
+        } catch {}
+      }
+      
       return (await this.getProfile())!;
     },
 

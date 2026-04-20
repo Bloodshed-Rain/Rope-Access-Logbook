@@ -22,7 +22,7 @@ export default (): ExpoConfig => ({
   splash: { image: './assets/splash-icon.png', resizeMode: 'contain', backgroundColor: '#003366' },
   assetBundlePatterns: ['**/*'],
   web: { favicon: './assets/favicon.png' },
-  plugins: ['expo-sqlite', 'expo-web-browser', '@react-native-community/datetimepicker'],
+  plugins: ['expo-sqlite', 'expo-web-browser', '@react-native-community/datetimepicker', 'expo-notifications'],
   extra: {
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
