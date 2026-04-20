@@ -213,17 +213,8 @@ All persistent images live under `FileSystem.documentDirectory/logbook/` with su
 
 These features are part of this app's scope but not yet built. They are not deferred sub-projects or future add-ons — they are unfinished pieces of the same product. Requests to build any of them are in-scope work, not scope bumps.
 
-- **Supervisor accounts — remaining server-side plumbing** — the in-app flow is implemented (see "Supervisor accounts" above), and the `invite-supervisor` and `search-supervisors` Edge Functions are now in-tree under `supabase/functions/`. Still deferred:
-  - Edge Function: `cleanup-request-assets` (deletes the `sign-requests/{request_id}/` folder when a request hits a terminal state).
-  - `pg_cron` jobs: hourly `pending → expired` transition on `sign_requests.expires_at < now()`; daily hard-delete of terminal-state rows older than 90 days.
-  - `delete-account` Edge Function cascade: on account deletion, flip the deleting user's in-flight `sign_requests` to `declined` or `withdrawn` per role before the auth.users row is removed.
-  - Supervisor-side photo download: `SignRequestDetailScreen` currently renders tech-local photo paths that don't resolve on the supervisor's device. Need to download from the `sign-requests` bucket to a local cache and show from there.
-  - Form auto-save before "Send for signature": the tech can tap Send without saving recent edits, and those edits don't reach the supervisor. Either auto-save on Send or disable the button while the form is dirty.
 - **Cryptographic keypair signing** — true non-repudiation (per-user or per-signature keypairs), replacing the current SHA-256 content-hash trust model. Paired device attestation is likely.
 - **Live multi-device sync** — continuous sync rather than the current triggered snapshot backup. Concurrent edits on two devices currently produce Scenario C and require explicit resolution.
 - **Org / company accounts with admin roles** — multi-user tenant model, admin dashboards, org-scoped policy.
-- **Push notifications** — for pending signatures, cert-expiry reminders, etc.
-- **Hour milestone tracking** — automatic detection of level-upgrade eligibility (SPRAT I → II → III).
 - **Dark mode** — full themed dark variant.
 - **Saved entry templates** — reusable entry presets for common work patterns.
-- **Entry-logging enhancements** — date-range entries, optional fields, "Other" custom text, visible back-navigation affordance. Designed in `docs/superpowers/specs/2026-04-17-entry-logging-enhancements-design.md`, not yet implemented.
