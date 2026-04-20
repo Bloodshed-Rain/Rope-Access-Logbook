@@ -511,5 +511,9 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
       if (!online) throw new Error('offline');
       // mock success
     },
+
+    async notifySignRequest() {
+      // No-op in tests: real push dispatch is exercised via manual QA only.
+    },
   };
 }

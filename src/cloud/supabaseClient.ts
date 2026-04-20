@@ -494,5 +494,16 @@ export function createSupabaseCloudClient(): CloudClient {
       const { error } = await sb.from('push_tokens').delete().eq('user_id', uid);
       if (error) throw new Error(`push_tokens_delete:${error.message}`);
     },
+
+    async notifySignRequest(type, record, oldRecord) {
+      // Best-effort: a failed notify must never fail the underlying sign-
+      // request mutation. The edge function re-verifies the caller is a
+      // party to the sign_request before looking up push tokens.
+      try {
+        await sb.functions.invoke('notify-sign-request', {
+          body: { type, record, old_record: oldRecord },
+        });
+      } catch {}
+    },
   };
 }

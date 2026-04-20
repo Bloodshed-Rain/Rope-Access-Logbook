@@ -139,6 +139,7 @@ export function createSignRequestsService(
       [cloudRow.id, clock(), entry.id],
     );
     await cacheRow(cloudRow);
+    await cloud.notifySignRequest('INSERT', cloudRow);
     return cloudRow;
   }
 
@@ -150,6 +151,7 @@ export function createSignRequestsService(
       'UPDATE entries SET pending_sign_request_id = NULL, updated_at = ? WHERE id = ? AND pending_sign_request_id = ?',
       [clock(), entryId, row.id],
     );
+    await cloud.notifySignRequest('UPDATE', row, { status: 'pending' });
     try { await cloud.cleanupRequestAssets(id); } catch {}
     return row;
   }
@@ -157,6 +159,7 @@ export function createSignRequestsService(
   async function decline(id: string, reason: string): Promise<SignRequest> {
     const row = await cloud.declineRequest(id, reason);
     await cacheRow(row);
+    await cloud.notifySignRequest('UPDATE', row, { status: 'pending' });
     try { await cloud.cleanupRequestAssets(id); } catch {}
     return row;
   }
@@ -187,6 +190,7 @@ export function createSignRequestsService(
       signed_gps_lon: args.gps_lon,
     });
     await cacheRow(result);
+    await cloud.notifySignRequest('UPDATE', result, { status: 'pending' });
     return result;
   }
 

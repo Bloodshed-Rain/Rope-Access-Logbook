@@ -88,4 +88,9 @@ export interface CloudClient {
   // Push Notifications
   registerPushToken(token: string): Promise<void>;
   unregisterPushToken(): Promise<void>;
+  notifySignRequest(
+    type: 'INSERT' | 'UPDATE',
+    record: SignRequest,
+    oldRecord?: { status: SignRequest['status'] },
+  ): Promise<void>;
 }
