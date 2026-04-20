@@ -9,3 +9,4 @@ export { Banner } from './Banner';
 export { Chip } from './Chip';
 export { ListRow } from './ListRow';
 export { EmptyState } from './EmptyState';
+export { ProgressBar } from './ProgressBar';

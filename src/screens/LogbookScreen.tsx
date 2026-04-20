@@ -8,6 +8,7 @@ import { Screen, ListRow, Badge, Banner, EmptyState, IconButton } from '../primi
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntries, useTotalWorkHours } from '../hooks/useEntries';
 import { useBackupReminder } from '../hooks/useBackupReminder';
+import { useMilestones } from '../hooks/useMilestones';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { Entry } from '../types';
 
@@ -27,7 +28,9 @@ export function LogbookScreen() {
   const { data: entries = [] } = useEntries();
   const { data: totalHours = 0 } = useTotalWorkHours(new Date().getFullYear());
   const { showReminder, daysSinceBackup } = useBackupReminder();
+  const { progress } = useMilestones();
   const [reminderDismissed, setReminderDismissed] = useState(false);
+  const [milestoneDismissed, setMilestoneDismissed] = useState(false);
 
   const renderEntry = ({ item }: { item: Entry }) => (
     <AnimatedRow>
@@ -67,6 +70,14 @@ export function LogbookScreen() {
           </View>
         </View>
       </View>
+
+      {progress?.isEligible && !progress.isMaxLevel && !milestoneDismissed && (
+        <View style={{ paddingHorizontal: spacing.base, paddingBottom: spacing.sm }}>
+          <Banner variant="success"
+            message={`You have reached ${progress.hoursNeeded} hours! You are eligible to upgrade to Level ${progress.currentLevel === 'I' ? 'II' : 'III'}.`}
+            onDismiss={() => setMilestoneDismissed(true)} />
+        </View>
+      )}
 
       {showReminder && !reminderDismissed && (
         <View style={{ paddingHorizontal: spacing.base, paddingBottom: spacing.sm }}>

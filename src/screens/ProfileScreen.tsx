@@ -3,10 +3,11 @@ import { View, Text, ScrollView } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useQueryClient } from '@tanstack/react-query';
-import { Screen, Card, Button, Banner } from '../primitives';
+import { Screen, Card, Button, Banner, ProgressBar } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile, useUpdateLastBackupAt } from '../hooks/useProfile';
 import { useBackupReminder } from '../hooks/useBackupReminder';
+import { useMilestones } from '../hooks/useMilestones';
 import { createExportService } from '../services/exportService';
 import { createEntriesService } from '../services/entriesService';
 import { createSigningService } from '../services/signingService';
@@ -20,9 +21,11 @@ export function ProfileScreen() {
   const { colors, spacing, typography } = useTheme();
   const { data: profile } = useProfile();
   const { certExpiryStatus, daysSinceBackup } = useBackupReminder();
+  const { progress } = useMilestones();
   const updateLastBackup = useUpdateLastBackupAt();
   const queryClient = useQueryClient();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [milestoneDismissed, setMilestoneDismissed] = useState(false);
 
   if (!profile) return null;
 
@@ -66,6 +69,13 @@ export function ProfileScreen() {
         <Text style={[typography.h1, { color: colors.textPrimary }]}>Profile</Text>
         {certExpiryStatus === 'expired' && <Banner variant="error" message="Your SPRAT certification has expired." />}
         {certExpiryStatus === 'warning' && <Banner variant="warning" message="Your SPRAT certification expires within 60 days." />}
+        
+        {progress?.isEligible && !progress.isMaxLevel && !milestoneDismissed && (
+          <Banner variant="success"
+            message={`You have reached ${progress.hoursNeeded} hours! You are eligible to upgrade to Level ${progress.currentLevel === 'I' ? 'II' : 'III'}.`}
+            onDismiss={() => setMilestoneDismissed(true)} />
+        )}
+
         <Card>
           <View style={{ gap: spacing.sm }}>
             <Text style={[typography.h2, { color: colors.textPrimary }]}>{profile.full_name}</Text>
@@ -75,6 +85,17 @@ export function ProfileScreen() {
             <Text style={[typography.body, { color: colors.textSecondary }]}>Employer: {profile.default_employer}</Text>
           </View>
         </Card>
+
+        {progress && !progress.isMaxLevel && (
+          <Card style={{ gap: spacing.sm }}>
+            <Text style={[typography.h2, { color: colors.textPrimary }]}>Level {progress.currentLevel === 'I' ? 'II' : 'III'} Progress</Text>
+            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
+              {progress.hoursAtCurrentLevel} / {progress.hoursNeeded} hours
+            </Text>
+            <ProgressBar progress={progress.progress} />
+          </Card>
+        )}
+
         <Card style={{ gap: spacing.md }}>
           <Text style={[typography.h2, { color: colors.textPrimary }]}>Backup</Text>
           {daysSinceBackup !== null ? (

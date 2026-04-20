@@ -1,0 +1,55 @@
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { useTheme } from '../theme/ThemeProvider';
+
+interface ProgressBarProps {
+  progress: number; // 0 to 1
+  color?: string;
+  height?: number;
+  trackColor?: string;
+}
+
+export function ProgressBar({
+  progress,
+  color,
+  height = 8,
+  trackColor,
+}: ProgressBarProps) {
+  const { colors, spacing } = useTheme();
+  
+  const clampedProgress = Math.max(0, Math.min(1, progress));
+  
+  return (
+    <View
+      style={[
+        styles.track,
+        {
+          height,
+          backgroundColor: trackColor || colors.slateLightest,
+          borderRadius: height / 2,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.fill,
+          {
+            width: `${clampedProgress * 100}%`,
+            backgroundColor: color || colors.accent,
+            borderRadius: height / 2,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  track: {
+    width: '100%',
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+  },
+});
