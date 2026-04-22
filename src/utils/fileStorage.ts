@@ -1,9 +1,15 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 
 const LOGBOOK_DIR = `${FileSystem.documentDirectory}logbook/`;
 const PHOTOS_DIR = `${LOGBOOK_DIR}photos/`;
 const SIGNATURES_DIR = `${LOGBOOK_DIR}signatures/`;
 const CARDS_DIR = `${LOGBOOK_DIR}cards/`;
+const SIGNREQUEST_PHOTOS_DIR = `${LOGBOOK_DIR}signrequest_photos/`;
+
+export function signRequestPhotoPath(requestId: string, basename: string): string {
+  return `${SIGNREQUEST_PHOTOS_DIR}${requestId}/${basename}`;
+}
 
 async function ensureDir(dir: string): Promise<void> {
   const info = await FileSystem.getInfoAsync(dir);
@@ -42,4 +48,25 @@ export async function deleteFile(path: string): Promise<void> {
   if (info.exists) {
     await FileSystem.deleteAsync(path);
   }
+}
+
+export async function saveSignRequestPhoto(
+  fs: FileSystemAbstraction,
+  requestId: string,
+  basename: string,
+  bytes: Uint8Array,
+): Promise<string> {
+  const destPath = signRequestPhotoPath(requestId, basename);
+  const dir = destPath.slice(0, destPath.lastIndexOf('/') + 1);
+  await fs.ensureDir(dir);
+  await fs.writeBytes(destPath, bytes);
+  return destPath;
+}
+
+export async function deleteSignRequestPhotosDir(
+  fs: FileSystemAbstraction,
+  requestId: string,
+): Promise<void> {
+  const dir = `${SIGNREQUEST_PHOTOS_DIR}${requestId}/`;
+  try { await fs.deletePath(dir); } catch {}
 }

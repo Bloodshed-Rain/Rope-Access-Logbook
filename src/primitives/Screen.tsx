@@ -1,16 +1,26 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
+import { RopeDivider } from './RopeDivider';
 
-interface ScreenProps { children: React.ReactNode; padded?: boolean; }
+export interface ScreenProps {
+  children: React.ReactNode;
+  padded?: boolean;
+  topDivider?: boolean;
+}
 
-export function Screen({ children, padded = true }: ScreenProps) {
+export function Screen({ children, padded = true, topDivider = false }: ScreenProps) {
   const { colors, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
+  
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <View style={[styles.container, padded && { paddingHorizontal: spacing.base }]}>{children}</View>
-    </SafeAreaView>
+    <View style={[styles.safe, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
+      {topDivider && <RopeDivider opacity={0.45} />}
+      <View style={[styles.container, padded && { paddingHorizontal: spacing.s5 }]}>
+        {children}
+      </View>
+    </View>
   );
 }
 

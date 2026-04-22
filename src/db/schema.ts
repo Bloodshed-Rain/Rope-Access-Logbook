@@ -15,6 +15,7 @@ export const SCHEMA_SQL = `
     supervisor_capability_enabled INTEGER NOT NULL DEFAULT 0,
     supervisor_cert_number TEXT,
     supervisor_directory_visible INTEGER NOT NULL DEFAULT 1,
+    subscription_tier TEXT NOT NULL DEFAULT 'free',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -86,7 +87,8 @@ export const SCHEMA_SQL = `
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    payload_json TEXT NOT NULL
+    payload_json TEXT NOT NULL,
+    local_photo_paths_json TEXT
   );
 
   -- idx_entries_pending_sign_request lives in migrations.ts only. It references

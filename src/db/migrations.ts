@@ -45,6 +45,9 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
   if (!(await hasColumn(db, 'profile', 'supervisor_directory_visible'))) {
     await db.exec('ALTER TABLE profile ADD COLUMN supervisor_directory_visible INTEGER NOT NULL DEFAULT 1');
   }
+  if (!(await hasColumn(db, 'profile', 'subscription_tier'))) {
+    await db.exec("ALTER TABLE profile ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'free'");
+  }
   if (!(await hasColumn(db, 'entries', 'pending_sign_request_id'))) {
     await db.exec('ALTER TABLE entries ADD COLUMN pending_sign_request_id TEXT');
   }
@@ -81,4 +84,7 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
   await db.exec(`CREATE INDEX IF NOT EXISTS idx_entries_pending_sign_request ON entries(pending_sign_request_id) WHERE pending_sign_request_id IS NOT NULL;`);
   await db.exec(`CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_status ON sign_requests_cache(status);`);
   await db.exec(`CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_entry ON sign_requests_cache(entry_id);`);
+  if (!(await hasColumn(db, 'sign_requests_cache', 'local_photo_paths_json'))) {
+    await db.exec('ALTER TABLE sign_requests_cache ADD COLUMN local_photo_paths_json TEXT');
+  }
 }

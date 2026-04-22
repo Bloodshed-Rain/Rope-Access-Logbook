@@ -3,13 +3,31 @@ import { CloudClient } from '../cloud/cloudClient';
 import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 import { Entry, EntryRow, SignRequest, HashFn, Signature } from '../types';
 import { computeEntryHashFromPayload } from '../utils/entryPayloadHash';
-import { saveSignaturePng } from '../utils/fileStorage';
+import {
+  saveSignaturePng,
+  saveSignRequestPhoto,
+  deleteSignRequestPhotosDir,
+  signRequestPhotoPath,
+} from '../utils/fileStorage';
 import { generateId } from '../utils/uuid';
 
 type Clock = () => string;
 type UuidFn = () => string;
 
 const EXPIRATION_DAYS = 30;
+
+export function getLocalPhotoPathsFromCache(row: { local_photo_paths_json: string | null }): {
+  paths: string[];
+  missingCount: number;
+  pending: boolean;
+} {
+  if (row.local_photo_paths_json == null) {
+    return { paths: [], missingCount: 0, pending: true };
+  }
+  const paths = JSON.parse(row.local_photo_paths_json) as string[];
+  const missingCount = paths.filter(p => p === '').length;
+  return { paths, missingCount, pending: false };
+}
 
 export function createSignRequestsService(
   db: DbClient,
@@ -20,11 +38,24 @@ export function createSignRequestsService(
   uuid: UuidFn = generateId,
 ) {
   async function cacheRow(row: SignRequest): Promise<void> {
+    // INSERT OR REPLACE would wipe local_photo_paths_json because it's not in
+    // the column list. ON CONFLICT DO UPDATE preserves it across status changes.
     await db.run(
-      `INSERT OR REPLACE INTO sign_requests_cache
+      `INSERT INTO sign_requests_cache
          (id, tech_user_id, supervisor_user_id, entry_id, status,
           decline_reason, signed_at, created_at, expires_at, updated_at, payload_json)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)
+       ON CONFLICT(id) DO UPDATE SET
+         tech_user_id = excluded.tech_user_id,
+         supervisor_user_id = excluded.supervisor_user_id,
+         entry_id = excluded.entry_id,
+         status = excluded.status,
+         decline_reason = excluded.decline_reason,
+         signed_at = excluded.signed_at,
+         created_at = excluded.created_at,
+         expires_at = excluded.expires_at,
+         updated_at = excluded.updated_at,
+         payload_json = excluded.payload_json`,
       [
         row.id, row.tech_user_id, row.supervisor_user_id,
         (row.entry_payload as Entry).id, row.status, row.decline_reason,
@@ -108,6 +139,7 @@ export function createSignRequestsService(
       [cloudRow.id, clock(), entry.id],
     );
     await cacheRow(cloudRow);
+    await cloud.notifySignRequest('INSERT', cloudRow);
     return cloudRow;
   }
 
@@ -119,12 +151,16 @@ export function createSignRequestsService(
       'UPDATE entries SET pending_sign_request_id = NULL, updated_at = ? WHERE id = ? AND pending_sign_request_id = ?',
       [clock(), entryId, row.id],
     );
+    await cloud.notifySignRequest('UPDATE', row, { status: 'pending' });
+    try { await cloud.cleanupRequestAssets(id); } catch {}
     return row;
   }
 
   async function decline(id: string, reason: string): Promise<SignRequest> {
     const row = await cloud.declineRequest(id, reason);
     await cacheRow(row);
+    await cloud.notifySignRequest('UPDATE', row, { status: 'pending' });
+    try { await cloud.cleanupRequestAssets(id); } catch {}
     return row;
   }
 
@@ -154,6 +190,7 @@ export function createSignRequestsService(
       signed_gps_lon: args.gps_lon,
     });
     await cacheRow(result);
+    await cloud.notifySignRequest('UPDATE', result, { status: 'pending' });
     return result;
   }
 
@@ -206,18 +243,134 @@ export function createSignRequestsService(
       `UPDATE entries SET status='signed', pending_sign_request_id=NULL, updated_at=? WHERE id=?`,
       [now, entry.id],
     );
+    try { await cloud.cleanupRequestAssets(row.id); } catch {}
     return (await db.get<Signature>('SELECT * FROM signatures WHERE id = ?', [sigId]))!;
   }
 
+  const PHOTO_BASENAME_RE = /^photo_[^_]+_(\d+)\.[^.]+$/;
+
+  function parsePhotoIndex(basename: string): number | null {
+    const m = basename.match(PHOTO_BASENAME_RE);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return Number.isInteger(n) ? n : null;
+  }
+
+  async function downloadRequestPhotos(row: SignRequest): Promise<{ localPaths: string[]; failed: number[] }> {
+    const entry = row.entry_payload as Entry;
+    const count = entry.photo_paths.length;
+    const localPaths: string[] = new Array(count).fill('');
+    const failed: number[] = [];
+
+    const manifest = row.assets_manifest as Record<string, { sha256: string; size_bytes: number }>;
+    for (const [key, meta] of Object.entries(manifest ?? {})) {
+      const basename = key.split('/').pop() ?? '';
+      const idx = parsePhotoIndex(basename);
+      if (idx === null || idx < 0 || idx >= count) continue;
+
+      try {
+        const bucketKey = key.replace(/^sign-requests\//, '');
+        const targetPath = signRequestPhotoPath(row.id, basename);
+
+        if (await fs.exists(targetPath)) {
+          const existingSha = await fs.getSha256(targetPath);
+          if (existingSha === meta.sha256) {
+            localPaths[idx] = targetPath;
+            continue;
+          }
+          try { await fs.deletePath(targetPath); } catch {}
+        }
+
+        const bytes = await cloud.downloadSignRequestAsset(bucketKey);
+        const writtenPath = await saveSignRequestPhoto(fs, row.id, basename, bytes);
+        const writtenSha = await fs.getSha256(writtenPath);
+        if (writtenSha !== meta.sha256) {
+          try { await fs.deletePath(writtenPath); } catch {}
+          failed.push(idx);
+          continue;
+        }
+        localPaths[idx] = writtenPath;
+      } catch {
+        failed.push(idx);
+      }
+    }
+
+    try {
+      await db.run(
+        'UPDATE sign_requests_cache SET local_photo_paths_json = ? WHERE id = ?',
+        [JSON.stringify(localPaths), row.id],
+      );
+    } catch {}
+
+    return { localPaths, failed };
+  }
+
+  async function cleanupRequestPhotos(row: SignRequest): Promise<void> {
+    try {
+      await deleteSignRequestPhotosDir(fs, row.id);
+      await db.run(
+        'UPDATE sign_requests_cache SET local_photo_paths_json = NULL WHERE id = ?',
+        [row.id],
+      );
+    } catch {}
+  }
+
+  async function topUpPendingPhotos(): Promise<void> {
+    const uid = cloud.getCurrentUserId();
+    if (!uid) return;
+    const rows = await db.getAll<{ payload_json: string }>(
+      `SELECT payload_json FROM sign_requests_cache
+        WHERE status = 'pending'
+          AND supervisor_user_id = ?
+          AND local_photo_paths_json IS NULL`,
+      [uid],
+    );
+    for (const r of rows) {
+      try { await downloadRequestPhotos(JSON.parse(r.payload_json) as SignRequest); } catch {}
+    }
+  }
+
+  async function topUpTerminalCleanup(): Promise<void> {
+    const uid = cloud.getCurrentUserId();
+    if (!uid) return;
+    const rows = await db.getAll<{ payload_json: string }>(
+      `SELECT payload_json FROM sign_requests_cache
+        WHERE supervisor_user_id = ?
+          AND status IN ('signed','declined','withdrawn','expired')
+          AND local_photo_paths_json IS NOT NULL`,
+      [uid],
+    );
+    for (const r of rows) {
+      try { await cleanupRequestPhotos(JSON.parse(r.payload_json) as SignRequest); } catch {}
+    }
+  }
+
   async function sync(): Promise<void> {
+    await topUpPendingPhotos();
+    await topUpTerminalCleanup();
+
     const since = await getMaxUpdatedAt();
     const rows = await cloud.listSignRequests(since);
     const currentUid = cloud.getCurrentUserId();
     for (const r of rows) {
       await cacheRow(r);
+
+      if (currentUid && r.supervisor_user_id === currentUid && r.status === 'pending') {
+        try { await downloadRequestPhotos(r); } catch {}
+      }
+
       if (currentUid && r.tech_user_id === currentUid && r.status === 'signed') {
         await applyIncomingSignature(r);
       }
+
+      if (
+        currentUid && r.supervisor_user_id === currentUid &&
+        (r.status === 'signed' || r.status === 'declined' ||
+         r.status === 'withdrawn' || r.status === 'expired')
+      ) {
+        try { await cleanupRequestPhotos(r); } catch {}
+      }
+
       if (currentUid && r.tech_user_id === currentUid &&
           (r.status === 'withdrawn' || r.status === 'declined' || r.status === 'expired')) {
         const entryId = (r.entry_payload as Entry).id;
@@ -242,5 +395,7 @@ export function createSignRequestsService(
     decline,
     sign,
     applyIncomingSignature,
+    downloadRequestPhotos,
+    cleanupRequestPhotos,
   };
 }

@@ -188,6 +188,27 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
       if (name === 'delete-account') {
         const uid = session?.user_id;
         if (uid) {
+          // Flip in-flight sign requests to terminal states
+          for (const [id, r] of requests.entries()) {
+            if (r.tech_user_id === uid && r.status === 'pending') {
+              requests.set(id, { ...r, status: 'withdrawn', updated_at: nowIso() });
+            }
+            if (r.supervisor_user_id === uid && r.status === 'pending') {
+              requests.set(id, { ...r, status: 'declined', decline_reason: 'Supervisor account deleted', updated_at: nowIso() });
+            }
+          }
+          // Clean up sign-request storage assets
+          for (const [id, r] of requests.entries()) {
+            if (r.tech_user_id === uid || r.supervisor_user_id === uid) {
+              const prefix = `sign-requests/${id}/`;
+              for (const key of Array.from(storage.keys())) {
+                if (key.startsWith(prefix)) storage.delete(key);
+              }
+            }
+          }
+          // Delete supervisor directory entry
+          directory.delete(uid);
+          // Delete logbook-backups storage
           for (const key of Array.from(storage.keys())) {
             if (key.startsWith(`${uid}/`)) storage.delete(key);
           }
@@ -471,6 +492,28 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
       const bytes = storage.get(fullKey);
       if (!bytes) throw new Error(`not_found:${fullKey}`);
       return bytes;
+    },
+
+    async cleanupRequestAssets(requestId) {
+      if (!online) throw new Error('offline');
+      const prefix = `sign-requests/${requestId}/`;
+      for (const key of Array.from(storage.keys())) {
+        if (key.startsWith(prefix)) storage.delete(key);
+      }
+    },
+
+    async registerPushToken(token) {
+      if (!online) throw new Error('offline');
+      // mock success
+    },
+
+    async unregisterPushToken() {
+      if (!online) throw new Error('offline');
+      // mock success
+    },
+
+    async notifySignRequest() {
+      // No-op in tests: real push dispatch is exercised via manual QA only.
     },
   };
 }

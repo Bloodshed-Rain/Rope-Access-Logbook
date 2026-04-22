@@ -3,6 +3,7 @@ import { DbClient } from '../db/client';
 import { Profile, Entry, EntryRow, Signature, JsonBackup } from '../types';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import { pdfStyles } from '../templates/pdfStyles';
 import { renderCoverPageHtml } from '../templates/coverPageHtml';
 import { renderEntryPageHtml } from '../templates/entryPageHtml';
@@ -107,6 +108,31 @@ export function createExportService(db: DbClient) {
       const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${pdfStyles}</style></head><body>${coverHtml}${entryPages}${summaryHtml}</body></html>`;
 
       const { uri } = await Print.printToFileAsync({ html: fullHtml });
+      return uri;
+    },
+
+    async exportAsCsv(entries: Entry[], signatures: Signature[]): Promise<string> {
+      const header = ['Date From', 'Date To', 'Employer', 'Site', 'Client', 'Work Hours', 'Work Types', 'Status', 'Supervisor Name', 'Supervisor Cert'];
+      const rows = entries.map(e => {
+        const sig = signatures.find(s => s.entry_id === e.id);
+        const types = e.work_types.join(';');
+        return [
+          e.date_from,
+          e.date_to,
+          `"${e.employer.replace(/"/g, '""')}"`,
+          `"${e.site.replace(/"/g, '""')}"`,
+          `"${e.client.replace(/"/g, '""')}"`,
+          e.work_hours.toString(),
+          `"${types}"`,
+          e.status,
+          `"${sig?.supervisor_name?.replace(/"/g, '""') ?? ''}"`,
+          `"${sig?.supervisor_cert_number?.replace(/"/g, '""') ?? ''}"`
+        ].join(',');
+      });
+
+      const csv = [header.join(','), ...rows].join('\n');
+      const uri = `${FileSystem.cacheDirectory}logbook-export.csv`;
+      await FileSystem.writeAsStringAsync(uri, csv);
       return uri;
     },
   };

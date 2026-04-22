@@ -19,6 +19,49 @@ serve(async (req) => {
   // Service-role client for destructive ops
   const admin = createClient(url, service);
 
+  // ---- Supervisor data cascade (Part B §5) ----
+
+  // 1. Flip in-flight sign requests to terminal states so the other party
+  //    sees a clean status via Realtime/sync instead of rows silently vanishing.
+  await admin
+    .from('sign_requests')
+    .update({ status: 'withdrawn', updated_at: new Date().toISOString() })
+    .eq('tech_user_id', uid)
+    .eq('status', 'pending');
+
+  await admin
+    .from('sign_requests')
+    .update({
+      status: 'declined',
+      decline_reason: 'Supervisor account deleted',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('supervisor_user_id', uid)
+    .eq('status', 'pending');
+
+  // 2. Clean up sign-request Storage assets for all requests where user is a party.
+  const { data: userRequests } = await admin
+    .from('sign_requests')
+    .select('id')
+    .or(`tech_user_id.eq.${uid},supervisor_user_id.eq.${uid}`);
+
+  if (userRequests && userRequests.length > 0) {
+    for (const r of userRequests) {
+      const { data: assets } = await admin.storage
+        .from('sign-requests')
+        .list(r.id, { limit: 1000 });
+      if (assets && assets.length > 0) {
+        const keys = assets.map((f) => `${r.id}/${f.name}`);
+        await admin.storage.from('sign-requests').remove(keys);
+      }
+    }
+  }
+
+  // 3. Delete supervisor directory entry (explicit, though ON DELETE CASCADE also handles it).
+  await admin.from('supervisor_directory').delete().eq('user_id', uid);
+
+  // ---- Logbook backups cleanup (existing) ----
+
   // Delete all objects under {uid}/
   const { data: files, error: listErr } = await admin.storage.from('logbook-backups').list(uid, { limit: 1000 });
   if (!listErr && files && files.length > 0) {
@@ -32,7 +75,8 @@ serve(async (req) => {
     await admin.storage.from('logbook-backups').remove(keys);
   }
 
-  // Delete the Auth user
+  // Delete the Auth user — ON DELETE CASCADE removes remaining supervisor_connections
+  // and sign_requests rows.
   const { error: deleteErr } = await admin.auth.admin.deleteUser(uid);
   if (deleteErr) return new Response(`delete_user_failed:${deleteErr.message}`, { status: 500 });
 

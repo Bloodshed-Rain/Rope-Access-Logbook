@@ -14,6 +14,8 @@ A mobile app (iOS & Android) that replaces the paper SPRAT work-experience logbo
 - **PDF export** -- cover page, entry pages with signature blocks, summary page with amendment log
 - **JSON backup** -- full round-trippable data export for safekeeping
 - **Optional cloud backup** (Supabase) -- sign in with Apple, Google, or email magic link; auto-backup after signing; restore to a new device; conflict resolution; always opt-in
+- **Push notifications** -- supervisor gets a tap-to-open alert for incoming sign requests; tech gets notified on signed / declined / withdrawn. Local cert-expiry reminders at 60 days out and on expiry
+- **Hour milestones** -- progress bar on the profile toward the next SPRAT level (500 hrs for L1→L2, 1000 hrs for L2→L3), plus an eligibility banner when you qualify
 - **Backup reminders** -- monthly nudge if you haven't exported, post-signing nudge if backup is stale
 - **Cert expiry warnings** -- amber at 60 days, red when expired
 - **Glove-friendly UI** -- 48-56px touch targets, high contrast, industrial color palette
@@ -24,8 +26,9 @@ A mobile app (iOS & Android) that replaces the paper SPRAT work-experience logbo
 - **SQLite** via `expo-sqlite` (local-first)
 - **React Query** (`@tanstack/react-query`) for data access
 - **React Navigation** (bottom tabs + native stack)
-- **Supabase** (`@supabase/supabase-js`) for cloud backup (auth + storage) and supervisor accounts (Postgres + Realtime)
+- **Supabase** (`@supabase/supabase-js`) for cloud backup (auth + storage), supervisor accounts (Postgres + Realtime), Edge Functions, and `pg_cron` housekeeping
 - **expo-auth-session** / **expo-web-browser** for OAuth
+- **expo-notifications** for remote push + local cert-expiry reminders
 - **expo-print** / **expo-sharing** for PDF export
 - **react-native-signature-canvas** for signature capture
 - **expo-crypto** for SHA-256 hashing and UUID generation
@@ -56,7 +59,7 @@ Scan the QR code with Expo Go on your phone. The app works without Supabase cred
 npx jest
 ```
 
-132 tests across 17 suites covering all service-layer logic (profile, entries, signing, local backup, export, cloud backup, restore, auth, supervisor connections, sign requests, remote sign round-trip, path normalization, schema migration, hash migration, canonical serialization).
+150 tests across 17 suites covering all service-layer logic (profile, entries, signing, local backup, export, cloud backup, restore, auth, supervisor connections, sign requests, remote sign round-trip, path normalization, schema migration, hash migration, canonical serialization).
 
 ## Project Structure
 
@@ -98,15 +101,11 @@ Designed for outdoor use: high contrast, large touch targets, minimal typing.
 
 ## Not Yet Implemented
 
-- Server-side plumbing for supervisor accounts (rate-limited search, request expiry, asset cleanup, account deletion cascade)
 - Cryptographic keypair signing (true non-repudiation)
 - Live multi-device sync
 - Org / company accounts with admin roles
-- Push notifications for pending signatures
-- Hour milestone tracking for level upgrades
 - Dark mode
 - Saved entry templates
-- Entry-logging enhancements (visible back navigation, form auto-save)
 
 ## License
 

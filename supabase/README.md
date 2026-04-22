@@ -6,22 +6,38 @@
 2. Enable Apple, Google, and Email auth providers in Authentication → Providers.
 3. In Authentication → URL Configuration, add `logbook://auth-callback` to Redirect URLs.
 4. In Authentication → Settings → Advanced, enable "Manual linking" for Identity Linking.
-5. Apply the migration:
+5. Apply all migrations in `supabase/migrations/` in filename order:
    ```bash
    supabase db push --db-url postgres://...
-   # or paste supabase/migrations/20260416_storage_bucket_and_rls.sql in the SQL editor
+   # or paste each SQL file into the SQL editor, oldest first.
    ```
-6. Deploy the Edge Function:
+6. Deploy all Edge Functions:
    ```bash
-   supabase functions deploy delete-account --no-verify-jwt
+   supabase functions deploy delete-account          --no-verify-jwt
+   supabase functions deploy cleanup-request-assets  --no-verify-jwt
+   supabase functions deploy notify-sign-request     --no-verify-jwt
    ```
-   (`--no-verify-jwt` because we verify manually inside the function using the caller's token.)
-7. Set secrets for the function:
+   (`--no-verify-jwt` because each function verifies the caller manually inside its handler.)
+7. Set secrets for the functions:
    ```bash
-   supabase secrets set SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=...
+   supabase secrets set \
+     SUPABASE_URL=https://<project-ref>.supabase.co \
+     SUPABASE_ANON_KEY=eyJ... \
+     SUPABASE_SERVICE_ROLE_KEY=eyJ...
    ```
 8. Copy `SUPABASE_URL` and `SUPABASE_ANON_KEY` into the developer's local `.env` at repo root.
 
 ## Production setup
 
-Mirror the dev setup. Ship production values in the release bundle.
+Mirror the dev setup. Ship production values in the release bundle via `app.config.ts`'s `extra` block (fed from `SUPABASE_URL` and `SUPABASE_ANON_KEY` env vars at build time).
+
+## How notifications are wired
+
+The app's `signRequestsService` calls `cloud.notifySignRequest(...)` from the device that just performed the mutation (send / withdraw / decline / sign). That invokes the `notify-sign-request` Edge Function, which:
+
+1. Verifies the caller's JWT is valid.
+2. Looks up the `sign_requests` row with the service-role key and confirms the caller is a party to it (tech or supervisor).
+3. Routes the notification to the other party (supervisor on INSERT, tech on signed/declined, supervisor on withdrawn).
+4. Looks up the recipient's Expo push token in `push_tokens` and POSTs to `https://exp.host/--/api/v2/push/send`.
+
+No database triggers, no `pg_net`, no `ALTER DATABASE` configuration. Dispatch runs on the client's authenticated session and a failed notify never fails the underlying sign-request mutation.

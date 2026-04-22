@@ -18,11 +18,6 @@ WebBrowser.maybeCompleteAuthSession();
 const BUCKET = 'logbook-backups';
 const SIGN_REQUESTS_BUCKET = 'sign-requests';
 
-function maskCert(cert: string): string {
-  if (cert.length <= 4) return cert;
-  return cert.slice(0, 2) + '-***' + cert.slice(-2);
-}
-
 async function getUid(client: SupabaseClient): Promise<string> {
   const { data } = await client.auth.getSession();
   if (!data.session) throw new Error('not_authenticated');
@@ -200,10 +195,11 @@ export function createSupabaseCloudClient(): CloudClient {
         .select('*')
         .single();
       if (error) throw new Error(error.message);
-      // TODO(part-b): invoke 'invite-supervisor' Edge Function to send the actual
-      // invitation email via auth.admin.inviteUserByEmail. For now the signup
-      // trigger (resolve_supervisor_invites_on_signup) backfills supervisor_user_id
-      // when the invited email signs up.
+      try {
+        await sb.functions.invoke('invite-supervisor', { body: { email } });
+      } catch {
+        // Non-fatal: connection row exists, invite email is a convenience.
+      }
       return data as SupervisorConnection;
     },
 
@@ -325,44 +321,14 @@ export function createSupabaseCloudClient(): CloudClient {
     },
 
     async searchSupervisors(kind, query) {
-      const uid = await getUid(sb);
-      const q = query.trim();
-      if (kind === 'sprat_id') {
-        const { data, error } = await sb
-          .from('supervisor_directory')
-          .select('*')
-          .eq('visible', true)
-          .eq('sprat_cert_number', q)
-          .neq('user_id', uid)
-          .limit(10);
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((d) => ({
-          user_id: d.user_id,
-          display_name: d.display_name,
-          sprat_cert_number: d.sprat_cert_number,
-          sprat_cert_number_is_masked: false,
-        }));
-      }
-      if (kind === 'name') {
-        if (q.length < 3) return [];
-        const { data, error } = await sb
-          .from('supervisor_directory')
-          .select('*')
-          .eq('visible', true)
-          .ilike('display_name', `${q}%`)
-          .neq('user_id', uid)
-          .limit(10);
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((d) => ({
-          user_id: d.user_id,
-          display_name: d.display_name,
-          sprat_cert_number: maskCert(d.sprat_cert_number),
-          sprat_cert_number_is_masked: true,
-        }));
-      }
-      // 'email' search: not supported in directory (invite flow goes via
-      // inviteSupervisorByEmail). Matches the mock.
-      return [];
+      const response = await sb.functions.invoke<{ results?: Array<{ user_id: string; display_name: string; sprat_cert_number: string; sprat_cert_number_is_masked: boolean }>; error?: string }>('search-supervisors', {
+        body: { kind, query },
+      });
+      if (response.error) throw new Error(typeof response.error === 'string' ? response.error : response.error.message);
+      const data = response.data;
+      if (data?.error === 'rate_limited') throw new Error('rate_limited');
+      if (data?.error) throw new Error(data.error);
+      return data?.results ?? [];
     },
 
     // --- Sign requests ---
@@ -509,6 +475,35 @@ export function createSupabaseCloudClient(): CloudClient {
       if (error) throw new Error(error.message);
       const buf = await data.arrayBuffer();
       return new Uint8Array(buf);
+    },
+
+    async cleanupRequestAssets(requestId) {
+      await sb.functions.invoke('cleanup-request-assets', {
+        body: { request_id: requestId },
+      });
+    },
+
+    async registerPushToken(token) {
+      const uid = await getUid(sb);
+      const { error } = await sb.from('push_tokens').upsert({ user_id: uid, expo_push_token: token }, { onConflict: 'user_id' });
+      if (error) throw new Error(`push_tokens_upsert:${error.message}`);
+    },
+
+    async unregisterPushToken() {
+      const uid = await getUid(sb);
+      const { error } = await sb.from('push_tokens').delete().eq('user_id', uid);
+      if (error) throw new Error(`push_tokens_delete:${error.message}`);
+    },
+
+    async notifySignRequest(type, record, oldRecord) {
+      // Best-effort: a failed notify must never fail the underlying sign-
+      // request mutation. The edge function re-verifies the caller is a
+      // party to the sign_request before looking up push tokens.
+      try {
+        await sb.functions.invoke('notify-sign-request', {
+          body: { type, record, old_record: oldRecord },
+        });
+      } catch {}
     },
   };
 }

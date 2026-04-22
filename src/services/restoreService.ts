@@ -4,6 +4,7 @@ import { CloudClient } from '../cloud/cloudClient';
 import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 import { CloudSnapshot, CloudStatePreview } from '../types';
 import { rehydrateAppPath } from '../utils/paths';
+import { scheduleCertExpiryNotifications } from '../utils/notifications';
 
 const MAX_CLOUD_SCHEMA_VERSION = 2;
 const MAX_DB_SCHEMA_VERSION = 1;
@@ -111,12 +112,16 @@ export function createRestoreService(deps: RestoreDeps) {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             p.id, p.full_name, p.sprat_id, p.level, p.cert_expires_on, p.default_employer,
-            rehydratedCard, p.last_backup_at, p.photos_in_backup ? 1 : 0,
-            snap.exported_at, snap.backup_id, p.created_at, p.updated_at,
+            rehydratedCard, null, p.photos_in_backup ? 1 : 0, snap.exported_at,
+            snap.backup_id, p.created_at, p.updated_at,
           ],
-        );
+          );
 
-        for (const e of snap.entries) {
+          try {
+          await scheduleCertExpiryNotifications(p.cert_expires_on);
+          } catch {}
+
+          for (const e of snap.entries) {
           const rehydratedPhotos = e.photo_paths.map(rehydrateAppPath);
           // Back-compat: a v1 cloud snapshot serialized entries with a single
           // `date` field and no range or other-work-description columns.

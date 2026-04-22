@@ -83,4 +83,14 @@ export interface CloudClient {
   withdrawRequest(id: string): Promise<SignRequest>;
   subscribeSignRequests(callback: (row: SignRequest) => void): () => void;
   downloadSignRequestAsset(bucketKey: string): Promise<Uint8Array>;
+  cleanupRequestAssets(requestId: string): Promise<void>;
+
+  // Push Notifications
+  registerPushToken(token: string): Promise<void>;
+  unregisterPushToken(): Promise<void>;
+  notifySignRequest(
+    type: 'INSERT' | 'UPDATE',
+    record: SignRequest,
+    oldRecord?: { status: SignRequest['status'] },
+  ): Promise<void>;
 }
