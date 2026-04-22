@@ -7,7 +7,7 @@ import SignatureCanvas from 'react-native-signature-canvas';
 import * as Haptics from 'expo-haptics';
 import * as Device from 'expo-device';
 import * as Location from 'expo-location';
-import { Screen, Button, Input, Card, Banner } from '../primitives';
+import { Screen, Button, Input, Card, Banner, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry } from '../hooks/useEntries';
 import { useSignEntry } from '../hooks/useSignatures';
@@ -52,6 +52,7 @@ export function SignatureScreen() {
   const [certNumber, setCertNumber] = useState('');
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   if (!entry) return null;
 
@@ -116,9 +117,9 @@ export function SignatureScreen() {
   };
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl }}>
-        <Text style={[typography.h1, { color: colors.textPrimary }]}>Supervisor signature</Text>
+    <Screen topDivider>
+      <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={{ gap: spacing.base, paddingVertical: spacing.md, paddingHorizontal: spacing.base, paddingBottom: spacing.xxl }}>
+        <Text style={[typography.h1, { color: colors.textPrimary }]}>Local Signature</Text>
 
         {!entryReady && (
           <Banner
@@ -129,21 +130,36 @@ export function SignatureScreen() {
           />
         )}
 
-        <Card>
+        <SectionHeader label="ENTRY SUMMARY" />
+        <Card accent="navy">
           <View style={{ gap: spacing.xs }}>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Entry summary</Text>
             <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} → ${entry.date_to}`} — {entry.site}</Text>
             <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.work_hours}h · {entry.employer}</Text>
             <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>{entry.description}</Text>
           </View>
         </Card>
 
-        <Input label="Supervisor name" value={supervisorName} onChangeText={setSupervisorName} placeholder="Full name" />
-        <Input label="SPRAT Level III cert number" value={certNumber} onChangeText={setCertNumber} placeholder="L3-XXXXX" />
+        <SectionHeader label="SUPERVISOR DETAILS" />
+        <Card accent="orange">
+          <Input label="Supervisor name" value={supervisorName} onChangeText={setSupervisorName} placeholder="Full name" />
+          <Input
+            label="SPRAT Level III cert number"
+            value={certNumber}
+            onChangeText={(t) => setCertNumber(t.replace(/\D/g, '').slice(0, 5))}
+            placeholder="Ex: 54321"
+            keyboardType="number-pad"
+            maxLength={5}
+          />
+        </Card>
 
-        <View style={{ gap: spacing.xs }}>
-          <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Signature</Text>
-          <View style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, overflow: 'hidden', height: 200 }}>
+        <SectionHeader label="SIGNATURE" />
+        <Card accent="orange" style={{ gap: spacing.xs }}>
+          <View
+            onTouchStart={() => setScrollEnabled(false)}
+            onTouchEnd={() => setScrollEnabled(true)}
+            onTouchCancel={() => setScrollEnabled(true)}
+            style={{ borderWidth: 2, borderColor: colors.border, borderRadius: 8, overflow: 'hidden', height: 200, backgroundColor: '#ffffff' }}
+          >
             <SignatureCanvas
               ref={sigRef}
               onOK={(sig) => setSignatureData(sig)}
@@ -151,13 +167,13 @@ export function SignatureScreen() {
               onClear={() => setSignatureData(null)}
               autoClear={false}
               descriptionText=""
-              webStyle={`.m-signature-pad { box-shadow: none; border: none; } .m-signature-pad--body { border: none; } .m-signature-pad--footer { display: none; }`}
+              webStyle={`.m-signature-pad { box-shadow: none; border: none; } .m-signature-pad--body { border: none; background-color: #ffffff; } .m-signature-pad--footer { display: none; }`}
             />
           </View>
           <Button title="Clear signature" variant="ghost" onPress={() => { sigRef.current?.clearSignature(); setSignatureData(null); }} />
-        </View>
+        </Card>
 
-        <Button title="Confirm & sign" onPress={handleSign} disabled={!canSign} loading={signing} style={{ marginTop: spacing.lg }} />
+        <Button title="CONFIRM & SIGN" variant="danger" onPress={handleSign} disabled={!canSign} loading={signing} style={{ marginTop: spacing.md }} haptic />
       </ScrollView>
     </Screen>
   );

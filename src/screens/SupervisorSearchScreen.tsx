@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Button, Input, Card, Chip, ListRow, Banner } from '../primitives';
+import { Screen, Button, Input, Card, Chip, ListRow, Banner, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSupervisorSearch } from '../hooks/useSupervisorSearch';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
@@ -10,6 +10,9 @@ import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { SupervisorSearchKind, SupervisorSearchResult } from '../types';
 import { RootStackParamList } from '../navigation/RootNavigator';
+import { useSubscriptionTier } from '../hooks/useSubscription';
+import { ProBadge } from '../primitives/ProBadge';
+import { Search } from 'lucide-react-native';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -20,10 +23,15 @@ export function SupervisorSearchScreen() {
   const cloud = useMemo(() => createSupabaseCloudClient(), []);
   const search = useSupervisorSearch(cloud);
   const conns = useSupervisorConnections({ db, cloud });
+  const { data: tier } = useSubscriptionTier();
   const [tab, setTab] = useState<SupervisorSearchKind>('email');
   const [query, setQuery] = useState('');
 
   const runSearch = async () => {
+    if (tier !== 'pro') {
+      navigation.navigate('Paywall');
+      return;
+    }
     if (tab === 'email') {
       if (!query.trim()) return;
       try {
@@ -57,65 +65,79 @@ export function SupervisorSearchScreen() {
   };
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl, padding: spacing.base }}>
-        <Text style={[typography.h1, { color: colors.textPrimary }]}>Add supervisor</Text>
-
-        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-          <Chip
-            label="Email"
-            selected={tab === 'email'}
-            onPress={() => {
-              setTab('email');
-              setQuery('');
-            }}
-          />
-          <Chip
-            label="SPRAT ID"
-            selected={tab === 'sprat_id'}
-            onPress={() => {
-              setTab('sprat_id');
-              setQuery('');
-            }}
-          />
-          <Chip
-            label="Name"
-            selected={tab === 'name'}
-            onPress={() => {
-              setTab('name');
-              setQuery('');
-            }}
-          />
+    <Screen topDivider>
+      <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl, padding: spacing.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: spacing.xs }}>
+          <Text style={[typography.h1, { color: colors.textPrimary }]}>Directory Search</Text>
+          {tier === 'pro' && <ProBadge />}
         </View>
 
-        <Input
-          label={
-            tab === 'email'
-              ? 'Supervisor email'
-              : tab === 'sprat_id'
-                ? 'SPRAT cert number'
-                : 'Name (3+ chars)'
-          }
-          value={query}
-          onChangeText={(v) => {
-            setQuery(v);
-            if (tab === 'name' && v.trim().length >= 3) search.search('name', v.trim());
-          }}
-          autoCapitalize={tab === 'sprat_id' ? 'characters' : 'none'}
-          keyboardType={tab === 'email' ? 'email-address' : 'default'}
-        />
+        {tier !== 'pro' && (
+          <Banner variant="info" message="Remote Supervisor Signatures are a Pro feature." />
+        )}
 
-        <Button
-          title={tab === 'email' ? 'Send invite' : 'Search'}
-          onPress={runSearch}
-          disabled={!query.trim() || (tab === 'name' && query.trim().length < 3)}
-        />
+        <SectionHeader label="SEARCH BY" />
+        <Card accent="navy" style={{ gap: spacing.md }}>
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            <Chip
+              label="Email"
+              selected={tab === 'email'}
+              onPress={() => {
+                setTab('email');
+                setQuery('');
+              }}
+            />
+            <Chip
+              label="SPRAT ID"
+              selected={tab === 'sprat_id'}
+              onPress={() => {
+                setTab('sprat_id');
+                setQuery('');
+              }}
+            />
+            <Chip
+              label="Name"
+              selected={tab === 'name'}
+              onPress={() => {
+                setTab('name');
+                setQuery('');
+              }}
+            />
+          </View>
+
+          <Input
+            label={
+              tab === 'email'
+                ? 'Supervisor email'
+                : tab === 'sprat_id'
+                  ? 'SPRAT cert number'
+                  : 'Name (3+ chars)'
+            }
+            value={query}
+            onChangeText={(v) => {
+              setQuery(v);
+              if (tab === 'name' && v.trim().length >= 3) search.search('name', v.trim());
+            }}
+            autoCapitalize={tab === 'sprat_id' ? 'characters' : 'none'}
+            keyboardType={tab === 'email' ? 'email-address' : 'default'}
+          />
+
+          <Button
+            title={tab === 'email' ? 'Send invite' : 'Search Directory'}
+            onPress={runSearch}
+            disabled={(!query.trim() && tier === 'pro') || (tab === 'name' && query.trim().length < 3)}
+            haptic
+          />
+        </Card>
 
         {search.error && <Banner variant="warning" message={search.error} />}
 
+        {tab !== 'email' && search.results.length > 0 && (
+          <SectionHeader label="RESULTS" />
+        )}
         {tab !== 'email' &&
           search.results.map((r) => (
-            <Card key={r.user_id}>
+            <Card key={r.user_id} accent="navy">
               <ListRow
                 title={r.display_name}
                 subtitle={r.sprat_cert_number}
@@ -126,7 +148,12 @@ export function SupervisorSearchScreen() {
           ))}
 
         {tab !== 'email' && !search.isSearching && search.results.length === 0 && query.trim() && (
-          <Banner variant="info" message="No supervisors found. Try the Email tab to invite by email." />
+          <View style={{ alignItems: 'center', marginTop: spacing.xl, padding: spacing.xl }}>
+            <Search color={colors.border} size={48} />
+            <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md }]}>
+              No supervisors found in the directory. Try the Email tab to send an invite directly.
+            </Text>
+          </View>
         )}
       </ScrollView>
     </Screen>

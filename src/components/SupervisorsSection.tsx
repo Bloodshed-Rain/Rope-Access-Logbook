@@ -121,9 +121,10 @@ export function SupervisorsSection() {
           <Input
             label="SPRAT Level III cert number"
             value={certInput}
-            onChangeText={setCertInput}
-            placeholder="L3-XXXXX"
-            autoCapitalize="characters"
+            onChangeText={(t) => setCertInput(t.replace(/\D/g, '').slice(0, 5))}
+            placeholder="12345"
+            keyboardType="number-pad"
+            maxLength={5}
           />
           <Button title="Enable supervising" onPress={confirmEnable} disabled={!certInput.trim()} />
           <Button

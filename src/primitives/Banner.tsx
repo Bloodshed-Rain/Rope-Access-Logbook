@@ -1,28 +1,74 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { AlertTriangle, Info, CheckCircle2, XCircle, X } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
-interface BannerProps {
-  message: string; variant: 'warning' | 'error' | 'info' | 'success';
-  actionLabel?: string; onAction?: () => void; onDismiss?: () => void;
+export interface BannerProps {
+  message: string;
+  variant: 'warning' | 'error' | 'info' | 'success';
+  actionLabel?: string;
+  onAction?: () => void;
+  onDismiss?: () => void;
 }
 
 export function Banner({ message, variant, actionLabel, onAction, onDismiss }: BannerProps) {
-  const { colors, spacing, typography, radii } = useTheme();
-  const bgMap = { warning: colors.warningLight, error: colors.errorLight, info: colors.accentLight, success: '#E8F5E9' };
-  const textMap = { warning: colors.warning, error: colors.error, info: colors.accent, success: '#2E7D32' };
+  const { colors, spacing, typography, radii, shadows } = useTheme();
+
+  const colorMap = {
+    warning: colors.warning,
+    error: colors.error,
+    info: colors.info,
+    success: colors.success,
+  };
+
+  const IconComponent =
+    variant === 'warning' ? AlertTriangle :
+    variant === 'error' ? XCircle :
+    variant === 'success' ? CheckCircle2 :
+    Info;
+
+  const accentColor = colorMap[variant];
+
   return (
-    <View style={{ backgroundColor: bgMap[variant], borderRadius: radii.md, padding: spacing.md,
-      flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-      <Text style={[typography.bodySmall, { color: textMap[variant], flex: 1 }]}>{message}</Text>
+    <View
+      style={[
+        {
+          backgroundColor: colors.surface,
+          borderRadius: radii.md,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.base,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          borderWidth: 1,
+          borderColor: colors.hairline,
+          overflow: 'hidden',
+        },
+        shadows.sm,
+      ]}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 4,
+          backgroundColor: accentColor,
+        }}
+      />
+      <IconComponent color={accentColor} size={20} />
+      <Text style={[typography.bodySmall, { color: colors.textPrimary, flex: 1 }]}>{message}</Text>
+      
       {actionLabel && onAction && (
-        <Pressable onPress={onAction}>
-          <Text style={[typography.bodySmall, { color: textMap[variant], fontWeight: '700' }]}>{actionLabel}</Text>
+        <Pressable onPress={onAction} hitSlop={8}>
+          <Text style={[typography.stencilLg, { color: accentColor }]}>{actionLabel}</Text>
         </Pressable>
       )}
+      
       {onDismiss && (
         <Pressable onPress={onDismiss} hitSlop={8}>
-          <Text style={[typography.body, { color: textMap[variant] }]}>x</Text>
+          <X color={colors.slateLight} size={20} />
         </Pressable>
       )}
     </View>

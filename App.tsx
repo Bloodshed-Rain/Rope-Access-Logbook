@@ -1,6 +1,13 @@
 import 'react-native-url-polyfill/auto';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, View, Text } from 'react-native';
+import {
+  useFonts,
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+  JetBrainsMono_700Bold,
+  JetBrainsMono_800ExtraBold,
+} from '@expo-google-fonts/jetbrains-mono';
 import * as Linking from 'expo-linking';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,12 +21,20 @@ import { createCloudBackupService } from './src/services/cloudBackupService';
 import { createSupervisorConnectionsService } from './src/services/supervisorConnectionsService';
 import { createSignRequestsService } from './src/services/signRequestsService';
 import { createExportService } from './src/services/exportService';
+import { createSubscriptionService } from './src/services/subscriptionService';
 import { sha256 } from './src/utils/hash';
 import { APP_VERSION } from './src/constants';
 
 const queryClient = new QueryClient();
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+    JetBrainsMono_700Bold,
+    JetBrainsMono_800ExtraBold,
+  });
+
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
 
@@ -32,6 +47,10 @@ export default function App() {
   useEffect(() => {
     if (!dbReady) return;
     const db = getClient();
+    
+    // Initialize RevenueCat
+    createSubscriptionService(db).init();
+
     const cloud = createSupabaseCloudClient();
     const fs = createExpoFsAbstraction();
     const svc = createCloudBackupService({
@@ -79,7 +98,7 @@ export default function App() {
       </View>
     );
   }
-  if (!dbReady) {
+  if (!dbReady || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.accent} />

@@ -30,6 +30,7 @@ export interface Profile {
   supervisor_capability_enabled: boolean;
   supervisor_cert_number: string | null;
   supervisor_directory_visible: boolean;
+  subscription_tier: 'free' | 'pro';
   created_at: string;
   updated_at: string;
 }

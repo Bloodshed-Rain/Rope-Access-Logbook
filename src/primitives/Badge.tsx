@@ -8,16 +8,30 @@ interface BadgeProps { status: EntryStatus; }
 const STATUS_LABELS: Record<EntryStatus, string> = { draft: 'Draft', signed: 'Signed', amended: 'Amended' };
 
 export function Badge({ status }: BadgeProps) {
-  const { colors, spacing, typography, radii } = useTheme();
-  const colorMap: Record<EntryStatus, { bg: string; text: string }> = {
-    draft: { bg: colors.statusDraftLight, text: colors.statusDraft },
-    signed: { bg: colors.statusSignedLight, text: colors.statusSigned },
-    amended: { bg: colors.statusAmendedLight, text: colors.statusAmended },
-  };
-  const { bg, text } = colorMap[status];
+  const { colors, borders } = useTheme();
+  
+  // map status to tag styles
+  let bg: string = 'transparent';
+  let text: string = colors.ink;
+  let border: string = colors.ink;
+
+  if (status === 'draft') {
+    bg = colors.paper; // ghost
+  } else if (status === 'signed') {
+    bg = colors.success;
+    text = colors.paper;
+    border = colors.success;
+  } else if (status === 'amended') {
+    bg = colors.blood;
+    text = colors.paper;
+    border = colors.blood;
+  }
+
   return (
-    <View style={{ backgroundColor: bg, borderRadius: radii.full, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}>
-      <Text style={[typography.caption, { color: text, fontWeight: '600' }]}>{STATUS_LABELS[status]}</Text>
+    <View style={{ backgroundColor: bg, borderWidth: borders.rule, borderColor: border, paddingHorizontal: 7, paddingVertical: 2 }}>
+      <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: text }}>
+        {STATUS_LABELS[status]}
+      </Text>
     </View>
   );
 }

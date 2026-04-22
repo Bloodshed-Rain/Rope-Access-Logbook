@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Card, Button, ListRow, EmptyState } from '../primitives';
+import { Screen, Card, Button, ListRow, EmptyState, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
 import { useSignRequests } from '../hooks/useSignRequests';
@@ -41,25 +41,28 @@ export function InboxScreen() {
     .slice(0, 50);
 
   return (
-    <Screen>
+    <Screen topDivider>
       <ScrollView
         contentContainerStyle={{
           gap: spacing.base,
-          paddingVertical: spacing.base,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.base,
           paddingBottom: spacing.xxl,
         }}
       >
         <Text style={[typography.h1, { color: colors.textPrimary }]}>Inbox</Text>
 
-        <Text style={[typography.h2, { color: colors.textPrimary }]}>Connection requests</Text>
+        <SectionHeader label="CONNECTION REQUESTS" />
         {incoming.length === 0 ? (
           <EmptyState
             title="No incoming requests"
-            subtitle="Techs who add you as their supervisor appear here."
+            subtitle="Techs who put in a connection request appear here."
+            actionLabel="REFRESH"
+            onAction={() => conns.query.refetch()}
           />
         ) : (
           incoming.map((c) => (
-            <Card key={c.id}>
+            <Card key={c.id} accent="navy">
               <View style={{ gap: spacing.xs }}>
                 <Text style={[typography.body, { color: colors.textPrimary }]}>
                   {c.invited_email}
@@ -95,17 +98,18 @@ export function InboxScreen() {
           ))
         )}
 
-        <Text style={[typography.h2, { color: colors.textPrimary }]}>Sign requests</Text>
+        <SectionHeader label="SIGN REQUESTS" />
         {incomingRequests.length === 0 && (
-          <EmptyState
-            title="No sign requests"
-            subtitle="Techs' completed entries will appear here for you to sign."
-          />
+          <Card accent="orange">
+            <Text style={[typography.body, { color: colors.textSecondary }]}>
+              No pending sign requests.
+            </Text>
+          </Card>
         )}
         {incomingRequests.map((r) => {
           const entry = r.entry_payload;
           return (
-            <Card key={r.id}>
+            <Card key={r.id} accent="orange">
               <ListRow
                 title={`${entry.date_from} — ${entry.site}`}
                 subtitle={`${entry.work_hours}h · ${entry.employer}`}
@@ -123,9 +127,7 @@ export function InboxScreen() {
 
         {history.length > 0 && (
           <>
-            <Text style={[typography.h2, { color: colors.textPrimary, marginTop: spacing.base }]}>
-              History
-            </Text>
+            <SectionHeader label="HISTORY" />
             {history.map((r) => {
               const entry = r.entry_payload;
               return (

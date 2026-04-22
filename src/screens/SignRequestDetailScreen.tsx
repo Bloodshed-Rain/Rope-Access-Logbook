@@ -6,7 +6,7 @@ import SignatureCanvas from 'react-native-signature-canvas';
 import * as Device from 'expo-device';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import { Screen, Card, Button, Banner, Input } from '../primitives';
+import { Screen, Card, Button, Banner, Input, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSignRequests } from '../hooks/useSignRequests';
 import { getLocalPhotoPathsFromCache } from '../services/signRequestsService';
@@ -97,12 +97,13 @@ export function SignRequestDetailScreen() {
   };
 
   return (
-    <Screen>
+    <Screen topDivider>
       <ScrollView contentContainerStyle={{ gap: spacing.base, padding: spacing.base, paddingBottom: spacing.xxl }}>
-        <Text style={[typography.h1, { color: colors.textPrimary }]}>Sign request</Text>
+        <Text style={[typography.h1, { color: colors.textPrimary }]}>Sign Request</Text>
         <Banner variant="info" message={`Requested at ${new Date(req.created_at).toLocaleString()}`} />
 
-        <Card>
+        <SectionHeader label="ENTRY DETAILS" />
+        <Card accent="orange">
           <Text style={[typography.bodyBold, { color: colors.textPrimary }]}>
             {entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} → ${entry.date_to}`}
           </Text>
@@ -137,41 +138,41 @@ export function SignRequestDetailScreen() {
         </Card>
 
         {entry.photo_paths.length > 0 && (
-          <Card>
-            <Text style={[typography.bodyBold, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
-              Photos
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-              {Array.from({ length: entry.photo_paths.length }).map((_, i) => {
-                const localPath = photoView.pending ? '' : (photoView.paths[i] ?? '');
-                if (localPath) {
-                  return <Image key={i} source={{ uri: localPath }} style={{ width: 100, height: 100, borderRadius: 6 }} />;
-                }
-                return (
-                  <View
-                    key={i}
-                    style={{
-                      width: 100, height: 100, borderRadius: 6,
-                      backgroundColor: colors.slateLightest, alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={[typography.caption, { color: colors.textSecondary, textAlign: 'center' }]}>
-                      {photoView.pending ? 'Loading…' : 'Photo unavailable'}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-            {photoView.pending && (
-              <Banner variant="info" message="Downloading photos…" />
-            )}
-            {!photoView.pending && photoView.missingCount > 0 && (
-              <Banner
-                variant="warning"
-                message={`${photoView.missingCount} of ${entry.photo_paths.length} photos couldn't be downloaded. Will retry on next sync.`}
-              />
-            )}
-          </Card>
+          <View>
+            <SectionHeader label="PHOTOS" />
+            <Card accent="navy">
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                {Array.from({ length: entry.photo_paths.length }).map((_, i) => {
+                  const localPath = photoView.pending ? '' : (photoView.paths[i] ?? '');
+                  if (localPath) {
+                    return <Image key={i} source={{ uri: localPath }} style={{ width: 100, height: 100, borderRadius: 6 }} />;
+                  }
+                  return (
+                    <View
+                      key={i}
+                      style={{
+                        width: 100, height: 100, borderRadius: 6,
+                        backgroundColor: colors.slateLightest, alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={[typography.caption, { color: colors.textSecondary, textAlign: 'center' }]}>
+                        {photoView.pending ? 'Loading…' : 'Photo unavailable'}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+              {photoView.pending && (
+                <Banner variant="info" message="Downloading photos…" />
+              )}
+              {!photoView.pending && photoView.missingCount > 0 && (
+                <Banner
+                  variant="warning"
+                  message={`${photoView.missingCount} of ${entry.photo_paths.length} photos couldn't be downloaded. Will retry on next sync.`}
+                />
+              )}
+            </Card>
+          </View>
         )}
 
         {req.status !== 'pending' && (
@@ -182,15 +183,15 @@ export function SignRequestDetailScreen() {
         )}
 
         {req.status === 'pending' && !showCanvas && !declineMode && (
-          <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
-            <Button title="Sign" onPress={() => setShowCanvas(true)} />
-            <Button title="Decline" variant="ghost" onPress={() => setDeclineMode(true)} />
-            <Button title="Close" variant="ghost" onPress={() => navigation.goBack()} />
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
+            <Button title="SIGN" onPress={() => setShowCanvas(true)} style={{ flex: 1 }} variant="danger" haptic />
+            <Button title="DECLINE" variant="ghost" onPress={() => setDeclineMode(true)} style={{ flex: 1 }} />
+            <Button title="CLOSE" variant="ghost" onPress={() => navigation.goBack()} style={{ flex: 1 }} />
           </View>
         )}
 
         {declineMode && (
-          <Card>
+          <Card accent="navy">
             <Input
               label="Decline reason"
               value={declineReason}
@@ -203,34 +204,39 @@ export function SignRequestDetailScreen() {
               style={{ minHeight: 100 }}
             />
             <View style={{ height: spacing.xs }} />
-            <Button title="Decline request" onPress={handleDecline} />
-            <Button
-              title="Cancel"
-              variant="ghost"
-              onPress={() => {
-                setDeclineMode(false);
-                setDeclineReason('');
-              }}
-            />
+            <View style={{ flexDirection: 'row', gap: spacing.md }}>
+              <Button title="DECLINE REQUEST" onPress={handleDecline} style={{ flex: 1 }} variant="danger" haptic />
+              <Button
+                title="CANCEL"
+                variant="ghost"
+                onPress={() => {
+                  setDeclineMode(false);
+                  setDeclineReason('');
+                }}
+                style={{ flex: 1 }}
+              />
+            </View>
           </Card>
         )}
 
         {showCanvas && (
-          <View style={{ gap: spacing.xs }}>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Your signature</Text>
-            <View style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, overflow: 'hidden', height: 200 }}>
+          <Card accent="orange" style={{ gap: spacing.xs, marginTop: spacing.md }}>
+            <SectionHeader label="YOUR SIGNATURE" />
+            <View style={{ borderWidth: 2, borderColor: colors.border, borderRadius: 8, overflow: 'hidden', height: 200, backgroundColor: '#ffffff' }}>
               <SignatureCanvas
                 ref={sigRef}
                 onOK={(sig) => handleSign(sig)}
                 autoClear={false}
                 descriptionText=""
-                webStyle={`.m-signature-pad{box-shadow:none;border:none}.m-signature-pad--body{border:none}.m-signature-pad--footer{display:none}`}
+                webStyle={`.m-signature-pad{box-shadow:none;border:none}.m-signature-pad--body{border:none;background-color:#ffffff}.m-signature-pad--footer{display:none}`}
               />
             </View>
-            <Button title="Confirm signature" onPress={() => sigRef.current?.readSignature()} loading={signing} />
-            <Button title="Clear" variant="ghost" onPress={() => sigRef.current?.clearSignature()} />
-            <Button title="Back" variant="ghost" onPress={() => setShowCanvas(false)} />
-          </View>
+            <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+              <Button title="CONFIRM & SIGN" onPress={() => sigRef.current?.readSignature()} loading={signing} variant="danger" haptic />
+              <Button title="Clear Signature" variant="ghost" onPress={() => sigRef.current?.clearSignature()} />
+              <Button title="Cancel" variant="ghost" onPress={() => setShowCanvas(false)} />
+            </View>
+          </Card>
         )}
       </ScrollView>
     </Screen>

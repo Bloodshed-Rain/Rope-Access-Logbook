@@ -4,7 +4,7 @@ import { View, Text, ScrollView, Alert, Image } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
-import { Screen, Card, Button, Badge, Banner } from '../primitives';
+import { Screen, Card, Button, Banner, StampBadge, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry, useDeleteEntry, useAmendmentForEntry } from '../hooks/useEntries';
 import { useSignatureForEntry, useVerifyIntegrity } from '../hooks/useSignatures';
@@ -42,6 +42,9 @@ export function EntryDetailScreen() {
 
   const isSigned = entry.status === 'signed';
   const isDraft = entry.status === 'draft';
+  const isAmended = entry.status === 'amended';
+
+  const stampVariant = isSigned ? 'signed' : isAmended ? 'amended' : 'draft';
 
   const handleDelete = () => {
     Alert.alert('Delete entry', 'Are you sure? This cannot be undone.', [
@@ -58,12 +61,22 @@ export function EntryDetailScreen() {
   };
 
   return (
-    <Screen>
+    <Screen topDivider>
       <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={[typography.h1, { color: colors.textPrimary }]}>Entry detail</Text>
-          <Badge status={entry.status} />
-        </View>
+        
+        <Card accent="navy" style={{ marginTop: spacing.md, paddingBottom: spacing.lg }}>
+          <Text style={[typography.h1, { color: colors.textPrimary, paddingRight: 80 }]}>
+            {entry.site || 'Untitled Entry'}
+          </Text>
+          <Text style={[typography.body, { color: colors.textSecondary, marginTop: spacing.xs }]}>
+            {entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} to ${entry.date_to}`}
+          </Text>
+          <StampBadge 
+            label={entry.status.toUpperCase()} 
+            variant={stampVariant} 
+            style={{ position: 'absolute', top: spacing.base, right: spacing.base, opacity: 0.85 }} 
+          />
+        </Card>
 
         {isSigned && integrity && !integrity.valid && (
           <Banner variant="error" message="Integrity check failed — this entry may have been modified after signing." />
@@ -106,51 +119,60 @@ export function EntryDetailScreen() {
           />
         )}
 
-        <Card style={{ gap: spacing.sm }}>
-          <Text style={[typography.h2, { color: colors.textPrimary }]}>When & where</Text>
+        <SectionHeader label="DATES & HOURS" />
+        <Card accent="navy" style={{ gap: spacing.sm }}>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Date: {entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} to ${entry.date_to}`}</Text>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>Hours: {entry.work_hours}</Text>
+        </Card>
+
+        <SectionHeader label="LOCATION & EMPLOYER" />
+        <Card accent="navy" style={{ gap: spacing.sm }}>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Site: {entry.site}</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Employer: {entry.employer}</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Client: {entry.client}</Text>
         </Card>
 
-        <Card style={{ gap: spacing.sm }}>
-          <Text style={[typography.h2, { color: colors.textPrimary }]}>Work</Text>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Hours: {entry.work_hours}</Text>
+        <SectionHeader label="WORK PERFORMED" />
+        <Card accent="navy" style={{ gap: spacing.sm }}>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Level: {entry.tech_level_snapshot}</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Type: {entry.work_types.join(', ')}</Text>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>{entry.description}</Text>
+          {entry.description ? (
+            <Text style={[typography.body, { color: colors.textSecondary }]}>{entry.description}</Text>
+          ) : null}
         </Card>
 
         {entry.amendment_reason && (
-          <Card style={{ gap: spacing.sm }}>
-            <Text style={[typography.h2, { color: colors.statusAmended }]}>Amendment reason</Text>
+          <Card accent="red" style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            <Text style={[typography.h2, { color: colors.error }]}>Amendment reason</Text>
             <Text style={[typography.body, { color: colors.textSecondary }]}>{entry.amendment_reason}</Text>
           </Card>
         )}
 
-        {signature && (
-          <Card style={{ gap: spacing.sm }}>
-            <Text style={[typography.h2, { color: colors.textPrimary }]}>Signature</Text>
+        <SectionHeader label={signature ? "SIGNATURE" : "SUPERVISOR"} />
+        {signature ? (
+          <Card accent="tan" style={{ gap: spacing.sm }}>
             <Text style={[typography.body, { color: colors.textSecondary }]}>Supervisor: {signature.supervisor_name}</Text>
             <Text style={[typography.body, { color: colors.textSecondary }]}>Cert #: {signature.supervisor_cert_number}</Text>
             <Text style={[typography.bodySmall, { color: colors.textTertiary }]}>Signed: {signature.signed_at}</Text>
             <Image source={{ uri: signature.signature_png_path }} style={{ width: '100%', height: 100, resizeMode: 'contain' }} />
             <Text style={[typography.caption, { color: colors.textTertiary }]}>SHA-256: {signature.entry_hash}</Text>
           </Card>
+        ) : (
+          <Card accent="orange" style={{ gap: spacing.sm }}>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>No signature on file.</Text>
+            <Button title="Request Signature" onPress={() => navigation.navigate('Signature', { entryId: entry.id })} />
+          </Card>
         )}
 
-        <View style={{ gap: spacing.sm, marginTop: spacing.base }}>
+        <View style={{ gap: spacing.sm, marginTop: spacing.xl }}>
           {isDraft && (
             <>
-              <Button title="Edit" onPress={() => navigation.navigate('EntryForm', { entryId: entry.id })} />
-              <Button title="Request supervisor signature" variant="secondary"
-                onPress={() => navigation.navigate('Signature', { entryId: entry.id })} />
-              <Button title="Delete" variant="ghost" onPress={handleDelete} />
+              <Button title="Edit Entry" onPress={() => navigation.navigate('EntryForm', { entryId: entry.id })} />
+              <Button title="Delete Entry" variant="danger" onPress={handleDelete} />
             </>
           )}
           {isSigned && !amendment && (
-            <Button title="Amend this entry" variant="secondary"
+            <Button title="Amend this entry" variant="danger"
               onPress={() => navigation.navigate('EntryForm', { amendEntryId: entry.id })} />
           )}
         </View>

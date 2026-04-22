@@ -45,6 +45,9 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
   if (!(await hasColumn(db, 'profile', 'supervisor_directory_visible'))) {
     await db.exec('ALTER TABLE profile ADD COLUMN supervisor_directory_visible INTEGER NOT NULL DEFAULT 1');
   }
+  if (!(await hasColumn(db, 'profile', 'subscription_tier'))) {
+    await db.exec("ALTER TABLE profile ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'free'");
+  }
   if (!(await hasColumn(db, 'entries', 'pending_sign_request_id'))) {
     await db.exec('ALTER TABLE entries ADD COLUMN pending_sign_request_id TEXT');
   }

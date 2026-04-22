@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface ProgressBarProps {
@@ -12,34 +12,52 @@ interface ProgressBarProps {
 export function ProgressBar({
   progress,
   color,
-  height = 8,
+  height = 18,
   trackColor,
 }: ProgressBarProps) {
-  const { colors, spacing } = useTheme();
+  const { colors, borders } = useTheme();
   
   const clampedProgress = Math.max(0, Math.min(1, progress));
+  const percentText = `${Math.round(clampedProgress * 100)}%`;
   
   return (
-    <View
-      style={[
-        styles.track,
-        {
-          height,
-          backgroundColor: trackColor || colors.slateLightest,
-          borderRadius: height / 2,
-        },
-      ]}
-    >
+    <View style={{ marginTop: 18, position: 'relative' }}>
       <View
         style={[
-          styles.fill,
+          styles.track,
           {
-            width: `${clampedProgress * 100}%`,
-            backgroundColor: color || colors.accent,
-            borderRadius: height / 2,
+            height,
+            backgroundColor: trackColor || colors.paper,
+            borderWidth: borders.block,
+            borderColor: colors.ink,
           },
         ]}
-      />
+      >
+        <View
+          style={[
+            styles.fill,
+            {
+              width: `${clampedProgress * 100}%`,
+              backgroundColor: color || colors.ink,
+            },
+          ]}
+        />
+      </View>
+      <View style={{
+        position: 'absolute',
+        right: -2,
+        top: -18,
+        backgroundColor: colors.blood,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+        borderWidth: borders.block,
+        borderColor: colors.ink,
+        borderBottomWidth: 0,
+      }}>
+        <Text style={{ fontFamily: 'JetBrainsMono_800ExtraBold', fontSize: 9, letterSpacing: 0.4, color: colors.paper }}>
+          {percentText}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -47,7 +65,6 @@ export function ProgressBar({
 const styles = StyleSheet.create({
   track: {
     width: '100%',
-    overflow: 'hidden',
   },
   fill: {
     height: '100%',

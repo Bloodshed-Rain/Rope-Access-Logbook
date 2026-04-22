@@ -1,5 +1,5 @@
 // src/screens/EntryFormScreen.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { copyPhotoToAppStorage } from '../utils/fileStorage';
-import { Screen, Button, Input, Textarea, Chip, Banner, Card, ListRow } from '../primitives';
+import { Screen, Button, Input, Textarea, Chip, Banner, Card, ListRow, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useEntry, useCreateEntry, useUpdateEntry, useCreateAmendment } from '../hooks/useEntries';
@@ -79,6 +79,9 @@ export function EntryFormScreen() {
   const [photoPaths, setPhotoPaths] = useState<string[]>([]);
   const [showPicker, setShowPicker] = useState(false);
 
+  const [isDirty, setIsDirty] = useState(false);
+  const isLeavingIntentionally = useRef(false);
+
   const db = useMemo(() => getClient(), []);
   const cloud = useMemo(() => createSupabaseCloudClient(), []);
   const fs = useMemo(() => createExpoFsAbstraction(), []);
@@ -107,7 +110,30 @@ export function EntryFormScreen() {
     }
   }, [existingEntry]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (isLeavingIntentionally.current || !isDirty) { return; }
+      e.preventDefault();
+      Alert.alert(
+        'Discard changes?',
+        'You have unsaved changes. Are you sure you want to discard them?',
+        [
+          { text: "Don't leave", style: 'cancel', onPress: () => {} },
+          { text: 'Discard', style: 'destructive', onPress: () => {
+              isLeavingIntentionally.current = true;
+              navigation.dispatch(e.data.action);
+            } 
+          },
+        ]
+      );
+    });
+    return unsubscribe;
+  }, [navigation, isDirty]);
+
+  const markDirty = () => !isDirty && setIsDirty(true);
+
   const handleAddPhoto = async () => {
+    markDirty();
     if (photoPaths.length >= 5) {
       Alert.alert('Maximum photos', 'You can attach up to 5 photos per entry.');
       return;
@@ -123,26 +149,26 @@ export function EntryFormScreen() {
   };
 
   const toggleWorkType = (wt: WorkType) => {
+    markDirty();
     setWorkTypes((prev) => (prev.includes(wt) ? prev.filter((t) => t !== wt) : [...prev, wt]));
   };
 
   const onChangeFrom = (_e: DateTimePickerEvent, d?: Date) => {
+    markDirty();
     if (Platform.OS !== 'ios') setShowFromPicker(false);
     if (d) {
       const iso = toISODate(d);
       setDateFrom(iso);
-      // Keep the range valid: if from > to, bump to.
       if (iso > dateTo) setDateTo(iso);
     }
   };
 
   const onChangeTo = (_e: DateTimePickerEvent, d?: Date) => {
+    markDirty();
     if (Platform.OS !== 'ios') setShowToPicker(false);
     if (d) setDateTo(toISODate(d));
   };
 
-  // Save button is always enabled except for amendments, which require a reason.
-  // Signing (separate screen) enforces the four required fields server-side.
   const canSubmit = !isAmend || !!amendmentReason.trim();
 
   const handleSave = async () => {
@@ -181,10 +207,10 @@ export function EntryFormScreen() {
     }
 
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    isLeavingIntentionally.current = true;
     navigation.goBack();
   };
 
-  /** Save current form state and return the entry ID. Used by both Save and Send-for-signature. */
   const saveEntry = async (): Promise<string> => {
     if (!profile) throw new Error('profile_not_loaded');
     const hours = workHours.trim() === '' ? 0 : parseFloat(workHours);
@@ -220,7 +246,7 @@ export function EntryFormScreen() {
     }
   };
 
-  const title = isAmend ? 'Amend entry' : isEdit ? 'Edit entry' : 'New entry';
+  const title = isAmend ? 'AMEND ENTRY' : isEdit ? 'EDIT ENTRY' : 'NEW ENTRY';
   const spanDays = Math.max(
     1,
     Math.round(
@@ -237,182 +263,198 @@ export function EntryFormScreen() {
   );
 
   return (
-    <Screen>
+    <Screen topDivider>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl }}>
-          <Text style={[typography.h1, { color: colors.textPrimary }]}>{title}</Text>
+        <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl, paddingTop: spacing.md }}>
+          <Text style={[typography.h1, { color: colors.textPrimary, paddingHorizontal: spacing.base }]}>{title}</Text>
 
           {isAmend && (
-            <Textarea label="Amendment reason (required)" value={amendmentReason}
-              onChangeText={setAmendmentReason} placeholder="Why is this entry being amended?" />
-          )}
-
-          <Text style={[typography.h2, { color: colors.textSecondary }]}>When & where</Text>
-
-          <View style={{ gap: spacing.xs }}>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>From</Text>
-            <Pressable
-              onPress={() => setShowFromPicker(true)}
-              style={{
-                borderWidth: 2, borderColor: colors.border, borderRadius: 10,
-                paddingHorizontal: spacing.base, paddingVertical: spacing.base,
-                backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
-              }}>
-              <Text style={[typography.body, { color: colors.textPrimary }]}>{dateFrom}</Text>
-            </Pressable>
-            {needed}
-            {showFromPicker && (
-              <DateTimePicker
-                value={fromISODate(dateFrom)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={onChangeFrom}
-              />
-            )}
-          </View>
-
-          <View style={{ gap: spacing.xs }}>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>To</Text>
-            <Pressable
-              onPress={() => setShowToPicker(true)}
-              style={{
-                borderWidth: 2, borderColor: colors.border, borderRadius: 10,
-                paddingHorizontal: spacing.base, paddingVertical: spacing.base,
-                backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
-              }}>
-              <Text style={[typography.body, { color: colors.textPrimary }]}>{dateTo}</Text>
-            </Pressable>
-            {needed}
-            {showToPicker && (
-              <DateTimePicker
-                value={fromISODate(dateTo)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                minimumDate={fromISODate(dateFrom)}
-                onChange={onChangeTo}
-              />
-            )}
-          </View>
-
-          <Input label="Employer" value={employer} onChangeText={setEmployer} />
-          <Input label="Job site / location" value={site} onChangeText={setSite} />
-          <Input label="Client / project" value={client} onChangeText={setClient} />
-
-          <Text style={[typography.h2, { color: colors.textSecondary }]}>Work</Text>
-          <View style={{ gap: spacing.xs }}>
-            <Input
-              label={hoursLabel}
-              value={workHours}
-              onChangeText={setWorkHours}
-              keyboardType="decimal-pad"
-              placeholder={hoursPlaceholder}
-            />
-            {needed}
-          </View>
-
-          <View style={{ gap: spacing.xs }}>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Type of work</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-              {WORK_TYPES.map((wt) => (
-                <Chip key={wt.value} label={wt.label} selected={workTypes.includes(wt.value)} onPress={() => toggleWorkType(wt.value)} />
-              ))}
+            <View style={{ paddingHorizontal: spacing.base }}>
+              <Textarea label="Amendment reason (required)" value={amendmentReason}
+                onChangeText={(t) => { markDirty(); setAmendmentReason(t); }} placeholder="Why is this entry being amended?" />
             </View>
-            {workTypes.includes('other') && (
-              <Input
-                label="Describe the other work"
-                value={otherWorkDescription}
-                onChangeText={setOtherWorkDescription}
-                placeholder="e.g. paint stripping"
-              />
-            )}
-          </View>
-
-          <View style={{ gap: spacing.xs }}>
-            <Textarea label="Description of work" value={description} onChangeText={setDescription} placeholder="What did you do?" />
-            {needed}
-          </View>
-
-          <Text style={[typography.h2, { color: colors.textSecondary }]}>Optional</Text>
-          <Input label="Equipment / rigging notes" value={equipmentNotes} onChangeText={setEquipmentNotes} />
-          <Input label="Weather / conditions" value={weather} onChangeText={setWeather} />
-          <Button title={`Add photo (${photoPaths.length}/5)`} variant="secondary" onPress={handleAddPhoto} />
-
-          {isEdit && existingEntry && existingEntry.status === 'draft' && (
-            existingEntry.pending_sign_request_id ? (
-              <Banner
-                variant="info"
-                message="Awaiting signature"
-                actionLabel="Withdraw"
-                onAction={async () => {
-                  try {
-                    await signReqs.withdraw.mutateAsync(existingEntry.pending_sign_request_id!);
-                  } catch (e: any) {
-                    Alert.alert('Could not withdraw', e.message);
-                  }
-                }}
-              />
-            ) : (
-              <>
-                {(() => {
-                  const entryIsComplete =
-                    !!dateFrom && !!dateTo && parseFloat(workHours || '0') > 0 && !!description.trim();
-                  return (
-                    <Button
-                      title="Send for signature"
-                      variant="secondary"
-                      onPress={() => setShowPicker(true)}
-                      disabled={!entryIsComplete || accepted.length === 0}
-                    />
-                  );
-                })()}
-                {accepted.length === 0 && (
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    Add a supervisor in your profile before requesting a signature.
-                  </Text>
-                )}
-                {showPicker && (
-                  <Card>
-                    <Text style={[typography.bodyBold, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
-                      Pick a supervisor
-                    </Text>
-                    {accepted.map((c) => (
-                      <ListRow
-                        key={c.id}
-                        title={c.supervisor_display_name ?? c.invited_email}
-                        subtitle="Tap to send"
-                        onPress={async () => {
-                          try {
-                            const entryId = await saveEntry();
-                            await signReqs.send.mutateAsync({
-                              entry_id: entryId,
-                              connection_id: c.id,
-                              supervisor_user_id: c.supervisor_user_id!,
-                            });
-                            setShowPicker(false);
-                            navigation.goBack();
-                          } catch (e: any) {
-                            if (e.message === 'invalid_hours') {
-                              Alert.alert('Invalid hours', 'Please enter a valid number of work hours.');
-                            } else {
-                              Alert.alert('Could not send', e.message);
-                            }
-                          }
-                        }}
-                      />
-                    ))}
-                    <View style={{ height: spacing.xs }} />
-                    <Button title="Cancel" variant="ghost" onPress={() => setShowPicker(false)} />
-                  </Card>
-                )}
-              </>
-            )
           )}
 
-          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
-            <Button title={isEdit ? 'Save' : 'Save as draft'} onPress={handleSave} disabled={!canSubmit}
-              loading={createEntry.isPending || updateEntry.isPending || createAmendment.isPending}
-              style={{ flex: 1 }} />
-            <Button title="Cancel" variant="ghost" onPress={() => navigation.goBack()} style={{ flex: 1 }} />
+          <View style={{ paddingHorizontal: spacing.base }}>
+            <SectionHeader label="WHEN & WHERE" />
+            <Card accent="navy" style={{ gap: spacing.md }}>
+              <View style={{ gap: spacing.xs }}>
+                <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>From</Text>
+                <Pressable
+                  onPress={() => setShowFromPicker(true)}
+                  style={{
+                    borderWidth: 2, borderColor: colors.border, borderRadius: 10,
+                    paddingHorizontal: spacing.base, paddingVertical: spacing.base,
+                    backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
+                  }}>
+                  <Text style={[typography.body, { color: colors.textPrimary }]}>{dateFrom}</Text>
+                </Pressable>
+                {needed}
+                {showFromPicker && (
+                  <DateTimePicker
+                    value={fromISODate(dateFrom)}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                    onChange={onChangeFrom}
+                  />
+                )}
+              </View>
+
+              <View style={{ gap: spacing.xs }}>
+                <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>To</Text>
+                <Pressable
+                  onPress={() => setShowToPicker(true)}
+                  style={{
+                    borderWidth: 2, borderColor: colors.border, borderRadius: 10,
+                    paddingHorizontal: spacing.base, paddingVertical: spacing.base,
+                    backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
+                  }}>
+                  <Text style={[typography.body, { color: colors.textPrimary }]}>{dateTo}</Text>
+                </Pressable>
+                {needed}
+                {showToPicker && (
+                  <DateTimePicker
+                    value={fromISODate(dateTo)}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                    minimumDate={fromISODate(dateFrom)}
+                    onChange={onChangeTo}
+                  />
+                )}
+              </View>
+
+              <Input label="Employer" value={employer} onChangeText={(t) => { markDirty(); setEmployer(t); }} />
+              <Input label="Job site / location" value={site} onChangeText={(t) => { markDirty(); setSite(t); }} />
+              <Input label="Client / project" value={client} onChangeText={(t) => { markDirty(); setClient(t); }} />
+            </Card>
+          </View>
+
+          <View style={{ paddingHorizontal: spacing.base }}>
+            <SectionHeader label="WORK" />
+            <Card accent="navy" style={{ gap: spacing.md }}>
+              <View style={{ gap: spacing.xs }}>
+                <Input
+                  label={hoursLabel}
+                  value={workHours}
+                  onChangeText={(t) => { markDirty(); setWorkHours(t); }}
+                  keyboardType="decimal-pad"
+                  placeholder={hoursPlaceholder}
+                />
+                {needed}
+              </View>
+
+              <View style={{ gap: spacing.xs }}>
+                <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Type of work</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                  {WORK_TYPES.map((wt) => (
+                    <Chip key={wt.value} label={wt.label} selected={workTypes.includes(wt.value)} onPress={() => toggleWorkType(wt.value)} />
+                  ))}
+                </View>
+                {workTypes.includes('other') && (
+                  <Input
+                    label="Describe the other work"
+                    value={otherWorkDescription}
+                    onChangeText={(t) => { markDirty(); setOtherWorkDescription(t); }}
+                    placeholder="e.g. paint stripping"
+                  />
+                )}
+              </View>
+
+              <View style={{ gap: spacing.xs }}>
+                <Textarea label="Description of work" value={description} onChangeText={(t) => { markDirty(); setDescription(t); }} placeholder="What did you do?" />
+                {needed}
+              </View>
+            </Card>
+          </View>
+
+          <View style={{ paddingHorizontal: spacing.base }}>
+            <SectionHeader label="OPTIONAL" />
+            <Card accent="navy" style={{ gap: spacing.md }}>
+              <Input label="Equipment / rigging notes" value={equipmentNotes} onChangeText={(t) => { markDirty(); setEquipmentNotes(t); }} />
+              <Input label="Weather / conditions" value={weather} onChangeText={(t) => { markDirty(); setWeather(t); }} />
+              <Button title={`Add photo (${photoPaths.length}/5)`} variant="secondary" onPress={handleAddPhoto} />
+            </Card>
+          </View>
+
+          <View style={{ paddingHorizontal: spacing.base }}>
+            {isEdit && existingEntry && existingEntry.status === 'draft' && (
+              existingEntry.pending_sign_request_id ? (
+                <Banner
+                  variant="info"
+                  message="Awaiting signature"
+                  actionLabel="Withdraw"
+                  onAction={async () => {
+                    try {
+                      await signReqs.withdraw.mutateAsync(existingEntry.pending_sign_request_id!);
+                    } catch (e: any) {
+                      Alert.alert('Could not withdraw', e.message);
+                    }
+                  }}
+                />
+              ) : (
+                <>
+                  {(() => {
+                    const entryIsComplete =
+                      !!dateFrom && !!dateTo && parseFloat(workHours || '0') > 0 && !!description.trim();
+                    return (
+                      <Button
+                        title="REQUEST SIGNATURE"
+                        variant="secondary"
+                        onPress={() => setShowPicker(true)}
+                        disabled={!entryIsComplete || accepted.length === 0}
+                      />
+                    );
+                  })()}
+                  {accepted.length === 0 && (
+                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                      Add a supervisor in your profile before requesting a signature.
+                    </Text>
+                  )}
+                  {showPicker && (
+                    <Card style={{ marginTop: spacing.md }} accent="orange">
+                      <Text style={[typography.bodyBold, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
+                        Pick a supervisor
+                      </Text>
+                      {accepted.map((c) => (
+                        <ListRow
+                          key={c.id}
+                          title={c.supervisor_display_name ?? c.invited_email}
+                          subtitle="Tap to send"
+                          onPress={async () => {
+                            try {
+                              const entryId = await saveEntry();
+                              await signReqs.send.mutateAsync({
+                                entry_id: entryId,
+                                connection_id: c.id,
+                                supervisor_user_id: c.supervisor_user_id!,
+                              });
+                              setShowPicker(false);
+                              isLeavingIntentionally.current = true;
+                              navigation.goBack();
+                            } catch (e: any) {
+                              if (e.message === 'invalid_hours') {
+                                Alert.alert('Invalid hours', 'Please enter a valid number of work hours.');
+                              } else {
+                                Alert.alert('Could not send', e.message);
+                              }
+                            }
+                          }}
+                        />
+                      ))}
+                      <View style={{ height: spacing.xs }} />
+                      <Button title="Cancel" variant="ghost" onPress={() => setShowPicker(false)} />
+                    </Card>
+                  )}
+                </>
+              )
+            )}
+
+            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
+              <Button title={isEdit ? 'SAVE CHANGES' : 'SAVE AS DRAFT'} onPress={handleSave} disabled={!canSubmit}
+                loading={createEntry.isPending || updateEntry.isPending || createAmendment.isPending}
+                style={{ flex: 1 }} haptic />
+              <Button title="CANCEL" variant="ghost" onPress={() => { isLeavingIntentionally.current = true; navigation.goBack(); }} style={{ flex: 1 }} />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

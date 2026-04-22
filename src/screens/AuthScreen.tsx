@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Button, Input, Banner } from '../primitives';
+import { Screen, Button, Input, Banner, Card, SectionHeader, RopeDivider } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createAuthService } from '../services/authService';
@@ -49,44 +49,59 @@ export function AuthScreen() {
   }
 
   return (
-    <Screen>
-      <View style={{ padding: spacing.base, gap: spacing.base }}>
-        <Text style={[typography.h1, { color: colors.textPrimary }]}>Back up your logbook</Text>
-        <Text style={[typography.body, { color: colors.textSecondary }]}>
-          Your logbook stays on this device. Signing in lets you restore it on a new phone if you lose or replace this one.
-        </Text>
+    <Screen topDivider>
+      <View style={{ flex: 1, justifyContent: 'center', padding: spacing.base, paddingBottom: spacing.xxl }}>
+        <SectionHeader label="SIGN IN" />
+        
+        <Card accent="orange" bg="paper" style={{ gap: spacing.base, paddingVertical: spacing.lg }}>
+          <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
+            <Text style={[typography.h1, { color: colors.textPrimary }]}>Back up your logbook</Text>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>
+              Signing in lets you restore your data on a new device.
+            </Text>
+          </View>
 
-        {error && <Banner variant="error" message={error} />}
+          {error && <Banner variant="error" message={error} />}
 
-        <Button
-          title={loading === 'apple' ? 'Signing in…' : 'Continue with Apple'}
-          onPress={() => signInWith('apple')}
-          disabled={loading !== null}
-        />
-        <Button
-          title={loading === 'google' ? 'Signing in…' : 'Continue with Google'}
-          onPress={() => signInWith('google')}
-          disabled={loading !== null}
-          variant="secondary"
-        />
+          <Button
+            title={loading === 'apple' ? 'Signing in…' : 'Continue with Apple'}
+            onPress={() => signInWith('apple')}
+            disabled={loading !== null}
+            variant="secondary"
+          />
+          <Button
+            title={loading === 'google' ? 'Signing in…' : 'Continue with Google'}
+            onPress={() => signInWith('google')}
+            disabled={loading !== null}
+            variant="secondary"
+          />
 
-        <Text style={[typography.bodySmall, { textAlign: 'center', color: colors.textSecondary }]}>or use email</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.sm }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
+            <Text style={[typography.stencil, { marginHorizontal: spacing.sm, color: colors.textTertiary }]}>OR</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
+          </View>
 
-        <Input
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={loading === null}
-        />
-        <Button
-          title={loading === 'email' ? 'Sending…' : 'Send me a sign-in link'}
-          onPress={sendMagicLink}
-          disabled={loading !== null}
-          variant="secondary"
-        />
+          <Input
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={loading === null}
+          />
+          <Button
+            title={loading === 'email' ? 'Sending…' : 'Send sign-in link'}
+            onPress={sendMagicLink}
+            disabled={loading !== null}
+            haptic
+          />
+        </Card>
+
+        <View style={{ alignItems: 'center', marginTop: spacing.xl, width: 80, alignSelf: 'center' }}>
+          <RopeDivider />
+        </View>
       </View>
     </Screen>
   );

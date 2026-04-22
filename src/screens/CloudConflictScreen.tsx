@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Button, Card, Banner } from '../primitives';
+import { Screen, Button, Card, Banner, SectionHeader, RopeDivider } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useCloudStatePreview, useRestore, useReplaceCloud } from '../hooks/useRestore';
 import { useBackup } from '../hooks/useBackup';
@@ -11,6 +11,7 @@ import { sha256 } from '../utils/hash';
 import { DbClient } from '../db/client';
 import { createExportService } from '../services/exportService';
 import { APP_VERSION } from '../constants';
+import { CloudOff } from 'lucide-react-native';
 
 interface CloudConflictScreenProps {
   db: DbClient;
@@ -71,22 +72,22 @@ export function CloudConflictScreen({
   }
 
   return (
-    <Screen>
-      <View style={{ padding: spacing.base, gap: spacing.base }}>
-        <Text style={[typography.h1, { color: colors.textPrimary }]}>
-          Your logbooks don&apos;t match
-        </Text>
-        <Text style={[typography.body, { color: colors.textSecondary }]}>
-          This device and your cloud backup have different data. Choose which one to keep. This
-          can&apos;t be undone.
-        </Text>
+    <Screen topDivider>
+      <View style={{ flex: 1, padding: spacing.base, paddingBottom: spacing.xxl }}>
+        <View style={{ alignItems: 'center', marginVertical: spacing.lg }}>
+          <CloudOff color={colors.error} size={48} />
+          <Text style={[typography.h1, { color: colors.textPrimary, textAlign: 'center', marginTop: spacing.md }]}>
+            Conflict Detected
+          </Text>
+          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }]}>
+            This device and your cloud backup have different data. Pick the one to keep. This cannot be undone.
+          </Text>
+        </View>
 
         {error && <Banner variant="error" message={error} />}
 
-        <Card>
-          <Text style={[typography.bodyBold, { color: colors.textPrimary }]}>
-            Your cloud logbook
-          </Text>
+        <SectionHeader label="CLOUD BACKUP" />
+        <Card accent="orange" style={{ marginBottom: spacing.md }}>
           <Text style={[typography.body, { color: colors.textPrimary }]}>
             {preview.data?.entries_count ?? 0} entries, {preview.data?.signatures_count ?? 0}{' '}
             signatures
@@ -96,8 +97,8 @@ export function CloudConflictScreen({
           </Text>
         </Card>
 
-        <Card>
-          <Text style={[typography.bodyBold, { color: colors.textPrimary }]}>This device</Text>
+        <SectionHeader label="LOCAL DEVICE" />
+        <Card accent="navy" style={{ marginBottom: spacing.xl }}>
           <Text style={[typography.body, { color: colors.textPrimary }]}>
             {localEntriesCount} entries, {localSignaturesCount} signatures
           </Text>
@@ -106,17 +107,26 @@ export function CloudConflictScreen({
           </Text>
         </Card>
 
-        <Button
-          title={busy ? 'Working…' : 'Keep cloud, replace this device'}
-          onPress={keepCloud}
-          disabled={busy}
-        />
-        <Button
-          title={busy ? 'Working…' : 'Replace cloud with this device'}
-          onPress={replaceCloud}
-          disabled={busy}
-          variant="secondary"
-        />
+        <View style={{ gap: spacing.md }}>
+          <Button
+            title={busy ? 'Working…' : 'Keep Cloud Data'}
+            onPress={keepCloud}
+            disabled={busy}
+            variant="danger"
+            haptic
+          />
+          <Button
+            title={busy ? 'Working…' : 'Keep Local Device Data'}
+            onPress={replaceCloud}
+            disabled={busy}
+            variant="danger"
+            haptic
+          />
+        </View>
+        
+        <View style={{ alignItems: 'center', marginTop: spacing.xl, width: 80, alignSelf: 'center' }}>
+          <RopeDivider />
+        </View>
       </View>
     </Screen>
   );

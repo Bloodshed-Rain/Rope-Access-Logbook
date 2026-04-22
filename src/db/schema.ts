@@ -15,6 +15,7 @@ export const SCHEMA_SQL = `
     supervisor_capability_enabled INTEGER NOT NULL DEFAULT 0,
     supervisor_cert_number TEXT,
     supervisor_directory_visible INTEGER NOT NULL DEFAULT 1,
+    subscription_tier TEXT NOT NULL DEFAULT 'free',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );

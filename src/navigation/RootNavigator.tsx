@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -12,6 +12,7 @@ import { useCloudStatePreview } from '../hooks/useRestore';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useNotifications } from '../hooks/useNotifications';
 import { colors } from '../theme/tokens';
+import { RopeDivider } from '../primitives/RopeDivider';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { LogbookScreen } from '../screens/LogbookScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -24,6 +25,8 @@ import { CloudConflictScreen } from '../screens/CloudConflictScreen';
 import { SupervisorSearchScreen } from '../screens/SupervisorSearchScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { SignRequestDetailScreen } from '../screens/SignRequestDetailScreen';
+import { PaywallScreen } from '../screens/PaywallScreen';
+import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -41,6 +44,8 @@ export type RootStackParamList = {
   CloudConflict: undefined;
   SupervisorSearch: undefined;
   SignRequestDetail: { requestId: string };
+  Paywall: undefined;
+  Analytics: undefined;
 };
 
 export type TabParamList = { Logbook: undefined; Inbox: undefined; Profile: undefined; };
@@ -57,12 +62,18 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
       tabBarInactiveTintColor: colors.slateLighter,
       tabBarStyle: {
         backgroundColor: colors.navy,
-        borderTopColor: colors.navy,
+        borderTopWidth: 2,
+        borderTopColor: colors.accentStripe,
         paddingTop: 10,
         paddingBottom: 10,
         height: 84,
       },
-      tabBarLabelStyle: { fontSize: 13, fontWeight: '600', marginTop: 4 },
+      tabBarLabel: ({ focused, color, children }) => (
+        <View style={{ alignItems: 'center', marginTop: 4 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color }}>{children}</Text>
+          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent, marginTop: 4 }} />}
+        </View>
+      ),
       tabBarIconStyle: { marginBottom: 2 },
       headerShown: false,
     }}>
@@ -114,8 +125,15 @@ export function RootNavigator() {
     headerShown: true,
     headerStyle: { backgroundColor: colors.navy },
     headerTintColor: colors.textInverse,
-    headerTitleStyle: { fontWeight: '700' as const },
+    headerTitleStyle: { fontWeight: '700' as const, letterSpacing: 0.5 },
     headerBackTitle: 'Back',
+    headerBackground: () => (
+      <View style={{ flex: 1, backgroundColor: colors.navy }}>
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+          <RopeDivider color={colors.ropeTan} opacity={0.45} />
+        </View>
+      </View>
+    ),
   };
 
   return (
@@ -164,6 +182,8 @@ export function RootNavigator() {
             <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ title: 'Check your email' }} />
             <Stack.Screen name="SupervisorSearch" component={SupervisorSearchScreen} options={{ title: 'Add supervisor' }} />
             <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
+            <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ title: 'Pro Analytics' }} />
           </>
         )}
       </Stack.Navigator>
