@@ -23,10 +23,9 @@ serve(async (req) => {
 
   const admin = createClient(url, service);
 
-  const { data: existingUsers } = await admin.auth.admin.listUsers();
-  const alreadyRegistered = (existingUsers?.users ?? []).some(
-    (u) => u.email?.toLowerCase() === email.toLowerCase(),
-  );
+  // getUserByEmail is O(1) and avoids loading all users into memory.
+  const { data: existingUserData } = await admin.auth.admin.getUserByEmail(email.toLowerCase());
+  const alreadyRegistered = !!existingUserData?.user;
   if (alreadyRegistered) {
     return new Response(JSON.stringify({ error: 'already_registered' }), {
       status: 200,

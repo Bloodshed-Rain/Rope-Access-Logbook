@@ -106,7 +106,7 @@ export function RootNavigator() {
     queryFn: () => createSigningService(getClient()).getAllSignatures(),
     enabled: !!profile,
   });
-  const { data: backupStatus } = useBackupStatus(db ?? getClient());
+  const { data: backupStatus } = useBackupStatus(db);
 
   const conflict = React.useMemo(() => {
     if (!session || !profile || !preview.data) return false;
@@ -117,7 +117,7 @@ export function RootNavigator() {
   }, [session, profile, localEntries, preview.data, backupStatus]);
 
   if (isLoading) return null;
-  if (profile && session !== null && sessionLoading) return null;
+  if (profile && session === null && sessionLoading) return null;
 
   // Themed default header: navy chrome, white title/chevrons. Individual
   // screens can opt out via `headerShown: false` (Onboarding, Main, Conflict).

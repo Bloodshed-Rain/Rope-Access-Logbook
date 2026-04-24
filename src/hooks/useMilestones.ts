@@ -17,11 +17,11 @@ export interface MilestoneProgress {
 export function useMilestones() {
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   
-  const entriesService = useMemo(() => createEntriesService(getClient()), []);
-  
   const { data: lifetimeHours, isLoading: isHoursLoading } = useQuery({
     queryKey: ['lifetimeHoursByLevel'],
-    queryFn: () => entriesService.getLifetimeHoursByLevel(),
+    // getClient() is called inside queryFn (not at render time) so it only runs
+    // after the DB is guaranteed to be initialised and the query is enabled.
+    queryFn: () => createEntriesService(getClient()).getLifetimeHoursByLevel(),
     enabled: !!profile,
   });
 

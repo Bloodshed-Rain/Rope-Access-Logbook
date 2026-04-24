@@ -20,6 +20,7 @@ import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { sha256 } from '../utils/hash';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { WorkType } from '../types';
+import { generateId } from '../utils/uuid';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type FormRoute = RouteProp<RootStackParamList, 'EntryForm'>;
@@ -60,6 +61,9 @@ export function EntryFormScreen() {
 
   const isEdit = !!editId;
   const isAmend = !!amendId;
+  // Stable temporary ID used for photo filenames when creating a new entry.
+  // This avoids all photos being named 'new_0.jpg', 'new_1.jpg', etc.
+  const tempEntryId = React.useMemo(() => generateId(), []);
 
   const today = toISODate(new Date());
   const [dateFrom, setDateFrom] = useState<string>(today);
@@ -143,7 +147,7 @@ export function EntryFormScreen() {
       quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {
-      const saved = await copyPhotoToAppStorage(result.assets[0].uri, editId ?? 'new', photoPaths.length);
+      const saved = await copyPhotoToAppStorage(result.assets[0].uri, editId ?? tempEntryId, photoPaths.length);
       setPhotoPaths((prev) => [...prev, saved]);
     }
   };

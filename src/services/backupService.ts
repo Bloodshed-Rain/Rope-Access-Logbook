@@ -22,7 +22,9 @@ export function createBackupService() {
       return daysBetween(lastBackupAt, new Date());
     },
     certExpiryStatus(certExpiresOn: string): CertExpiryStatus {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      // Use local date (not UTC) so the expiry check matches the user's timezone.
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       if (certExpiresOn < todayStr) return 'expired';
       const nowMs = Date.now();
       const expiryMs = new Date(certExpiresOn + 'T00:00:00Z').getTime();

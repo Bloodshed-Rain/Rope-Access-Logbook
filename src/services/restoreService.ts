@@ -99,7 +99,9 @@ export function createRestoreService(deps: RestoreDeps) {
 
       await db.exec('BEGIN');
       try {
-        await db.exec('DELETE FROM signatures; DELETE FROM entries; DELETE FROM profile;');
+        await db.exec('DELETE FROM signatures');
+        await db.exec('DELETE FROM entries');
+        await db.exec('DELETE FROM profile');
 
         const p = snap.profile;
         const rehydratedCard = p.sprat_card_photo_path

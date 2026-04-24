@@ -61,10 +61,15 @@ export function SupervisorsSection() {
       setShowToggleForm(true);
     } else {
       try {
-        // Count pending requests where THIS user is the supervisor. For Part A we
-        // don't yet have sign_requests_cache queries on the UI path, so pass 0.
-        // Task 16 will wire the real count.
-        await profileService.disableSupervisorCapability(0, cloud);
+        // Count pending sign requests where this user is the supervisor by
+        // querying the local cache directly.
+        const pendingRows = await db.getAll<{ id: string }>(
+          `SELECT id FROM sign_requests_cache
+           WHERE supervisor_user_id = ?
+             AND status = 'pending'`,
+          [session?.user_id ?? ''],
+        );
+        await profileService.disableSupervisorCapability(pendingRows.length, cloud);
         conns.query.refetch();
       } catch (e) {
         const msg = (e as Error).message;
