@@ -14,11 +14,16 @@ export function Card({ children, style, accent, bg = 'surface' }: CardProps) {
 
   const getAccentColor = () => {
     switch (accent) {
-      case 'orange': return colors.blood; // map orange to blood
-      case 'navy': return colors.ink;     // map navy to ink
-      case 'red': return colors.blood;
-      case 'tan': return colors.bg2;
-      default: return undefined;
+      case 'orange':
+        return colors.accentBase;
+      case 'red':
+        return colors.statusErr;
+      case 'navy':
+        return colors.edgeBright;
+      case 'tan':
+        return colors.accentHot;
+      default:
+        return undefined;
     }
   };
 
@@ -28,10 +33,16 @@ export function Card({ children, style, accent, bg = 'surface' }: CardProps) {
     <View
       style={[
         {
-          backgroundColor: bg === 'paper' ? colors.paper : colors.paper, // usually cards are paper
-          padding: spacing.s3,
-          borderWidth: borders.block,
-          borderColor: colors.ink,
+          backgroundColor: bg === 'paper' ? colors.bgPanel : colors.bgRaised,
+          padding: spacing.s4,
+          borderTopWidth: borders.hair,
+          borderTopColor: colors.edgeHi,
+          borderRightWidth: borders.hair,
+          borderRightColor: colors.edgeBase,
+          borderBottomWidth: borders.hair,
+          borderBottomColor: colors.edgeBase,
+          borderLeftWidth: borders.hair,
+          borderLeftColor: colors.edgeBase,
           overflow: 'hidden',
         },
         style,
@@ -44,7 +55,7 @@ export function Card({ children, style, accent, bg = 'surface' }: CardProps) {
             left: 0,
             top: 0,
             bottom: 0,
-            width: borders.heavy,
+            width: borders.block,
             backgroundColor: accentColor,
           }}
         />

@@ -9,30 +9,49 @@ export interface SectionHeaderProps {
   right?: React.ReactNode;
 }
 
-export function SectionHeader({ label, num, accent = 'orange', right }: SectionHeaderProps) {
-  const { colors, typography, spacing, borders } = useTheme();
+// Stencil section label with `01 · LABEL` format. The new industrial aesthetic
+// matches the mockup: an orange-rule prefix, an orange numeric index, then the
+// stencil label in dim ink.
+export function SectionHeader({ label, num, accent: _accent = 'orange', right }: SectionHeaderProps) {
+  const { colors, typography, spacing } = useTheme();
 
   return (
-    <View style={{ marginBottom: spacing.s5, marginTop: spacing.s6 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingBottom: spacing.s3, borderBottomWidth: borders.block, borderBottomColor: colors.ink }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.s3 }}>
-          {num && (
-            <View style={{ backgroundColor: colors.ink, paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={[typography.label, { color: colors.paper, fontWeight: '800' }]}>{num}</Text>
-            </View>
-          )}
-          <Text style={[typography.h2, { color: colors.ink }]}>{label}</Text>
-        </View>
-        {right && (
-          <View>
-            {typeof right === 'string' ? (
-              <Text style={[typography.label, { color: colors.ink50 }]}>{right}</Text>
-            ) : (
-              right
-            )}
-          </View>
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.s3,
+        marginTop: spacing.s5,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.s2 }}>
+        <View style={{ width: 10, height: 1, backgroundColor: colors.accentBase }} />
+        {num && (
+          <Text
+            style={{
+              fontFamily: 'JetBrainsMono_700Bold',
+              fontSize: 10,
+              letterSpacing: 0.5,
+              color: colors.accentBase,
+            }}
+          >
+            {num}
+          </Text>
         )}
+        <Text style={[typography.stencil, { color: colors.inkTertiary }]}>{label}</Text>
       </View>
+      {right && (
+        <View>
+          {typeof right === 'string' ? (
+            <Text style={[typography.caption, { color: colors.accentBase, letterSpacing: 1.0 }]}>
+              {right}
+            </Text>
+          ) : (
+            right
+          )}
+        </View>
+      )}
     </View>
   );
 }

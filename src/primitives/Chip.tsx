@@ -10,27 +10,27 @@ export interface ChipProps {
 
 export function Chip({ label, selected, onPress }: ChipProps) {
   const { colors, borders } = useTheme();
-  
+
   return (
     <Pressable
       onPress={onPress}
       style={{
-        backgroundColor: selected ? colors.ink : 'transparent',
-        paddingHorizontal: 7,
-        paddingVertical: 2,
-        borderWidth: borders.rule,
-        borderColor: colors.ink,
+        backgroundColor: selected ? colors.accentBase : 'transparent',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderWidth: borders.hair,
+        borderColor: selected ? colors.accentDeep : colors.edgeHi,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
       <Text
         style={{
-          fontFamily: 'JetBrainsMono_700Bold',
-          fontSize: 10,
-          letterSpacing: 0.8,
+          fontFamily: 'Michroma_400Regular',
+          fontSize: 9,
+          letterSpacing: 1.4,
           textTransform: 'uppercase',
-          color: selected ? colors.bg : colors.ink,
+          color: selected ? colors.bgBase : colors.inkSecondary,
         }}
       >
         {label}

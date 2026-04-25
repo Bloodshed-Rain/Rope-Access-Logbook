@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, Text, ViewStyle, ActivityIndicator } from 'react-native';
+import { Pressable, Text, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/ThemeProvider';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export interface ButtonProps {
   title: string;
@@ -14,38 +15,51 @@ export interface ButtonProps {
   haptic?: boolean;
 }
 
-export function Button({ title, onPress, variant = 'primary', disabled = false, loading = false, style, textStyle, haptic }: ButtonProps) {
-  const { colors, spacing, typography, radii, borders, touchTarget } = useTheme();
+export function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  disabled = false,
+  loading = false,
+  style,
+  textStyle,
+  haptic,
+}: ButtonProps) {
+  const { colors, spacing, radii, borders, touchTarget } = useTheme();
 
   const isPrimary = variant === 'primary';
   const isDanger = variant === 'danger';
+  const isSecondary = variant === 'secondary';
   const enableHaptic = haptic ?? true;
 
   const getBgColor = (pressed: boolean) => {
     if (disabled) {
-      if (isPrimary || isDanger) return colors.ink30;
+      if (isPrimary) return colors.inkDisabled;
+      if (isDanger) return colors.inkDisabled;
       return 'transparent';
     }
-    if (isPrimary || isDanger) return pressed ? colors.bloodD : colors.ink;
-    if (variant === 'secondary') return pressed ? colors.blood : 'transparent';
-    return pressed ? colors.blood : 'transparent'; // ghost
+    if (isPrimary) return pressed ? colors.accentDeep : colors.accentBase;
+    if (isDanger) return pressed ? '#b03a40' : colors.statusErr;
+    if (isSecondary) return pressed ? colors.bgPanel : 'transparent';
+    return pressed ? colors.bgPanel : 'transparent'; // ghost
   };
 
   const getTextColor = (pressed: boolean) => {
     if (disabled) {
-      if (isPrimary || isDanger) return colors.paper;
-      return colors.ink50;
+      if (isPrimary || isDanger) return colors.bgBase;
+      return colors.inkDisabled;
     }
-    if (isPrimary || isDanger) return colors.bg;
-    if (variant === 'secondary') return pressed ? colors.paper : colors.ink;
-    return pressed ? colors.paper : colors.blood; // ghost
+    if (isPrimary || isDanger) return colors.bgBase;
+    if (isSecondary) return pressed ? colors.inkPrimary : colors.inkPrimary;
+    return colors.accentBase; // ghost
   };
 
   const getBorderColor = (pressed: boolean) => {
-    if (variant === 'secondary') {
-      if (disabled) return colors.ink30;
-      return pressed ? colors.blood : colors.ink;
+    if (isSecondary) {
+      if (disabled) return colors.inkDisabled;
+      return pressed ? colors.accentBase : colors.edgeHi;
     }
+    if (isPrimary && !disabled) return colors.accentDeep;
     return 'transparent';
   };
 
@@ -66,13 +80,20 @@ export function Button({ title, onPress, variant = 'primary', disabled = false, 
           borderRadius: radii.none,
           minHeight: touchTarget.min,
           paddingVertical: spacing.s3,
-          paddingHorizontal: variant === 'ghost' ? spacing.s3 : spacing.s4,
-          borderWidth: variant === 'secondary' ? borders.block : 0,
+          paddingHorizontal: spacing.s4,
+          borderWidth: isSecondary || isPrimary ? borders.hair : 0,
           borderColor: getBorderColor(pressed),
           alignItems: 'center',
-          justifyContent: isPrimary ? 'space-between' : 'center',
+          justifyContent: 'center',
           flexDirection: 'row',
-          gap: spacing.s3,
+          gap: spacing.s2,
+          // Inset highlight on primary — top edge brighter
+          ...(isPrimary && !disabled
+            ? {
+                borderTopWidth: borders.hair,
+                borderTopColor: colors.accentHot,
+              }
+            : {}),
           transform: [{ translateY: pressed && !disabled ? 1 : 0 }],
         },
         style,
@@ -80,35 +101,21 @@ export function Button({ title, onPress, variant = 'primary', disabled = false, 
     >
       {({ pressed }) => (
         <>
-          {loading && <ActivityIndicator size="small" color={getTextColor(pressed)} />}
-          <Text 
+          {loading && <LoadingSpinner size="small" color={getTextColor(pressed)} />}
+          <Text
             style={[
               {
-                fontFamily: typography.h1.fontFamily,
-                fontSize: 12,
-                fontWeight: '800',
-                letterSpacing: 1.44,
+                fontFamily: 'Michroma_400Regular',
+                fontSize: 11,
+                letterSpacing: 1.8,
                 textTransform: 'uppercase',
                 color: getTextColor(pressed),
               },
-              textStyle
+              textStyle,
             ]}
           >
             {title}
           </Text>
-          {isPrimary && !loading && (
-            <Text 
-              style={{
-                fontFamily: typography.h1.fontFamily,
-                fontSize: 12,
-                fontWeight: '800',
-                letterSpacing: 1.44,
-                color: getTextColor(pressed),
-              }}
-            >
-              [+]
-            </Text>
-          )}
         </>
       )}
     </Pressable>

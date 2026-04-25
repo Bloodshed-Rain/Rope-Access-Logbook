@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, View, Text } from 'react-native';
+import { AppState, View, Text } from 'react-native';
 import {
   useFonts,
   JetBrainsMono_400Regular,
@@ -8,11 +8,13 @@ import {
   JetBrainsMono_700Bold,
   JetBrainsMono_800ExtraBold,
 } from '@expo-google-fonts/jetbrains-mono';
+import { Michroma_400Regular } from '@expo-google-fonts/michroma';
 import * as Linking from 'expo-linking';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { LoadingSpinner } from './src/primitives';
 import { initializeDatabase, getClient } from './src/db/initialize';
 import { colors } from './src/theme/tokens';
 import { createSupabaseCloudClient } from './src/cloud/supabaseClient';
@@ -33,6 +35,7 @@ export default function App() {
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
     JetBrainsMono_800ExtraBold,
+    Michroma_400Regular,
   });
 
   const [dbReady, setDbReady] = useState(false);
@@ -99,11 +102,7 @@ export default function App() {
     );
   }
   if (!dbReady || !fontsLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
+    return <LoadingSpinner fullScreen label="Preparing logbook" />;
   }
   return (
     <SafeAreaProvider>
