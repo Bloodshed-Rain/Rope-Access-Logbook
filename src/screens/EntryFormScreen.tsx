@@ -184,7 +184,7 @@ export function EntryFormScreen() {
       : null;
 
     if (isAmend && amendId) {
-      await createAmendment.mutateAsync({ entryId: amendId, reason: amendmentReason.trim(), techLevel: profile.level });
+      await createAmendment.mutateAsync({ entryId: amendId, reason: amendmentReason.trim(), techLevel: profile.level ?? 'I' });
     } else if (isEdit && editId) {
       await updateEntry.mutateAsync({
         id: editId,
@@ -202,7 +202,7 @@ export function EntryFormScreen() {
           equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
           photo_paths: photoPaths.length > 0 ? photoPaths : undefined,
         },
-        techLevel: profile.level,
+        techLevel: profile.level ?? 'I',
       });
     }
 
@@ -240,7 +240,7 @@ export function EntryFormScreen() {
           equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
           photo_paths: photoPaths.length > 0 ? photoPaths : undefined,
         },
-        techLevel: profile.level,
+        techLevel: profile.level ?? 'I',
       });
       return typeof created === 'string' ? created : (created as any).id;
     }

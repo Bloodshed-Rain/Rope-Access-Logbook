@@ -1,9 +1,7 @@
 // src/types.ts
 
 export type SpratLevel = 'I' | 'II' | 'III';
-// CertLevel is the scheme-agnostic alias. SpratLevel kept for backwards compat
-// with the many call sites that read profile.level as a SPRAT level today.
-export type CertLevel = SpratLevel;
+export type CertLevel = 'I' | 'II' | 'III';
 export type CertScheme = 'irata' | 'sprat';
 
 export type EntryStatus = 'draft' | 'signed' | 'amended';
@@ -19,26 +17,32 @@ export type WorkType =
   | 'rigging'
   | 'other';
 
+export interface CertBlock {
+  id: string;
+  level: CertLevel;
+  cert_expires_on: string;
+  card_photo_path: string | null;
+}
+
 export interface Profile {
   id: string;
   full_name: string;
-  // SPRAT block. DB columns sprat_id/level/cert_expires_on are nullable so
-  // IRATA-only users are first-class. Types here are non-null because every
-  // user reachable from current code paths is a SPRAT holder; the IRATA-only
-  // path lands with the cert-selection UI in a later commit, at which point
-  // these tighten to nullable across consumers.
+  // SPRAT block — flat columns kept under their legacy names. All four are now
+  // nullable so an IRATA-only user is first-class. Existing call sites that
+  // read these fields directly continue to work unchanged for SPRAT-holding
+  // users; new IRATA-aware code should branch on `holds_sprat` first.
   holds_sprat: boolean;
-  sprat_id: string;
-  level: SpratLevel;
-  cert_expires_on: string;
+  sprat_id: string | null;
+  level: SpratLevel | null;
+  cert_expires_on: string | null;
   sprat_card_photo_path: string | null;
-  // IRATA block. Nullable from day one (no legacy data to honor).
+  // IRATA block — new flat columns, all nullable.
   holds_irata: boolean;
   irata_id: string | null;
   irata_level: CertLevel | null;
   irata_expires_on: string | null;
   irata_card_photo_path: string | null;
-  // Drives the dashboard cert toggle's default segment.
+  // Drives the dashboard cert-toggle default.
   primary_cert: CertScheme;
   default_employer: string;
   last_backup_at: string | null;
@@ -62,13 +66,9 @@ export interface Entry {
   client: string;
   description: string;
   work_hours: number;
-  // tech_level_snapshot is the SPRAT level at entry creation. Kept under its
-  // legacy name to preserve v1/v2/v3 hash compatibility — every signed entry
-  // already carries a hash that includes this exact key.
+  // tech_level_snapshot is the SPRAT-level snapshot, kept under its legacy
+  // name because v1/v2/v3 hash algorithms read this column directly.
   tech_level_snapshot: SpratLevel;
-  // IRATA level at entry creation. Null on legacy entries (pre-dual-cert) and
-  // on entries by techs who don't hold IRATA. Deliberately NOT in canonical
-  // hash input — adding it would invalidate every existing signature.
   irata_level_snapshot: CertLevel | null;
   work_types: WorkType[];
   other_work_description: string | null;
@@ -169,37 +169,38 @@ export interface CreateSignatureInput {
   gps_lon?: number;
 }
 
+export interface CertBlockInput {
+  id: string;
+  level: CertLevel;
+  cert_expires_on: string;
+  card_photo_path?: string | null;
+}
+
 export interface CreateProfileInput {
   full_name: string;
-  sprat_id: string;
-  level: SpratLevel;
-  cert_expires_on: string;
-  default_employer: string;
+  // SPRAT-only legacy shorthand: passing these creates a SPRAT-holding profile
+  // with no IRATA. Existing onboarding code uses this shape.
+  sprat_id?: string;
+  level?: SpratLevel;
+  cert_expires_on?: string;
   sprat_card_photo_path?: string;
-  // IRATA fields — optional. If holds_irata is set, the rest of the IRATA
-  // block must be present.
-  holds_irata?: boolean;
-  irata_id?: string;
-  irata_level?: CertLevel;
-  irata_expires_on?: string;
-  irata_card_photo_path?: string;
+  // Dual-cert shape: pass either or both; at least one must be present.
+  sprat?: CertBlockInput;
+  irata?: CertBlockInput;
   primary_cert?: CertScheme;
+  default_employer?: string;
 }
 
 export interface UpdateProfileInput {
   full_name?: string;
+  // Legacy SPRAT-direct updates — still supported for back-compat with existing
+  // ProfileScreen code. New IRATA-aware code should call upsertIrataCert / etc.
   sprat_id?: string;
   level?: SpratLevel;
   cert_expires_on?: string;
-  default_employer?: string;
   sprat_card_photo_path?: string | null;
-  holds_sprat?: boolean;
-  holds_irata?: boolean;
-  irata_id?: string | null;
-  irata_level?: CertLevel | null;
-  irata_expires_on?: string | null;
-  irata_card_photo_path?: string | null;
   primary_cert?: CertScheme;
+  default_employer?: string;
 }
 
 export interface JsonBackup {
@@ -222,7 +223,7 @@ export interface BinaryManifest {
 }
 
 export interface CloudSnapshot extends JsonBackup {
-  cloud_schema_version: 1 | 2;
+  cloud_schema_version: 1 | 2 | 3;
   backup_id: string;
   binary_manifest: BinaryManifest;
   photos_included: boolean;

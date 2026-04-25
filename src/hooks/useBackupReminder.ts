@@ -10,6 +10,8 @@ export function useBackupReminder() {
     showReminder: service.shouldShowReminder(lastBackupAt),
     showPostSigningNudge: service.shouldShowPostSigningNudge(lastBackupAt),
     daysSinceBackup: service.daysSinceBackup(lastBackupAt),
-    certExpiryStatus: profile ? service.certExpiryStatus(profile.cert_expires_on) : 'ok' as const,
+    certExpiryStatus: profile?.cert_expires_on
+      ? service.certExpiryStatus(profile.cert_expires_on)
+      : ('ok' as const),
   };
 }

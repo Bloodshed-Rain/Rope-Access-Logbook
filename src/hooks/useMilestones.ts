@@ -29,7 +29,9 @@ export function useMilestones() {
 
   const progress = useMemo<MilestoneProgress | null>(() => {
     if (!profile || !lifetimeHours) return null;
-
+    // Milestone math currently tracks the SPRAT level only. IRATA-only profiles
+    // skip this hook (returns null); the dashboard's gauge math covers them.
+    if (!profile.holds_sprat || !profile.level) return null;
     const currentLevel = profile.level;
     const hoursAtCurrentLevel = lifetimeHours[currentLevel] ?? 0;
     

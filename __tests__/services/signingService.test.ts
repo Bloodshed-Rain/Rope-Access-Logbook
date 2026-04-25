@@ -302,7 +302,7 @@ test('signature produced by remote sign flow verifies with verifyIntegrity', asy
 
   const entry = {
     id: 'e1', date_from: '2026-03-01', date_to: '2026-03-01', employer: 'Acme', site: 'Site',
-    client: 'Client', description: 'Desc', work_hours: 8, tech_level_snapshot: 'II' as const, irata_level_snapshot: null as null,
+    client: 'Client', description: 'Desc', work_hours: 8, tech_level_snapshot: 'II' as const, irata_level_snapshot: null,
     work_types: ['inspection' as const], other_work_description: null, equipment_notes: null, weather: null,
     photo_paths: [], status: 'draft' as const, amends_entry_id: null, amendment_reason: null,
     pending_sign_request_id: 'r1',

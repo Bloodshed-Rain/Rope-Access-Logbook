@@ -3,18 +3,19 @@ export const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS profile (
     id TEXT PRIMARY KEY,
     full_name TEXT NOT NULL,
-    -- SPRAT block: nullable to support IRATA-only users.
+    -- SPRAT block (legacy column names preserved, nullable so IRATA-only users are first-class)
     holds_sprat INTEGER NOT NULL DEFAULT 1,
     sprat_id TEXT,
     level TEXT CHECK (level IS NULL OR level IN ('I', 'II', 'III')),
     cert_expires_on TEXT,
     sprat_card_photo_path TEXT,
-    -- IRATA block: nullable, all opt-in.
+    -- IRATA block
     holds_irata INTEGER NOT NULL DEFAULT 0,
     irata_id TEXT,
     irata_level TEXT CHECK (irata_level IS NULL OR irata_level IN ('I', 'II', 'III')),
     irata_expires_on TEXT,
     irata_card_photo_path TEXT,
+    -- Drives the dashboard cert-toggle default
     primary_cert TEXT NOT NULL DEFAULT 'sprat' CHECK (primary_cert IN ('irata', 'sprat')),
     default_employer TEXT NOT NULL DEFAULT '',
     last_backup_at TEXT,
@@ -39,6 +40,8 @@ export const SCHEMA_SQL = `
     client TEXT NOT NULL,
     description TEXT NOT NULL,
     work_hours REAL NOT NULL,
+    -- tech_level_snapshot is the SPRAT-level snapshot under its legacy name, kept
+    -- for hash stability across v1/v2/v3 signature algorithms (all read this column).
     tech_level_snapshot TEXT NOT NULL CHECK (tech_level_snapshot IN ('I', 'II', 'III')),
     irata_level_snapshot TEXT CHECK (irata_level_snapshot IS NULL OR irata_level_snapshot IN ('I', 'II', 'III')),
     work_types TEXT NOT NULL DEFAULT '[]',

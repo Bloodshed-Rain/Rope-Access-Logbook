@@ -118,7 +118,9 @@ export function createRestoreService(deps: RestoreDeps) {
           );
 
           try {
-          await scheduleCertExpiryNotifications(p.cert_expires_on);
+            if (p.cert_expires_on) {
+              await scheduleCertExpiryNotifications(p.cert_expires_on);
+            }
           } catch {}
 
           for (const e of snap.entries) {
