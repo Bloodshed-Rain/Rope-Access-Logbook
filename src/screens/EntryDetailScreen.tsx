@@ -4,7 +4,7 @@ import { View, Text, ScrollView, Alert, Image } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
-import { Screen, Card, Button, Banner, StampBadge, SectionHeader } from '../primitives';
+import { Screen, Card, Button, Banner, Badge, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry, useDeleteEntry, useAmendmentForEntry } from '../hooks/useEntries';
 import { useSignatureForEntry, useVerifyIntegrity } from '../hooks/useSignatures';
@@ -44,8 +44,6 @@ export function EntryDetailScreen() {
   const isDraft = entry.status === 'draft';
   const isAmended = entry.status === 'amended';
 
-  const stampVariant = isSigned ? 'signed' : isAmended ? 'amended' : 'draft';
-
   const handleDelete = () => {
     Alert.alert('Delete entry', 'Are you sure? This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
@@ -71,11 +69,9 @@ export function EntryDetailScreen() {
           <Text style={[typography.body, { color: colors.textSecondary, marginTop: spacing.xs }]}>
             {entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} to ${entry.date_to}`}
           </Text>
-          <StampBadge 
-            label={entry.status.toUpperCase()} 
-            variant={stampVariant} 
-            style={{ position: 'absolute', top: spacing.base, right: spacing.base, opacity: 0.85 }} 
-          />
+          <View style={{ position: 'absolute', top: spacing.base, right: spacing.base }}>
+            <Badge status={entry.status} />
+          </View>
         </Card>
 
         {isSigned && integrity && !integrity.valid && (

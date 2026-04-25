@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Button, Card, Banner, SectionHeader, RopeDivider } from '../primitives';
+import { Screen, Button, Card, Banner, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useCloudStatePreview, useRestore, useReplaceCloud } from '../hooks/useRestore';
 import { useBackup } from '../hooks/useBackup';
@@ -124,9 +124,6 @@ export function CloudConflictScreen({
           />
         </View>
         
-        <View style={{ alignItems: 'center', marginTop: spacing.xl, width: 80, alignSelf: 'center' }}>
-          <RopeDivider />
-        </View>
       </View>
     </Screen>
   );

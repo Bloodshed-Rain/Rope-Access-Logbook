@@ -3,7 +3,7 @@ import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressabl
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Svg, { Path } from 'react-native-svg';
-import { Screen, Button, Input, RopeDivider } from '../primitives';
+import { Screen, Button, Input } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useCreateProfile } from '../hooks/useProfile';
 import { SpratLevel } from '../types';
@@ -76,9 +76,6 @@ export function OnboardingScreen() {
     return (
       <Screen>
         <View style={{ flex: 1, justifyContent: 'center', gap: spacing.lg, padding: spacing.xl }}>
-          <View style={{ alignItems: 'center', marginBottom: spacing.md, width: 80, alignSelf: 'center' }}>
-            <RopeDivider />
-          </View>
           <Text style={[typography.h1, { color: colors.textPrimary, textAlign: 'center' }]}>Local storage</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>
             Your data is stored locally on this device. There is no cloud backup in this version.
@@ -98,10 +95,7 @@ export function OnboardingScreen() {
     <Screen>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ gap: spacing.base, padding: spacing.base, paddingBottom: spacing.xxl }}>
-          <View style={{ paddingVertical: spacing.md, alignItems: 'center', width: 80, alignSelf: 'center' }}>
-            <RopeDivider />
-          </View>
-          <Text style={[typography.h1, { color: colors.textPrimary }]}>Create your profile</Text>
+          <Text style={[typography.h1, { color: colors.textPrimary, marginTop: spacing.md }]}>Create your profile</Text>
           <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>You can update this later in your profile tab.</Text>
           <Input label="Full name" value={fullName} onChangeText={setFullName} placeholder="John Doe" />
           <Input

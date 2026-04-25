@@ -27,7 +27,6 @@ import { SupervisorSearchScreen } from '../screens/SupervisorSearchScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { SignRequestDetailScreen } from '../screens/SignRequestDetailScreen';
 import { PaywallScreen } from '../screens/PaywallScreen';
-import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -47,7 +46,6 @@ export type RootStackParamList = {
   SupervisorSearch: undefined;
   SignRequestDetail: { requestId: string };
   Paywall: undefined;
-  Analytics: undefined;
 };
 
 export type TabParamList = { Dashboard: undefined; Inbox: undefined; Profile: undefined; };
@@ -232,7 +230,6 @@ export function RootNavigator() {
             <Stack.Screen name="SupervisorSearch" component={SupervisorSearchScreen} options={{ title: 'Add supervisor' }} />
             <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal', headerShown: false }} />
-            <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ title: 'Pro Analytics' }} />
           </>
         )}
       </Stack.Navigator>

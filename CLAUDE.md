@@ -14,6 +14,7 @@ Primary design references:
 - Cloud backup and restore: `docs/superpowers/specs/2026-04-16-cloud-backup-and-restore-design.md`. Section 4 (path normalization + v1→v2 hash migration) and section 6.3 (conflict scenarios A/B/C) are load-bearing.
 - Implementation plan history: `docs/superpowers/plans/2026-04-16-cloud-backup-and-restore.md`. The spec is canonical; the plan is history.
 - Entry-logging enhancements (in-flight, not yet implemented): `docs/superpowers/specs/2026-04-17-entry-logging-enhancements-design.md`.
+- **UI/UX overhaul + dual-cert (current)**: `docs/superpowers/specs/2026-04-25-ui-overhaul-industrial-design.md`. Industrial gauge-panel dark theme, IRATA + SPRAT support, Dashboard tab, drops Analytics standalone screen.
 
 ## Commands
 
@@ -32,13 +33,17 @@ npx jest --testNamePattern="creates a draft entry"
 npx tsc --noEmit                     # type check (see "Known state" below — `supabase/` folder breaks this)
 ```
 
-Supabase provisioning (dev and prod project setup, documented in `supabase/README.md`):
+Supabase provisioning (dev and prod project setup, runbook in `supabase/README.md`):
 
 ```bash
 supabase db push --db-url postgres://...     # applies supabase/migrations/*.sql
-supabase functions deploy delete-account --no-verify-jwt
+supabase functions deploy delete-account          --no-verify-jwt
+supabase functions deploy cleanup-request-assets  --no-verify-jwt
+supabase functions deploy notify-sign-request     --no-verify-jwt
 supabase secrets set SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=...
 ```
+
+`invite-supervisor` and `search-supervisors` also live under `supabase/functions/` but are invoked from the client with a normal JWT; deploy them the same way if you add or modify them. `--no-verify-jwt` on the three above is because each verifies the caller manually inside its handler.
 
 `.env` at repo root supplies `SUPABASE_URL` and `SUPABASE_ANON_KEY` to `app.config.ts`; the app throws on missing config at `getConfig()` call time (`src/config.ts`). The app is fully usable offline without valid Supabase credentials until the user signs in.
 
@@ -46,7 +51,7 @@ supabase secrets set SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROL
 
 ### Persistence (`src/db/`)
 
-The `DbClient` interface in `client.ts` is the only DB abstraction. It exposes `run`, `get`, `getAll`, `exec` against parameterized SQL. The runtime implementation (`expoClient.ts`) wraps `expo-sqlite` and is instantiated by `initialize.ts`; tests use `better-sqlite3` in-memory via `__tests__/setup.ts`'s `createTestClient()`. Schema lives in `schema.ts` — five tables (`profile`, `entries`, `signatures`, `supervisor_connections_cache`, `sign_requests_cache`) plus indexes. New columns are added idempotently by `migrations.ts` via guarded `PRAGMA table_info` + `ALTER TABLE`; the profile table currently carries `photos_in_backup`, `last_cloud_backup_at`, `last_uploaded_backup_id`, `supervisor_capability_enabled`, `supervisor_cert_number`, `supervisor_directory_visible`; the entries table carries `pending_sign_request_id` (with a partial index); the signatures table carries `hash_version`.
+The `DbClient` interface in `client.ts` is the only DB abstraction. It exposes `run`, `get`, `getAll`, `exec` against parameterized SQL. The runtime implementation (`expoClient.ts`) wraps `expo-sqlite` and is instantiated by `initialize.ts`; tests use `better-sqlite3` in-memory via `__tests__/setup.ts`'s `createTestClient()`. Schema lives in `schema.ts` — five tables (`profile`, `entries`, `signatures`, `supervisor_connections_cache`, `sign_requests_cache`) plus indexes. New columns are added idempotently by `migrations.ts` via guarded `PRAGMA table_info` + `ALTER TABLE`; the profile table currently carries `photos_in_backup`, `last_cloud_backup_at`, `last_uploaded_backup_id`, `supervisor_capability_enabled`, `supervisor_cert_number`, `supervisor_directory_visible`, `subscription_tier`; the entries table carries `pending_sign_request_id` (with a partial index); the signatures table carries `hash_version`.
 
 Boot sequence, `initialize.ts::initializeDatabase()`:
 
@@ -71,6 +76,7 @@ Pure functions taking a `DbClient` (and, for cloud services, a `CloudClient` + `
 - `restoreService.ts` — `previewCloudState()`, `restore()`, `uploadCurrentAsCloud()`. See "Cloud backup" below.
 - `supervisorConnectionsService.ts` — `inviteSupervisor`, `acceptInvite`, `declineInvite`, `revokeConnection`, `searchDirectory`, `syncConnections`. See "Supervisor accounts" below.
 - `signRequestsService.ts` — `sendSignRequest`, `withdrawRequest`, `declineRequest`, `signRequest`, `applyIncomingSignature`, `syncSignRequests`. See "Supervisor accounts" below.
+- `subscriptionService.ts` — `init`, `getTier`, `getPackages`, `purchase`, `restore`. RevenueCat wrapper that resolves to `'free' | 'pro'` and mirrors the tier into `profile.subscription_tier` for offline reads. See "Subscriptions / Pro tier" below.
 
 Invariants the service layer enforces (these are contract, not convention):
 
@@ -82,25 +88,31 @@ Invariants the service layer enforces (these are contract, not convention):
 
 ### UI (`src/primitives/`, `screens/`, `components/`, `navigation/`, `theme/`, `hooks/`)
 
-Screens compose from the fixed primitive set in `src/primitives/index.ts` (`Screen`, `Button`, `IconButton`, `Input`, `Textarea`, `Card`, `Badge`, `Banner`, `Chip`, `ListRow`, `EmptyState`). Primitives read tokens from `theme/ThemeProvider`'s `useTheme()` hook. Screens should not define their own style sheets for anything a primitive already covers.
+Screens compose from the primitive set exported by `src/primitives/index.ts` — kept primitives: `Screen`, `Button`, `IconButton`, `Input`, `Textarea`, `Card`, `Badge`, `Banner`, `Chip`, `ListRow`, `EmptyState`, `ProgressBar`, `SectionHeader`, `LoadingSpinner`. Industrial-aesthetic primitives added in the UI overhaul: `Panel` (rivet-cornered container), `Gauge` (semi-circular SVG with tick ring + needle), `PunchCardRow` (entry row with date "punch"), `BreakdownBar`, `RecertStrip`, `StatStrip`, `SegmentedToggle`, `SyncLED`, `FabButton`, `SectionLabel`. `ProBadge`, `Rivet`, and `NoiseTexture` live in their own files but are imported directly (not re-exported from the barrel). Primitives read tokens from `theme/ThemeProvider`'s `useTheme()` hook. Screens should not define their own style sheets for anything a primitive already covers.
 
-Design tokens (`theme/tokens.ts`): spacing base 4px with an `xs|sm|md|base|lg|xl|xxl` scale, safety-orange `#FF6600` accent (primary CTAs, focus rings), SPRAT-navy `#003366` chrome (tab bar, headers), IRATA-red `#C8102E` for errors and amendments, Steel Gray `#4A4A4A` body text, Concrete Light `#F2F2F2` background. Touch targets: 48px minimum, 56px preferred — glove use is assumed. Typography is System-font-based with explicit `h1/h2/body/bodyBold/bodySmall/caption/mono` variants; `display` is the onboarding hero size.
+Design tokens (`theme/tokens.ts`): **dark industrial gauge-panel aesthetic.** Background scale `bgBase #0a0b0d → bgRaised #111418 → bgPanel #181c22 → bgInset #1f242b`; edge scale `edgeBase #262c34 → edgeHi #3a4048 → edgeBright #515864`; ink scale `inkPrimary #dde3eb → inkSecondary → inkTertiary → inkDisabled`. Accent **safety orange** `accentBase #ff5a1f` (primary CTAs, gauge progress, focus rings) with `accentHot #ff7a3d` and `accentDeep #c63f10` for highlights and pressed states. Status: `statusOk #3fb950` (sync, signed), `statusWarn #f5a524` (recert reval, pending), `statusErr #e5484d` (errors, amendments, missing). Cert level chips: `certL1 #6fb7ff`, `certL2 #ffb857`, `certL3 #ff7a3d`. Spacing base 4px (`xs|sm|md|base|lg|xl|xxl`). Sharp corners by default (`radii.none = 0`). Touch targets: 48px minimum, 56px preferred — glove use is assumed. Typography: **JetBrains Mono** for body/numeric/mono variants (`display` 46px gauge numerator, `h1/h2/h3`, `body/bodyBold/bodySmall`, `numeric`, `caption`, `mono`); **Michroma** stencil for `stencil`/`stencilSm`/`stencilLg`/`label`/`micro` (section labels, brand mark, button labels). All legacy color and typography keys are aliased to the new palette so older code paths keep working.
 
-React Query hooks in `src/hooks/` wrap service calls: `useProfile`, `useEntries`, `useSignatures`, `useBackupReminder` (local reminders), `useAuthSession`, `useBackup`, `useBackupStatus`, `useRestore`, `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`. `useSignEntry` accepts an optional `afterSign` callback — `SignatureScreen` passes `() => backup.mutate()` to trigger a cloud backup as a post-sign side effect without any event-bus indirection.
+React Query hooks in `src/hooks/` wrap service calls: `useProfile`, `useEntries`, `useSignatures`, `useBackupReminder` (local reminders), `useAuthSession`, `useBackup`, `useBackupStatus`, `useRestore`, `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`, `useSubscriptionTier` / `useSubscriptionPackages` / `usePurchasePackage` / `useRestorePurchases`. `useSignEntry` accepts an optional `afterSign` callback — `SignatureScreen` passes `() => backup.mutate()` to trigger a cloud backup as a post-sign side effect without any event-bus indirection.
 
-Composite `src/components/` are wider than a primitive but narrower than a screen — currently `ProfileCloudSection` and `DeleteAccountModal`, both mounted inside `ProfileScreen`.
+Composite `src/components/` are wider than a primitive but narrower than a screen — currently `ProfileCloudSection`, `DeleteAccountModal`, and `SupervisorsSection`, all mounted inside `ProfileScreen`.
 
 ## Navigation
 
-`src/navigation/RootNavigator.tsx` owns a single `NavigationContainer` with a native-stack of gated branches. If `useProfile()` returns no profile, the Onboarding branch is shown (Onboarding + Auth + MagicLinkWait screens). Once a profile exists and an authenticated session is present, the cloud-state preview runs; if `preview.data.backup_id !== backupStatus.last_uploaded_backup_id` and both local and cloud have data, the CloudConflict branch is the sole route until resolved (Scenario C). Otherwise the Main branch is rendered with bottom tabs (Logbook, Profile) plus stack screens for EntryForm, EntryDetail, Signature, Auth, and MagicLinkWait.
+`src/navigation/RootNavigator.tsx` owns a single `NavigationContainer` with a native-stack of gated branches. If `useProfile()` returns no profile, the Onboarding branch is shown (Onboarding + Auth + MagicLinkWait screens). Once a profile exists and an authenticated session is present, the cloud-state preview runs; if `preview.data.backup_id !== backupStatus.last_uploaded_backup_id` and both local and cloud have data, the CloudConflict branch is the sole route until resolved (Scenario C). Otherwise the Main branch is rendered with bottom tabs — **Dashboard** (primary), **Profile**, and **Inbox** (conditionally when supervisor capability is on) — plus stack screens for `LogbookList` (the demoted entry list, reachable from Dashboard's "ALL N →" link), EntryForm, EntryDetail, Signature, Auth, MagicLinkWait, SupervisorSearch, SignRequestDetail, and Paywall (modal). The standalone `AnalyticsScreen` was deleted in the UI overhaul; its features (work breakdown, year-over-year stats) live on the Dashboard.
 
-All three cloud-related screens (`AuthScreen`, `MagicLinkWaitScreen`, `CloudConflictScreen`) are registered in the stack. `AuthScreen` and `MagicLinkWaitScreen` opt into header display with titles; the rest of the stack runs with `headerShown: false`. The top-level headerless default is a known UX gap captured in the entry-logging enhancements spec — several screens have no visible back chevron and no cue that iOS edge-swipe-back is available.
+Cloud-related screens (`AuthScreen`, `MagicLinkWaitScreen`, `CloudConflictScreen`) and the `LogbookList` sub-screen are registered in the stack. The default stack header is themed dark (bgRaised chrome with edgeHi hairline divider, Michroma title). Individual screens opt out via `headerShown: false`.
 
-`App.tsx` bootstraps: the `react-native-url-polyfill/auto` import sits above every other import (it must load before `@supabase/supabase-js` pulls in `URL`). After `initializeDatabase()` succeeds, an `AppState` listener fires a best-effort cloud backup on every transition to `background`, and an `expo-linking` listener consumes `logbook://auth-callback` URLs for magic-link completion.
+`App.tsx` bootstraps in this order:
+
+1. `react-native-url-polyfill/auto` sits above every other import (it must load before `@supabase/supabase-js` pulls in `URL`).
+2. `initializeDatabase()` runs; while it's running a `LoadingSpinner` is shown.
+3. On DB-ready, `createSubscriptionService(db).init()` configures RevenueCat with the platform-appropriate key from `app.config.ts`'s `extra` block.
+4. An `AppState` listener is attached: `background` fires a best-effort `cloudBackupService.backup()`; `active` fires best-effort `supervisorConnectionsService.sync()` + `signRequestsService.sync()` so invites and incoming sign requests catch up after the app returns from the background.
+5. An `expo-linking` listener consumes `logbook://auth-callback` URLs for magic-link completion.
 
 ## Cloud backup
 
-Supabase hosts Auth + Storage only — no Postgres tables are used. The single private bucket `logbook-backups` is RLS-gated by `(storage.foldername(name))[1] = auth.uid()::text`, provisioned via `supabase/migrations/20260416_storage_bucket_and_rls.sql`. The only server-side code is the `delete-account` Edge Function (`supabase/functions/delete-account/index.ts`), which runs with service-role privileges and derives the caller's `user_id` from the request JWT — never accepts it as a parameter.
+The cloud-backup feature itself uses only Auth + Storage — no Postgres tables. (Postgres is used elsewhere in the project: supervisor accounts, `push_tokens`, pg_cron housekeeping. See those sections.) The single private bucket `logbook-backups` is RLS-gated by `(storage.foldername(name))[1] = auth.uid()::text`, provisioned via `supabase/migrations/20260416_storage_bucket_and_rls.sql`. The `delete-account` Edge Function (`supabase/functions/delete-account/index.ts`) runs with service-role privileges and derives the caller's `user_id` from the request JWT — never accepts it as a parameter.
 
 Config is read from `SUPABASE_URL` and `SUPABASE_ANON_KEY` env vars via `app.config.ts`'s `extra` block; `src/config.ts::getConfig()` throws if either is missing. The service-role key lives only in deployed Edge Function secrets, never in the client bundle.
 
@@ -182,9 +194,36 @@ Two new cache tables: `supervisor_connections_cache` and `sign_requests_cache` �
 - **Realtime**: `subscribeConnections` and `subscribeSignRequests` use Supabase Realtime against the supervisor tables (added to the `supabase_realtime` publication in the migration). The mock fires sync callbacks synchronously.
 - **Offline**: supervisor-accounts **writes require online** and fail fast with a "connection required" banner. Reads serve from the SQLite cache.
 
+## Push notifications
+
+Remote push is dispatched **from the device that performed the mutation**, not from a Postgres trigger. This was a deliberate change (`refactor(notifications): dispatch from client instead of DB trigger`) — no `pg_net`, no `ALTER DATABASE` config, no `after insert` triggers.
+
+Wiring:
+
+- `push_tokens` table (`supabase/migrations/20260420_push_tokens.sql`) stores per-user Expo push tokens. The client registers its token on login via `CloudClient.registerPushToken`.
+- Every mutation in `signRequestsService` (send / withdraw / decline / sign) calls `cloud.notifySignRequest(type, record, oldRecord)` after the underlying Postgres write succeeds.
+- `notifySignRequest` in `supabaseClient.ts` invokes the `notify-sign-request` Edge Function with the caller's authenticated session.
+- The Edge Function (`supabase/functions/notify-sign-request/index.ts`) verifies the JWT, re-reads the `sign_requests` row with the service-role key, confirms the caller is a party to it, resolves the *other* party's push token from `push_tokens`, and POSTs to `https://exp.host/--/api/v2/push/send`.
+- A failed `notifySignRequest` never fails the underlying sign-request mutation — it's fire-and-forget from the service's perspective.
+
+Local notifications (cert expiry at 60 days and at-expiry, plus the supervisor-side "new request" tap target) go through `expo-notifications` and don't touch Supabase.
+
+## Subscriptions / Pro tier
+
+`subscriptionService.ts` wraps `react-native-purchases` (RevenueCat) and resolves the user to `'free' | 'pro'` based on the `pro` entitlement (`ENTITLEMENT_ID = 'pro'`). Keys live in `app.config.ts`'s `extra` as `revenueCatAppleKey` / `revenueCatGoogleKey`, fed from `.env` at build time; `init()` picks the right one per platform and warns if absent. `getTier()` falls back to `profile.subscription_tier` on offline / RevenueCat failures, which is how Pro gating survives without network — every resolution writes the tier back into `profile.subscription_tier`.
+
+Surfaces:
+
+- `PaywallScreen` is registered as a modal in the root stack and presents RevenueCat's packages with a Restore button.
+- `AnalyticsScreen` is Pro-gated — `ProfileScreen` routes to `Paywall` instead when `tier !== 'pro'`.
+- Search by name (as opposed to cert number) in `SupervisorSearchScreen` is a Pro feature; non-Pro users see `ProBadge` affordances linking to Paywall.
+- `ProfileCloudSection` surfaces Pro status on the cloud-backup card.
+
+Hooks in `src/hooks/useSubscription.ts`: `useSubscriptionTier`, `useSubscriptionPackages`, `usePurchasePackage`, `useRestorePurchases`. All invalidate the `profile` query on success so the persisted tier stays in sync with React Query cache. The subscription tier is intentionally *not* part of the cloud backup snapshot — it's owned by RevenueCat and resolved per-device.
+
 ## Testing
 
-The suite currently has **17 test files / 132 tests** (`__tests__/services/` × 12, `__tests__/db/` × 3, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
+The suite currently has **17 test files / 150 tests** (`__tests__/services/` × 12, `__tests__/db/` × 3, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
 
 Cloud tests use `createMockCloudClient()` + `createMockFs()`. The jest config (`jest.config.js`) uses the `jest-expo` preset and `transformIgnorePatterns` tuned to leave RN / Expo packages untransformed. Individual service test files mock `expo-file-system/legacy` with a stable `documentDirectory` (see the top of `signingService.test.ts`) so `normalizeAppPath` behaves deterministically; `@react-native-async-storage/async-storage` is mocked with an in-memory map as part of the jest-expo preset.
 
@@ -207,7 +246,7 @@ All persistent images live under `FileSystem.documentDirectory/logbook/` with su
 ## Known state
 
 - `npx tsc --noEmit` is clean. `supabase/` is excluded from the app's tsconfig — the `delete-account` Edge Function is Deno code (URL imports, `Deno` global) and doesn't participate in the app type check.
-- `npx jest` is clean: 132 passed, 17 suites (run with `--runInBand` if you see flakes from parallel mock-cloud state).
+- `npx jest` is clean: 150 passed, 17 suites (run with `--runInBand` if you see flakes from parallel mock-cloud state).
 
 ## Not yet implemented
 
@@ -216,5 +255,4 @@ These features are part of this app's scope but not yet built. They are not defe
 - **Cryptographic keypair signing** — true non-repudiation (per-user or per-signature keypairs), replacing the current SHA-256 content-hash trust model. Paired device attestation is likely.
 - **Live multi-device sync** — continuous sync rather than the current triggered snapshot backup. Concurrent edits on two devices currently produce Scenario C and require explicit resolution.
 - **Org / company accounts with admin roles** — multi-user tenant model, admin dashboards, org-scoped policy.
-- **Dark mode** — full themed dark variant.
 - **Saved entry templates** — reusable entry presets for common work patterns.

@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { Screen, Button, Card, SectionHeader, RopeDivider } from '../primitives';
+import { Screen, Button, Card, SectionHeader, LoadingSpinner } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSubscriptionPackages, usePurchasePackage, useRestorePurchases } from '../hooks/useSubscription';
 import { PurchasesPackage } from 'react-native-purchases';
@@ -76,7 +76,7 @@ export function PaywallScreen({ navigation }: Props) {
         </Card>
 
         {isLoadingPackages ? (
-          <ActivityIndicator size="large" color={colors.accent} />
+          <LoadingSpinner label="Loading offers" style={{ paddingVertical: spacing.xl }} />
         ) : packages && packages.length > 0 ? (
           <View style={{ gap: spacing.md }}>
             {packages.map((pkg) => (
@@ -96,10 +96,7 @@ export function PaywallScreen({ navigation }: Props) {
         )}
 
         <View style={styles.footer}>
-          <View style={{ width: '60%', alignItems: 'center', marginBottom: spacing.sm }}>
-            <RopeDivider opacity={0.3} />
-          </View>
-          <Button 
+          <Button
             variant="ghost" 
             title={restore.isPending ? "Restoring..." : "Restore Purchases"} 
             onPress={handleRestore} 

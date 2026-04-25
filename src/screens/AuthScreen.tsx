@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Button, Input, Banner, Card, SectionHeader, RopeDivider } from '../primitives';
+import { Screen, Button, Input, Banner, Card, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createAuthService } from '../services/authService';
@@ -99,9 +99,6 @@ export function AuthScreen() {
           />
         </Card>
 
-        <View style={{ alignItems: 'center', marginTop: spacing.xl, width: 80, alignSelf: 'center' }}>
-          <RopeDivider />
-        </View>
       </View>
     </Screen>
   );

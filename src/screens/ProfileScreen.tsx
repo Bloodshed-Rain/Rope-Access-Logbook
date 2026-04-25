@@ -182,20 +182,6 @@ export function ProfileScreen() {
         <SectionLabel index="02" label="REPORTS & EXPORTS" />
         <Card>
           <View style={{ gap: spacing.s3 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Button
-                title="View Pro Analytics"
-                onPress={() =>
-                  tier === 'pro' ? navigation.navigate('Analytics') : navigation.navigate('Paywall')
-                }
-                style={{ flex: 1 }}
-                variant="secondary"
-              />
-              {tier !== 'pro' && <ProBadge />}
-            </View>
-
-            <View style={{ height: 1, backgroundColor: colors.edgeBase, marginVertical: spacing.s1 }} />
-
             {daysSinceBackup !== null ? (
               <Text style={[typography.bodySmall, { color: colors.inkTertiary }]}>
                 Last backed up: {daysSinceBackup} days ago

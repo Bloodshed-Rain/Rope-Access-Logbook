@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
-import { Screen, Card, SectionHeader, RopeDivider } from '../primitives';
+import { Screen, Card, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { Mail } from 'lucide-react-native';
 
@@ -31,9 +31,6 @@ export function MagicLinkWaitScreen() {
           </Text>
         </Card>
 
-        <View style={{ alignItems: 'center', marginTop: spacing.xl, width: 80, alignSelf: 'center' }}>
-          <RopeDivider />
-        </View>
       </View>
     </Screen>
   );

@@ -7,7 +7,7 @@ import { rehydrateAppPath } from '../utils/paths';
 import { scheduleCertExpiryNotifications } from '../utils/notifications';
 
 const MAX_CLOUD_SCHEMA_VERSION = 2;
-const MAX_DB_SCHEMA_VERSION = 1;
+const MAX_DB_SCHEMA_VERSION = 2;
 
 export interface RestoreDeps {
   db: DbClient;

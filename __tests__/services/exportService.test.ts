@@ -54,7 +54,7 @@ describe('exportService', () => {
       const backup = await exportService.exportAsJson('1.0.0');
 
       expect(backup.app_version).toBe('1.0.0');
-      expect(backup.schema_version).toBe(1);
+      expect(backup.schema_version).toBe(2);
       expect(backup.profile.full_name).toBe('John');
       expect(backup.entries).toHaveLength(1);
       expect(backup.entries[0].work_types).toEqual(['inspection']);

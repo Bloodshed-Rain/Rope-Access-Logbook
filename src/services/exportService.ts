@@ -55,7 +55,7 @@ export function createExportService(db: DbClient) {
         profile,
         entries,
         signatures,
-        schema_version: 1,
+        schema_version: 2,
       };
     },
 
