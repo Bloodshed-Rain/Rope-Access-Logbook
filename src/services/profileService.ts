@@ -12,11 +12,13 @@ type UuidFn = () => string;
 // converts before returning.
 type ProfileRow = Omit<
   Profile,
-  'photos_in_backup' | 'supervisor_capability_enabled' | 'supervisor_directory_visible'
+  'photos_in_backup' | 'supervisor_capability_enabled' | 'supervisor_directory_visible' | 'holds_sprat' | 'holds_irata'
 > & {
   photos_in_backup: number;
   supervisor_capability_enabled: number;
   supervisor_directory_visible: number;
+  holds_sprat: number;
+  holds_irata: number;
 };
 
 function rowToProfile(row: ProfileRow | null | undefined): Profile | null {
@@ -26,6 +28,8 @@ function rowToProfile(row: ProfileRow | null | undefined): Profile | null {
     photos_in_backup: !!row.photos_in_backup,
     supervisor_capability_enabled: !!row.supervisor_capability_enabled,
     supervisor_directory_visible: !!row.supervisor_directory_visible,
+    holds_sprat: !!row.holds_sprat,
+    holds_irata: !!row.holds_irata,
   };
 }
 
@@ -34,10 +38,26 @@ export function createProfileService(db: DbClient, uuid: UuidFn = generateId) {
     async createProfile(input: CreateProfileInput): Promise<Profile> {
       const now = new Date().toISOString();
       const id = uuid();
+      const holdsIrata = input.holds_irata ?? false;
+      // Validate IRATA block coherence: if holds_irata, all IRATA fields required.
+      if (holdsIrata && (!input.irata_id || !input.irata_level || !input.irata_expires_on)) {
+        throw new Error('IRATA block incomplete');
+      }
       await db.run(
-        `INSERT INTO profile (id, full_name, sprat_id, level, cert_expires_on, default_employer, sprat_card_photo_path, last_backup_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, input.full_name, input.sprat_id, input.level, input.cert_expires_on, input.default_employer, input.sprat_card_photo_path ?? null, null, now, now],
+        `INSERT INTO profile (
+            id, full_name,
+            holds_sprat, sprat_id, level, cert_expires_on, sprat_card_photo_path,
+            holds_irata, irata_id, irata_level, irata_expires_on, irata_card_photo_path,
+            primary_cert,
+            default_employer, last_backup_at, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id, input.full_name,
+          1, input.sprat_id, input.level, input.cert_expires_on, input.sprat_card_photo_path ?? null,
+          holdsIrata ? 1 : 0, input.irata_id ?? null, input.irata_level ?? null, input.irata_expires_on ?? null, input.irata_card_photo_path ?? null,
+          input.primary_cert ?? 'sprat',
+          input.default_employer, null, now, now,
+        ],
       );
       return (await this.getProfile())!;
     },

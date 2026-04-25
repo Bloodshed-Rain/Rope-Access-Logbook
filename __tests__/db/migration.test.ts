@@ -103,4 +103,88 @@ describe('runSchemaMigrations', () => {
     expect(row?.date_from).toBe('2026-03-10');
     expect(row?.date_to).toBe('2026-03-15');
   });
+
+  // Dual-cert (IRATA + SPRAT) migration
+
+  it('adds irata_level_snapshot column to entries', async () => {
+    const db = createLegacyTestClient();
+    await runSchemaMigrations(db);
+    const cols = await listColumns(db, 'entries');
+    expect(cols).toContain('irata_level_snapshot');
+  });
+
+  it('rebuilds profile to add IRATA columns + holds_*/primary_cert flags', async () => {
+    const db = createLegacyTestClient();
+    await runSchemaMigrations(db);
+    const cols = await listColumns(db, 'profile');
+    expect(cols).toContain('holds_sprat');
+    expect(cols).toContain('holds_irata');
+    expect(cols).toContain('irata_id');
+    expect(cols).toContain('irata_level');
+    expect(cols).toContain('irata_expires_on');
+    expect(cols).toContain('irata_card_photo_path');
+    expect(cols).toContain('primary_cert');
+  });
+
+  it('preserves all legacy SPRAT-only profile values across the rebuild', async () => {
+    const db = createLegacyTestClient();
+    await db.run(
+      `INSERT INTO profile (id, full_name, sprat_id, level, cert_expires_on, default_employer, sprat_card_photo_path, last_backup_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['p-legacy', 'Jane Tech', 'S-9107', 'II', '2027-05-01', 'Acme', '/photos/card.jpg', '2026-04-01', '2026-04-01', '2026-04-15'],
+    );
+    await runSchemaMigrations(db);
+    const row = await db.get<{
+      id: string; full_name: string; sprat_id: string; level: string;
+      cert_expires_on: string; default_employer: string; sprat_card_photo_path: string;
+      last_backup_at: string;
+      holds_sprat: number; holds_irata: number;
+      irata_id: string | null; irata_level: string | null; irata_expires_on: string | null; irata_card_photo_path: string | null;
+      primary_cert: string;
+    }>('SELECT * FROM profile WHERE id = ?', ['p-legacy']);
+    expect(row).toBeTruthy();
+    expect(row!.full_name).toBe('Jane Tech');
+    expect(row!.sprat_id).toBe('S-9107');
+    expect(row!.level).toBe('II');
+    expect(row!.cert_expires_on).toBe('2027-05-01');
+    expect(row!.default_employer).toBe('Acme');
+    expect(row!.sprat_card_photo_path).toBe('/photos/card.jpg');
+    expect(row!.last_backup_at).toBe('2026-04-01');
+    expect(row!.holds_sprat).toBe(1);
+    expect(row!.holds_irata).toBe(0);
+    expect(row!.irata_id).toBeNull();
+    expect(row!.irata_level).toBeNull();
+    expect(row!.irata_expires_on).toBeNull();
+    expect(row!.irata_card_photo_path).toBeNull();
+    expect(row!.primary_cert).toBe('sprat');
+  });
+
+  it('profile rebuild is idempotent — running migrations twice does not error or duplicate', async () => {
+    const db = createLegacyTestClient();
+    await db.run(
+      `INSERT INTO profile (id, full_name, sprat_id, level, cert_expires_on, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ['p-1', 'Tech', 'S1', 'I', '2027-01-01', '2026-04-01', '2026-04-01'],
+    );
+    await runSchemaMigrations(db);
+    await expect(runSchemaMigrations(db)).resolves.not.toThrow();
+    const rows = await db.getAll<{ id: string }>('SELECT id FROM profile');
+    expect(rows.length).toBe(1);
+  });
+
+  it('legacy entries get NULL irata_level_snapshot', async () => {
+    const db = createLegacyTestClient();
+    await db.run(
+      `INSERT INTO entries (id, date, employer, site, client, description, work_hours, tech_level_snapshot, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['e-old', '2026-03-10', 'Emp', 'Site', 'Cli', 'Desc', 8, 'II', '2026-03-10', '2026-03-10'],
+    );
+    await runSchemaMigrations(db);
+    const row = await db.get<{ irata_level_snapshot: string | null; tech_level_snapshot: string }>(
+      'SELECT irata_level_snapshot, tech_level_snapshot FROM entries WHERE id = ?',
+      ['e-old'],
+    );
+    expect(row?.tech_level_snapshot).toBe('II');
+    expect(row?.irata_level_snapshot).toBeNull();
+  });
 });

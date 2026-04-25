@@ -1,6 +1,6 @@
 // src/services/entriesService.ts
 import { DbClient } from '../db/client';
-import { Entry, EntryRow, CreateEntryInput, UpdateEntryInput, SpratLevel } from '../types';
+import { Entry, EntryRow, CreateEntryInput, UpdateEntryInput, SpratLevel, CertLevel } from '../types';
 import { generateId } from '../utils/uuid';
 
 type UuidFn = () => string;
@@ -21,6 +21,7 @@ function rowToEntry(row: EntryRow): Entry {
     description: row.description,
     work_hours: row.work_hours,
     tech_level_snapshot: row.tech_level_snapshot,
+    irata_level_snapshot: row.irata_level_snapshot ?? null,
     work_types: JSON.parse(row.work_types),
     other_work_description: row.other_work_description,
     equipment_notes: row.equipment_notes,
@@ -37,7 +38,7 @@ function rowToEntry(row: EntryRow): Entry {
 
 export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
   return {
-    async createEntry(input: CreateEntryInput, techLevel: SpratLevel): Promise<Entry> {
+    async createEntry(input: CreateEntryInput, techLevel: SpratLevel, iratLevel: CertLevel | null = null): Promise<Entry> {
       const now = new Date().toISOString();
       const id = uuid();
       const today = now.substring(0, 10);
@@ -46,12 +47,12 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
       // `date` column kept in sync with date_from so legacy v1/v2 hash algorithms
       // that still read it continue to work for newly-written rows.
       await db.run(
-        `INSERT INTO entries (id, date, date_from, date_to, employer, site, client, description, work_hours, tech_level_snapshot, work_types, other_work_description, equipment_notes, weather, photo_paths, status, amends_entry_id, amendment_reason, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?)`,
+        `INSERT INTO entries (id, date, date_from, date_to, employer, site, client, description, work_hours, tech_level_snapshot, irata_level_snapshot, work_types, other_work_description, equipment_notes, weather, photo_paths, status, amends_entry_id, amendment_reason, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?)`,
         [
           id, dateFrom, dateFrom, dateTo,
           input.employer ?? '', input.site ?? '', input.client ?? '', input.description ?? '',
-          input.work_hours ?? 0, techLevel, JSON.stringify(input.work_types ?? []),
+          input.work_hours ?? 0, techLevel, iratLevel, JSON.stringify(input.work_types ?? []),
           input.other_work_description ?? null,
           input.equipment_notes ?? null, input.weather ?? null,
           JSON.stringify(input.photo_paths ?? []),
@@ -124,7 +125,7 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
       await db.run('DELETE FROM entries WHERE id = ?', [id]);
     },
 
-    async createAmendment(originalEntryId: string, reason: string, techLevel: SpratLevel): Promise<Entry> {
+    async createAmendment(originalEntryId: string, reason: string, techLevel: SpratLevel, iratLevel: CertLevel | null = null): Promise<Entry> {
       const original = await this.getEntry(originalEntryId);
       if (!original) throw new Error('Entry not found');
       if (original.status !== 'signed') throw new Error('Can only amend signed entries');
@@ -147,6 +148,7 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
           amendment_reason: reason,
         },
         techLevel,
+        iratLevel,
       );
     },
 

@@ -23,6 +23,7 @@ function rowToEntry(row: EntryRow): Entry {
     description: row.description,
     work_hours: row.work_hours,
     tech_level_snapshot: row.tech_level_snapshot,
+    irata_level_snapshot: row.irata_level_snapshot ?? null,
     work_types: JSON.parse(row.work_types),
     other_work_description: row.other_work_description,
     equipment_notes: row.equipment_notes,

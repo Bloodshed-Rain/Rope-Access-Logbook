@@ -36,6 +36,40 @@ describe('profileService', () => {
       const profile = await service.createProfile(validInput);
       expect(profile.last_backup_at).toBeNull();
     });
+
+    it('defaults legacy profile to SPRAT-only with primary_cert=sprat', async () => {
+      const profile = await service.createProfile(validInput);
+      expect(profile.holds_sprat).toBe(true);
+      expect(profile.holds_irata).toBe(false);
+      expect(profile.primary_cert).toBe('sprat');
+      expect(profile.irata_id).toBeNull();
+      expect(profile.irata_level).toBeNull();
+      expect(profile.irata_expires_on).toBeNull();
+      expect(profile.irata_card_photo_path).toBeNull();
+    });
+
+    it('creates a dual-cert profile when IRATA fields supplied', async () => {
+      const profile = await service.createProfile({
+        ...validInput,
+        holds_irata: true,
+        irata_id: 'IRATA-188421',
+        irata_level: 'I',
+        irata_expires_on: '2027-08-04',
+        primary_cert: 'irata',
+      });
+      expect(profile.holds_sprat).toBe(true);
+      expect(profile.holds_irata).toBe(true);
+      expect(profile.irata_id).toBe('IRATA-188421');
+      expect(profile.irata_level).toBe('I');
+      expect(profile.irata_expires_on).toBe('2027-08-04');
+      expect(profile.primary_cert).toBe('irata');
+    });
+
+    it('rejects creating an IRATA-flagged profile with missing IRATA fields', async () => {
+      await expect(
+        service.createProfile({ ...validInput, holds_irata: true } as CreateProfileInput),
+      ).rejects.toThrow(/IRATA block incomplete/);
+    });
   });
 
   describe('getProfile', () => {

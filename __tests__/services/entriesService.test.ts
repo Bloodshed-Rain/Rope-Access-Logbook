@@ -36,6 +36,17 @@ describe('entriesService', () => {
       expect(entry.id).toBe('entry-1');
     });
 
+    it('defaults irata_level_snapshot to null when omitted', async () => {
+      const entry = await service.createEntry(validInput, 'II');
+      expect(entry.irata_level_snapshot).toBeNull();
+    });
+
+    it('snapshots both SPRAT and IRATA levels when both supplied', async () => {
+      const entry = await service.createEntry(validInput, 'II', 'I');
+      expect(entry.tech_level_snapshot).toBe('II');
+      expect(entry.irata_level_snapshot).toBe('I');
+    });
+
     it('stores work_types as JSON string in DB', async () => {
       await service.createEntry(validInput, 'I');
       const row = await db.get<{ work_types: string }>('SELECT work_types FROM entries WHERE id = ?', ['entry-1']);

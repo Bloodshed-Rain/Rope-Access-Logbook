@@ -100,7 +100,7 @@ test('decline stores reason and transitions to declined', async () => {
   // Seed a request directly on the mock server, act as supervisor
   const entry: Entry = {
     id: 'e1', date_from: '2026-03-01', date_to: '2026-03-01', employer: 'Acme', site: 'Site',
-    client: 'Client', description: 'Desc', work_hours: 8, tech_level_snapshot: 'II',
+    client: 'Client', description: 'Desc', work_hours: 8, tech_level_snapshot: 'II', irata_level_snapshot: null,
     work_types: ['inspection'], other_work_description: null, equipment_notes: null, weather: null,
     photo_paths: [], status: 'draft', amends_entry_id: null, amendment_reason: null,
     pending_sign_request_id: 'r1',
@@ -126,7 +126,7 @@ test('sign uploads PNG, transitions row to signed with v3 hash', async () => {
   const { service, cloud, db } = await setup();
   const entry: Entry = {
     id: 'e1', date_from: '2026-03-01', date_to: '2026-03-01', employer: 'Acme', site: 'Site',
-    client: 'Client', description: 'Desc', work_hours: 8, tech_level_snapshot: 'II',
+    client: 'Client', description: 'Desc', work_hours: 8, tech_level_snapshot: 'II', irata_level_snapshot: null,
     work_types: ['inspection'], other_work_description: null, equipment_notes: null, weather: null,
     photo_paths: [], status: 'draft', amends_entry_id: null, amendment_reason: null,
     pending_sign_request_id: 'r2',

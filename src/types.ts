@@ -1,6 +1,10 @@
 // src/types.ts
 
 export type SpratLevel = 'I' | 'II' | 'III';
+// CertLevel is the scheme-agnostic alias. SpratLevel kept for backwards compat
+// with the many call sites that read profile.level as a SPRAT level today.
+export type CertLevel = SpratLevel;
+export type CertScheme = 'irata' | 'sprat';
 
 export type EntryStatus = 'draft' | 'signed' | 'amended';
 
@@ -18,11 +22,25 @@ export type WorkType =
 export interface Profile {
   id: string;
   full_name: string;
+  // SPRAT block. DB columns sprat_id/level/cert_expires_on are nullable so
+  // IRATA-only users are first-class. Types here are non-null because every
+  // user reachable from current code paths is a SPRAT holder; the IRATA-only
+  // path lands with the cert-selection UI in a later commit, at which point
+  // these tighten to nullable across consumers.
+  holds_sprat: boolean;
   sprat_id: string;
   level: SpratLevel;
   cert_expires_on: string;
-  default_employer: string;
   sprat_card_photo_path: string | null;
+  // IRATA block. Nullable from day one (no legacy data to honor).
+  holds_irata: boolean;
+  irata_id: string | null;
+  irata_level: CertLevel | null;
+  irata_expires_on: string | null;
+  irata_card_photo_path: string | null;
+  // Drives the dashboard cert toggle's default segment.
+  primary_cert: CertScheme;
+  default_employer: string;
   last_backup_at: string | null;
   photos_in_backup: boolean;
   last_cloud_backup_at: string | null;
@@ -44,7 +62,14 @@ export interface Entry {
   client: string;
   description: string;
   work_hours: number;
+  // tech_level_snapshot is the SPRAT level at entry creation. Kept under its
+  // legacy name to preserve v1/v2/v3 hash compatibility — every signed entry
+  // already carries a hash that includes this exact key.
   tech_level_snapshot: SpratLevel;
+  // IRATA level at entry creation. Null on legacy entries (pre-dual-cert) and
+  // on entries by techs who don't hold IRATA. Deliberately NOT in canonical
+  // hash input — adding it would invalidate every existing signature.
+  irata_level_snapshot: CertLevel | null;
   work_types: WorkType[];
   other_work_description: string | null;
   equipment_notes: string | null;
@@ -72,6 +97,7 @@ export interface EntryRow {
   description: string;
   work_hours: number;
   tech_level_snapshot: SpratLevel;
+  irata_level_snapshot: CertLevel | null;
   work_types: string;
   other_work_description: string | null;
   equipment_notes: string | null;
@@ -150,6 +176,14 @@ export interface CreateProfileInput {
   cert_expires_on: string;
   default_employer: string;
   sprat_card_photo_path?: string;
+  // IRATA fields — optional. If holds_irata is set, the rest of the IRATA
+  // block must be present.
+  holds_irata?: boolean;
+  irata_id?: string;
+  irata_level?: CertLevel;
+  irata_expires_on?: string;
+  irata_card_photo_path?: string;
+  primary_cert?: CertScheme;
 }
 
 export interface UpdateProfileInput {
@@ -159,6 +193,13 @@ export interface UpdateProfileInput {
   cert_expires_on?: string;
   default_employer?: string;
   sprat_card_photo_path?: string | null;
+  holds_sprat?: boolean;
+  holds_irata?: boolean;
+  irata_id?: string | null;
+  irata_level?: CertLevel | null;
+  irata_expires_on?: string | null;
+  irata_card_photo_path?: string | null;
+  primary_cert?: CertScheme;
 }
 
 export interface JsonBackup {
