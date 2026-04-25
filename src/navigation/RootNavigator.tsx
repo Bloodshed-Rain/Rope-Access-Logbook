@@ -4,7 +4,7 @@ import { NavigationContainer, createNavigationContainerRef } from '@react-naviga
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, User, Inbox } from 'lucide-react-native';
+import { Gauge as GaugeIcon, BookOpen, User, Inbox } from 'lucide-react-native';
 import { useProfile } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';
 import { useBackupStatus } from '../hooks/useBackupStatus';
@@ -12,8 +12,9 @@ import { useCloudStatePreview } from '../hooks/useRestore';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useNotifications } from '../hooks/useNotifications';
 import { colors } from '../theme/tokens';
-import { RopeDivider } from '../primitives/RopeDivider';
+import { LoadingSpinner } from '../primitives/LoadingSpinner';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { DashboardScreen } from '../screens/DashboardScreen';
 import { LogbookScreen } from '../screens/LogbookScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { EntryFormScreen } from '../screens/EntryFormScreen';
@@ -36,6 +37,7 @@ import { APP_VERSION } from '../constants';
 export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
+  LogbookList: undefined;
   EntryForm: { entryId?: string; amendEntryId?: string } | undefined;
   EntryDetail: { entryId: string };
   Signature: { entryId: string };
@@ -48,7 +50,7 @@ export type RootStackParamList = {
   Analytics: undefined;
 };
 
-export type TabParamList = { Logbook: undefined; Inbox: undefined; Profile: undefined; };
+export type TabParamList = { Dashboard: undefined; Inbox: undefined; Profile: undefined; };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
@@ -57,34 +59,63 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 function TabNavigator({ showInbox }: { showInbox: boolean }) {
   return (
-    <Tab.Navigator screenOptions={{
-      tabBarActiveTintColor: colors.accent,
-      tabBarInactiveTintColor: colors.slateLighter,
-      tabBarStyle: {
-        backgroundColor: colors.navy,
-        borderTopWidth: 2,
-        borderTopColor: colors.accentStripe,
-        paddingTop: 10,
-        paddingBottom: 10,
-        height: 84,
-      },
-      tabBarLabel: ({ focused, color, children }) => (
-        <View style={{ alignItems: 'center', marginTop: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color }}>{children}</Text>
-          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent, marginTop: 4 }} />}
-        </View>
-      ),
-      tabBarIconStyle: { marginBottom: 2 },
-      headerShown: false,
-    }}>
-      <Tab.Screen name="Logbook" component={LogbookScreen}
-        options={{ tabBarIcon: ({ color }) => <BookOpen color={color} size={30} /> }} />
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: colors.accentBase,
+        tabBarInactiveTintColor: colors.inkTertiary,
+        tabBarStyle: {
+          backgroundColor: colors.bgRaised,
+          borderTopWidth: 1,
+          borderTopColor: colors.edgeHi,
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 64,
+        },
+        tabBarLabel: ({ focused, color, children }) => (
+          <View style={{ alignItems: 'center', marginTop: 2 }}>
+            <Text
+              style={{
+                fontFamily: 'Michroma_400Regular',
+                fontSize: 8,
+                letterSpacing: 1.4,
+                color,
+              }}
+            >
+              {String(children).toUpperCase()}
+            </Text>
+            {focused && (
+              <View
+                style={{
+                  width: 16,
+                  height: 1.5,
+                  backgroundColor: colors.accentBase,
+                  marginTop: 3,
+                }}
+              />
+            )}
+          </View>
+        ),
+        tabBarIconStyle: { marginBottom: 0 },
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ tabBarIcon: ({ color }) => <GaugeIcon color={color} size={24} /> }}
+      />
       {showInbox ? (
-        <Tab.Screen name="Inbox" component={InboxScreen}
-          options={{ tabBarIcon: ({ color }) => <Inbox color={color} size={30} /> }} />
+        <Tab.Screen
+          name="Inbox"
+          component={InboxScreen}
+          options={{ tabBarIcon: ({ color }) => <Inbox color={color} size={24} /> }}
+        />
       ) : null}
-      <Tab.Screen name="Profile" component={ProfileScreen}
-        options={{ tabBarIcon: ({ color }) => <User color={color} size={30} /> }} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarIcon: ({ color }) => <User color={color} size={24} /> }}
+      />
     </Tab.Navigator>
   );
 }
@@ -116,22 +147,35 @@ export function RootNavigator() {
     return backupStatus?.last_uploaded_backup_id !== preview.data.backup_id;
   }, [session, profile, localEntries, preview.data, backupStatus]);
 
-  if (isLoading) return null;
-  if (profile && session !== null && sessionLoading) return null;
+  if (isLoading) return <LoadingSpinner fullScreen label="Loading profile" />;
+  if (profile && session !== null && sessionLoading) {
+    return <LoadingSpinner fullScreen label="Checking cloud session" />;
+  }
 
-  // Themed default header: navy chrome, white title/chevrons. Individual
-  // screens can opt out via `headerShown: false` (Onboarding, Main, Conflict).
+  // Themed default header: dark chrome with bottom hairline divider.
+  // Individual screens can opt out via `headerShown: false`.
   const defaultScreenOptions = {
     headerShown: true,
-    headerStyle: { backgroundColor: colors.navy },
-    headerTintColor: colors.textInverse,
-    headerTitleStyle: { fontWeight: '700' as const, letterSpacing: 0.5 },
+    headerStyle: { backgroundColor: colors.bgRaised },
+    headerTintColor: colors.inkPrimary,
+    headerTitleStyle: {
+      fontFamily: 'Michroma_400Regular',
+      fontSize: 11,
+      letterSpacing: 1.6,
+    },
     headerBackTitle: 'Back',
     headerBackground: () => (
-      <View style={{ flex: 1, backgroundColor: colors.navy }}>
-        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-          <RopeDivider color={colors.ropeTan} opacity={0.45} />
-        </View>
+      <View style={{ flex: 1, backgroundColor: colors.bgRaised }}>
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 1,
+            backgroundColor: colors.edgeHi,
+          }}
+        />
       </View>
     ),
   };
@@ -163,6 +207,11 @@ export function RootNavigator() {
             <Stack.Screen name="Main" options={{ headerShown: false }}>
               {() => <TabNavigator showInbox={!!profile?.supervisor_capability_enabled} />}
             </Stack.Screen>
+            <Stack.Screen
+              name="LogbookList"
+              component={LogbookScreen}
+              options={{ title: 'All entries' }}
+            />
             <Stack.Screen
               name="EntryForm"
               component={EntryFormScreen}
