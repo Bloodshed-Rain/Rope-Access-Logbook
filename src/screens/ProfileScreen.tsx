@@ -3,8 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useQueryClient } from '@tanstack/react-query';
-import { HardHat } from 'lucide-react-native';
-import { Screen, Card, Button, Banner, ProgressBar, RopeDivider, SectionHeader } from '../primitives';
+import { Screen, Card, Button, Banner, ProgressBar, SectionLabel, Panel } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile, useUpdateLastBackupAt } from '../hooks/useProfile';
 import { useBackupReminder } from '../hooks/useBackupReminder';
@@ -95,78 +94,129 @@ export function ProfileScreen() {
   };
 
   return (
-    <Screen padded={false} topDivider>
-      <View style={{ backgroundColor: colors.navy }}>
-        <View style={{ paddingHorizontal: spacing.base, paddingTop: spacing.xl, paddingBottom: spacing.lg }}>
-          <Text style={[typography.stencil, { color: colors.ropeTan, marginBottom: spacing.xs }]}>
-            TECHNICIAN
-          </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View>
-              <Text style={[typography.h1, { color: colors.textInverse, fontSize: 32 }]}>{profile.full_name}</Text>
-              <Text style={[typography.stencil, { color: colors.slateLighter, marginTop: spacing.xs }]}>
-                LEVEL {profile.level} · #{profile.sprat_id}
+    <Screen padded={false}>
+      <ScrollView
+        contentContainerStyle={{
+          gap: spacing.s3,
+          paddingTop: spacing.s4,
+          paddingHorizontal: spacing.s5,
+          paddingBottom: spacing.s12,
+        }}
+      >
+        {/* Account header */}
+        <Panel header={{ label: 'TECHNICIAN' }}>
+          <View style={{ paddingHorizontal: spacing.s4, paddingVertical: spacing.s3, gap: 4 }}>
+            <Text
+              style={{
+                fontFamily: 'JetBrainsMono_800ExtraBold',
+                fontSize: 22,
+                color: colors.inkPrimary,
+                letterSpacing: -0.4,
+              }}
+            >
+              {profile.full_name}
+            </Text>
+            {profile.holds_sprat && profile.sprat_id && profile.level && (
+              <Text style={[typography.caption, { color: colors.inkTertiary, letterSpacing: 1.0 }]}>
+                SPRAT · LEVEL {profile.level} · #{profile.sprat_id}
               </Text>
-            </View>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }}>
-              <HardHat color={colors.textInverse} size={24} />
-            </View>
+            )}
+            {profile.holds_irata && profile.irata_id && profile.irata_level && (
+              <Text style={[typography.caption, { color: colors.inkTertiary, letterSpacing: 1.0 }]}>
+                IRATA · LEVEL {profile.irata_level} · #{profile.irata_id}
+              </Text>
+            )}
           </View>
-        </View>
-        <RopeDivider color={colors.ropeTan} opacity={0.45} />
-      </View>
+        </Panel>
 
-      <ScrollView contentContainerStyle={{ gap: spacing.base, paddingVertical: spacing.md, paddingHorizontal: spacing.base, paddingBottom: spacing.xxl }}>
-        {certExpiryStatus === 'expired' && <Banner variant="error" message="Your SPRAT certification has expired." />}
-        {certExpiryStatus === 'warning' && <Banner variant="warning" message="Your SPRAT certification expires within 60 days." />}
-        
-        {progress?.isEligible && !progress.isMaxLevel && !milestoneDismissed && (
-          <Banner variant="success"
-            message={`You have reached ${progress.hoursNeeded} hours! You are eligible to upgrade to Level ${progress.currentLevel === 'I' ? 'II' : 'III'}.`}
-            onDismiss={() => setMilestoneDismissed(true)} />
+        {certExpiryStatus === 'expired' && (
+          <Banner variant="error" message="Your SPRAT certification has expired." />
+        )}
+        {certExpiryStatus === 'warning' && (
+          <Banner variant="warning" message="Your SPRAT certification expires within 60 days." />
         )}
 
-        <SectionHeader label="ACCOUNT INFO" />
-        <Card accent="navy" style={{ gap: spacing.sm }}>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Cert expires: {profile.cert_expires_on}</Text>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Employer: {profile.default_employer}</Text>
+        {progress?.isEligible && !progress.isMaxLevel && !milestoneDismissed && (
+          <Banner
+            variant="success"
+            message={`You have reached ${progress.hoursNeeded} hours! Eligible to upgrade to Level ${
+              progress.currentLevel === 'I' ? 'II' : 'III'
+            }.`}
+            onDismiss={() => setMilestoneDismissed(true)}
+          />
+        )}
+
+        <SectionLabel index="01" label="ACCOUNT" />
+        <Card>
+          <View style={{ gap: spacing.s2 }}>
+            {profile.cert_expires_on && (
+              <Text style={[typography.body, { color: colors.inkSecondary }]}>
+                SPRAT cert expires: {profile.cert_expires_on}
+              </Text>
+            )}
+            {profile.irata_expires_on && (
+              <Text style={[typography.body, { color: colors.inkSecondary }]}>
+                IRATA cert expires: {profile.irata_expires_on}
+              </Text>
+            )}
+            <Text style={[typography.body, { color: colors.inkSecondary }]}>
+              Employer: {profile.default_employer || '—'}
+            </Text>
+          </View>
         </Card>
 
         {progress && !progress.isMaxLevel && (
-          <Card accent="navy" style={{ gap: spacing.sm, marginTop: spacing.xs }}>
-            <Text style={[typography.body, { color: colors.textPrimary, fontWeight: '700' }]}>Level {progress.currentLevel === 'I' ? 'II' : 'III'} Progress</Text>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-              {progress.hoursAtCurrentLevel} / {progress.hoursNeeded} hours
-            </Text>
-            <ProgressBar progress={progress.progress} />
+          <Card>
+            <View style={{ gap: spacing.s2 }}>
+              <Text style={[typography.bodyBold, { color: colors.inkPrimary }]}>
+                Level {progress.currentLevel === 'I' ? 'II' : 'III'} progress
+              </Text>
+              <Text style={[typography.bodySmall, { color: colors.inkSecondary }]}>
+                {progress.hoursAtCurrentLevel} / {progress.hoursNeeded} hours
+              </Text>
+              <ProgressBar progress={progress.progress} />
+            </View>
           </Card>
         )}
 
-        <SectionHeader label="REPORTS & EXPORTS" />
-        <Card accent="navy" style={{ gap: spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Button title="View Pro Analytics" onPress={() => tier === 'pro' ? navigation.navigate('Analytics') : navigation.navigate('Paywall')} style={{ flex: 1 }} variant="secondary" />
-            {tier !== 'pro' && <ProBadge />}
-          </View>
-          
-          <View style={{ height: 1, backgroundColor: colors.hairline, marginVertical: spacing.xs }} />
+        <SectionLabel index="02" label="REPORTS & EXPORTS" />
+        <Card>
+          <View style={{ gap: spacing.s3 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Button
+                title="View Pro Analytics"
+                onPress={() =>
+                  tier === 'pro' ? navigation.navigate('Analytics') : navigation.navigate('Paywall')
+                }
+                style={{ flex: 1 }}
+                variant="secondary"
+              />
+              {tier !== 'pro' && <ProBadge />}
+            </View>
 
-          {daysSinceBackup !== null ? (
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Last backed up: {daysSinceBackup} days ago</Text>
-          ) : (
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Never backed up</Text>
-          )}
-          <Button title="Export full logbook (JSON)" onPress={handleExportJson} variant="secondary" />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Button title="Export full logbook (PDF)" onPress={handleExportPdf} style={{ flex: 1 }} />
-            {tier !== 'pro' && <ProBadge />}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Button title="Export full logbook (CSV)" onPress={handleExportCsv} style={{ flex: 1 }} />
-            {tier !== 'pro' && <ProBadge />}
+            <View style={{ height: 1, backgroundColor: colors.edgeBase, marginVertical: spacing.s1 }} />
+
+            {daysSinceBackup !== null ? (
+              <Text style={[typography.bodySmall, { color: colors.inkTertiary }]}>
+                Last backed up: {daysSinceBackup} days ago
+              </Text>
+            ) : (
+              <Text style={[typography.bodySmall, { color: colors.inkTertiary }]}>
+                Never backed up
+              </Text>
+            )}
+            <Button title="Export full logbook (JSON)" onPress={handleExportJson} variant="secondary" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Button title="Export full logbook (PDF)" onPress={handleExportPdf} style={{ flex: 1 }} />
+              {tier !== 'pro' && <ProBadge />}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Button title="Export full logbook (CSV)" onPress={handleExportCsv} style={{ flex: 1 }} />
+              {tier !== 'pro' && <ProBadge />}
+            </View>
           </View>
         </Card>
-        
+
         <SupervisorsSection />
         <ProfileCloudSection
           db={getClient()}

@@ -1,22 +1,22 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
-import { RopeDivider } from './RopeDivider';
 
 export interface ScreenProps {
   children: React.ReactNode;
   padded?: boolean;
+  // Kept for back-compat; the new aesthetic uses panel chrome / stencil
+  // section labels instead of rope dividers, so this is now a no-op flag.
   topDivider?: boolean;
 }
 
-export function Screen({ children, padded = true, topDivider = false }: ScreenProps) {
+export function Screen({ children, padded = true }: ScreenProps) {
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  
+
   return (
-    <View style={[styles.safe, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
-      {topDivider && <RopeDivider opacity={0.45} />}
+    <View style={[styles.safe, { backgroundColor: colors.bgBase, paddingTop: insets.top }]}>
       <View style={[styles.container, padded && { paddingHorizontal: spacing.s5 }]}>
         {children}
       </View>
