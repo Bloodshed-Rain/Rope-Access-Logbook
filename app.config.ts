@@ -9,10 +9,15 @@ export default (): ExpoConfig => ({
   userInterfaceStyle: 'light',
   newArchEnabled: true,
   scheme: 'logbook',
+  runtimeVersion: { policy: 'fingerprint' },
+  updates: {
+    url: 'https://u.expo.dev/20f2ef58-1e1a-4401-a37e-85024a42b91a',
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.ropeaccess.logbook',
     infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
       NSCameraUsageDescription:
         'Take photos of your SPRAT card and on-site work to attach to logbook entries.',
       NSPhotoLibraryUsageDescription:
