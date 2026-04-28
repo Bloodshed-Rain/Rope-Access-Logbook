@@ -13,6 +13,7 @@ import { useAuthSession } from '../hooks/useAuthSession';
 import { useNotifications } from '../hooks/useNotifications';
 import { colors } from '../theme/tokens';
 import { LoadingSpinner } from '../primitives/LoadingSpinner';
+import { useToast } from '../primitives/Toast';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { LogbookScreen } from '../screens/LogbookScreen';
@@ -124,6 +125,25 @@ export function RootNavigator() {
   useNotifications(cloud);
   const fs = React.useMemo(() => createExpoFsAbstraction(), []);
   const { session, loading: sessionLoading } = useAuthSession(cloud);
+  const toast = useToast();
+  // Track auth transitions to toast on fresh sign-in. Skip the first settled
+  // resolution: on cold boot a previously-signed-in user goes null → session
+  // as AsyncStorage is read, and we don't want a toast on every launch.
+  const sessionSettledOnceRef = React.useRef(false);
+  const prevSessionRef = React.useRef<typeof session>(null);
+  React.useEffect(() => {
+    if (sessionLoading) return;
+    if (!sessionSettledOnceRef.current) {
+      sessionSettledOnceRef.current = true;
+      prevSessionRef.current = session;
+      return;
+    }
+    const prev = prevSessionRef.current;
+    if (!prev && session) {
+      toast.show({ message: 'Signed in', variant: 'ok' });
+    }
+    prevSessionRef.current = session;
+  }, [session, sessionLoading, toast]);
   const db = profile ? getClient() : null;
   const preview = useCloudStatePreview(
     { db: db!, cloud, fs, appVersion: APP_VERSION },

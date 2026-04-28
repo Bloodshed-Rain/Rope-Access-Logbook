@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { copyPhotoToAppStorage } from '../utils/fileStorage';
-import { Screen, Button, Input, Textarea, Chip, Banner, Card, ListRow, SectionHeader } from '../primitives';
+import { Screen, Button, Input, Textarea, Chip, Banner, Card, ListRow, SectionHeader, useToast } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useEntry, useCreateEntry, useUpdateEntry, useCreateAmendment } from '../hooks/useEntries';
@@ -88,6 +88,7 @@ export function EntryFormScreen() {
   const conns = useSupervisorConnections({ db, cloud });
   const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
   const { session } = useAuthSession(cloud);
+  const toast = useToast();
 
   const accepted = (conns.query.data ?? []).filter(
     (c) => c.tech_user_id === session?.user_id && c.status === 'accepted' && c.supervisor_user_id,
@@ -428,6 +429,7 @@ export function EntryFormScreen() {
                                 connection_id: c.id,
                                 supervisor_user_id: c.supervisor_user_id!,
                               });
+                              toast.show({ message: 'Sent for signature', variant: 'ok' });
                               setShowPicker(false);
                               isLeavingIntentionally.current = true;
                               navigation.goBack();

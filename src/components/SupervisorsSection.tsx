@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Card, Button, Input, ListRow } from '../primitives';
+import { Card, Button, Input, ListRow, useToast } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useAuthSession } from '../hooks/useAuthSession';
@@ -39,6 +39,7 @@ export function SupervisorsSection() {
   const { session } = useAuthSession(cloud);
   const profileService = useMemo(() => createProfileService(db), [db]);
   const conns = useSupervisorConnections({ db, cloud });
+  const toast = useToast();
 
   const [showToggleForm, setShowToggleForm] = useState(false);
   const [certInput, setCertInput] = useState('');
@@ -66,6 +67,7 @@ export function SupervisorsSection() {
         // Task 16 will wire the real count.
         await profileService.disableSupervisorCapability(0, cloud);
         conns.query.refetch();
+        toast.show({ message: 'Supervising turned off', variant: 'ok' });
       } catch (e) {
         const msg = (e as Error).message;
         if (msg === 'pending_requests_exist') {
@@ -92,6 +94,7 @@ export function SupervisorsSection() {
       setShowToggleForm(false);
       setCertInput('');
       conns.query.refetch();
+      toast.show({ message: 'Supervising turned on', variant: 'ok' });
     } catch (e) {
       Alert.alert('Could not enable', (e as Error).message);
     }

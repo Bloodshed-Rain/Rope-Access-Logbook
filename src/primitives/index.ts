@@ -13,6 +13,8 @@ export { EmptyState } from './EmptyState';
 export { ProgressBar } from './ProgressBar';
 export { SectionHeader } from './SectionHeader';
 export { LoadingSpinner } from './LoadingSpinner';
+export { ToastProvider, useToast } from './Toast';
+export type { ToastVariant, ToastOptions } from './Toast';
 
 // Industrial-aesthetic primitives (new in commit 3)
 export { Panel } from './Panel';

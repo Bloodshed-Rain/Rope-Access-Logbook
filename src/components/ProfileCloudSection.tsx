@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Switch, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Card, Button, Banner, SectionHeader } from '../primitives';
+import { Card, Button, Banner, SectionHeader, useToast } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useBackupStatus } from '../hooks/useBackupStatus';
@@ -47,6 +47,7 @@ export function ProfileCloudSection({
   });
   const { data: tier } = useSubscriptionTier();
   const [signingOut, setSigningOut] = useState(false);
+  const toast = useToast();
 
   if (loading) return null;
 
@@ -80,6 +81,9 @@ export function ProfileCloudSection({
             setSigningOut(true);
             try {
               await createAuthService(cloud).signOut();
+              toast.show({ message: 'Signed out', variant: 'ok' });
+            } catch (e) {
+              toast.show({ message: `Sign out failed: ${(e as Error).message}`, variant: 'err' });
             } finally {
               setSigningOut(false);
             }
@@ -116,7 +120,15 @@ export function ProfileCloudSection({
           {tier === 'pro' ? (
             <Button
               title={backup.isPending ? 'Backing up…' : 'Back up now'}
-              onPress={() => backup.mutate()}
+              onPress={() =>
+                backup.mutate(undefined, {
+                  onSuccess: (res) => {
+                    if (res.kind === 'uploaded') toast.show({ message: 'Backup uploaded', variant: 'ok' });
+                    else if (res.kind === 'failed') toast.show({ message: `Backup failed: ${res.message}`, variant: 'err' });
+                    else if (res.kind === 'skipped_offline') toast.show({ message: 'Offline — backup skipped', variant: 'warn' });
+                  },
+                })
+              }
               disabled={backup.isPending}
               style={{ flex: 1 }}
             />

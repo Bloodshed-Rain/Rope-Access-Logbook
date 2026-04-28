@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, View, Text } from 'react-native';
-import { Button, Input } from '../primitives';
+import { Button, Input, useToast } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createAuthService } from '../services/authService';
@@ -16,19 +16,26 @@ export function DeleteAccountModal({ visible, onDone, db }: DeleteAccountModalPr
   const { colors, spacing, radii, typography } = useTheme();
   const [step, setStep] = useState<'confirm' | 'type' | 'deleting'>('confirm');
   const [typed, setTyped] = useState('');
+  const toast = useToast();
 
   async function doDelete() {
     setStep('deleting');
     const cloud = createSupabaseCloudClient();
     const auth = createAuthService(cloud);
-    await auth.deleteAccount();
-    await db.run(
-      `UPDATE profile SET last_cloud_backup_at = NULL, last_uploaded_backup_id = NULL, updated_at = ?`,
-      [new Date().toISOString()],
-    );
-    setStep('confirm');
-    setTyped('');
-    onDone();
+    try {
+      await auth.deleteAccount();
+      await db.run(
+        `UPDATE profile SET last_cloud_backup_at = NULL, last_uploaded_backup_id = NULL, updated_at = ?`,
+        [new Date().toISOString()],
+      );
+      toast.show({ message: 'Account deleted', variant: 'ok' });
+    } catch (e) {
+      toast.show({ message: `Delete failed: ${(e as Error).message}`, variant: 'err' });
+    } finally {
+      setStep('confirm');
+      setTyped('');
+      onDone();
+    }
   }
 
   function cancel() {

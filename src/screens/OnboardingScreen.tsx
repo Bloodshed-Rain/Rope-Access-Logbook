@@ -3,7 +3,7 @@ import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressabl
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Svg, { Path } from 'react-native-svg';
-import { Screen, Button, Input } from '../primitives';
+import { Screen, Button, Input, useToast } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useCreateProfile } from '../hooks/useProfile';
 import { SpratLevel } from '../types';
@@ -48,6 +48,7 @@ export function OnboardingScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [employer, setEmployer] = useState('');
   const createProfile = useCreateProfile();
+  const toast = useToast();
 
   const levels: SpratLevel[] = ['I', 'II', 'III'];
 
@@ -152,6 +153,7 @@ export function OnboardingScreen() {
             cert_expires_on: certExpiresOn.trim(), default_employer: employer.trim(),
           }, {
             onSuccess: () => {
+              toast.show({ message: 'Profile created', variant: 'ok' });
               Alert.alert(
                 'Back up your logbook?',
                 'Sign in to keep your logbook safe in the cloud and restore it on a new phone. You can do this later from Profile.',

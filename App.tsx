@@ -14,7 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { LoadingSpinner } from './src/primitives';
+import { LoadingSpinner, ToastProvider } from './src/primitives';
 import { initializeDatabase, getClient } from './src/db/initialize';
 import { colors } from './src/theme/tokens';
 import { createSupabaseCloudClient } from './src/cloud/supabaseClient';
@@ -107,7 +107,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider><RootNavigator /></ThemeProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <RootNavigator />
+          </ToastProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
