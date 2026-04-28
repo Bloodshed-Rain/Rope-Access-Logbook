@@ -50,6 +50,10 @@ export interface CloudClient {
   getCurrentUserId(): string | null;
   signInWithProvider(provider: AuthProvider): Promise<AuthSession>;
   signInWithMagicLink(email: string): Promise<void>;
+  // Called from the deep-link handler when the magic-link callback URL
+  // arrives as logbook://auth-callback?code=... — supabase-js is configured
+  // with detectSessionInUrl: false, so this exchange is explicit.
+  exchangeAuthCode(code: string): Promise<AuthSession>;
   signOut(): Promise<void>;
 
   // Edge Functions

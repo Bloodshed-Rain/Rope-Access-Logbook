@@ -4,6 +4,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
+import { Platform } from 'react-native';
 import { CloudClient, AuthProvider } from './cloudClient';
 import {
   AuthSession as AppAuthSession,
@@ -111,6 +114,34 @@ export function createSupabaseCloudClient(): CloudClient {
     },
 
     async signInWithProvider(provider: AuthProvider) {
+      // iOS Apple Sign In: native flow via expo-apple-authentication →
+      // signInWithIdToken. Android (and any future provider) keeps the
+      // OAuth web flow via expo-web-browser → exchangeCodeForSession.
+      if (provider === 'apple' && Platform.OS === 'ios') {
+        const rawNonce = generateId();
+        const hashedNonce = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          rawNonce,
+        );
+        const credential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+          nonce: hashedNonce,
+        });
+        if (!credential.identityToken) throw new Error('apple_no_identity_token');
+        const { data: idData, error: idErr } = await sb.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+          nonce: rawNonce,
+        });
+        if (idErr) throw idErr;
+        const appNative = sessionToAppSession(idData.session as never);
+        if (!appNative) throw new Error('apple_no_session');
+        return appNative;
+      }
+
       const redirectUri = AuthSession.makeRedirectUri({ scheme: 'logbook', path: 'auth-callback' });
       const { data, error } = await sb.auth.signInWithOAuth({
         provider,
@@ -140,6 +171,14 @@ export function createSupabaseCloudClient(): CloudClient {
         options: { emailRedirectTo: redirectUri },
       });
       if (error) throw error;
+    },
+
+    async exchangeAuthCode(code) {
+      const { data, error } = await sb.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+      const app = sessionToAppSession(data.session as never);
+      if (!app) throw new Error('exchange_no_session');
+      return app;
     },
 
     async signOut() {

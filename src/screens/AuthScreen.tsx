@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Screen, Button, Input, Banner, Card, SectionHeader } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
@@ -63,12 +64,29 @@ export function AuthScreen() {
 
           {error && <Banner variant="error" message={error} />}
 
-          <Button
-            title={loading === 'apple' ? 'Signing in…' : 'Continue with Apple'}
-            onPress={() => signInWith('apple')}
-            disabled={loading !== null}
-            variant="secondary"
-          />
+          {Platform.OS === 'ios' ? (
+            <View
+              style={{
+                opacity: loading !== null ? 0.5 : 1,
+                pointerEvents: loading !== null ? 'none' : 'auto',
+              }}
+            >
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                cornerRadius={0}
+                style={{ width: '100%', height: 48 }}
+                onPress={() => signInWith('apple')}
+              />
+            </View>
+          ) : (
+            <Button
+              title={loading === 'apple' ? 'Signing in…' : 'Continue with Apple'}
+              onPress={() => signInWith('apple')}
+              disabled={loading !== null}
+              variant="secondary"
+            />
+          )}
           <Button
             title={loading === 'google' ? 'Signing in…' : 'Continue with Google'}
             onPress={() => signInWith('google')}

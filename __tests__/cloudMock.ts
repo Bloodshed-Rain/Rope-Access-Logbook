@@ -178,6 +178,19 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
       notifyAuth();
     },
 
+    async exchangeAuthCode(code: string) {
+      const s: AuthSession = {
+        user_id: 'mock-user-code-' + code,
+        email: 'mock@example.test',
+        access_token: 'mock-access',
+        refresh_token: 'mock-refresh',
+        expires_at: Date.now() + 3600_000,
+      };
+      session = s;
+      notifyAuth();
+      return s;
+    },
+
     async signOut() {
       session = null;
       notifyAuth();
