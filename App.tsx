@@ -86,10 +86,23 @@ export default function App() {
   }, [dbReady]);
 
   useEffect(() => {
-    const sub = Linking.addEventListener('url', ({ url }) => {
-      if (url.startsWith('logbook://auth-callback')) {
-        // supabase-js detectSessionInUrl + onAuthStateChange picks up the token.
+    async function handleAuthCallback(url: string) {
+      try {
+        const code = new URL(url).searchParams.get('code');
+        if (!code) return;
+        const cloud = createSupabaseCloudClient();
+        await cloud.exchangeAuthCode(code);
+      } catch {
+        /* swallow — UI surfaces auth errors via the in-app session listener */
       }
+    }
+    // Handle case where the app is launched cold via the magic-link tap.
+    Linking.getInitialURL().then((url) => {
+      if (url && url.startsWith('logbook://auth-callback')) handleAuthCallback(url);
+    });
+    // Handle the warm case (app already running).
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (url.startsWith('logbook://auth-callback')) handleAuthCallback(url);
     });
     return () => sub.remove();
   }, []);
