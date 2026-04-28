@@ -3,7 +3,7 @@ import { createTestClient } from '../setup';
 import { createMockCloudClient } from '../cloudMock';
 import { createProfileService } from '../../src/services/profileService';
 import { DbClient } from '../../src/db/client';
-import { Profile, CreateProfileInput, AuthSession } from '../../src/types';
+import { Profile, CreateProfileInput, CertBlockInput, AuthSession } from '../../src/types';
 
 describe('profileService', () => {
   let db: DbClient;
@@ -37,7 +37,7 @@ describe('profileService', () => {
       expect(profile.last_backup_at).toBeNull();
     });
 
-    it('defaults legacy profile to SPRAT-only with primary_cert=sprat', async () => {
+    it('defaults the legacy SPRAT-only shape to primary_cert=sprat with no IRATA', async () => {
       const profile = await service.createProfile(validInput);
       expect(profile.holds_sprat).toBe(true);
       expect(profile.holds_irata).toBe(false);
@@ -48,27 +48,105 @@ describe('profileService', () => {
       expect(profile.irata_card_photo_path).toBeNull();
     });
 
-    it('creates a dual-cert profile when IRATA fields supplied', async () => {
+    it('creates an IRATA-only profile via the irata block (no SPRAT)', async () => {
       const profile = await service.createProfile({
-        ...validInput,
-        holds_irata: true,
-        irata_id: 'IRATA-188421',
-        irata_level: 'I',
-        irata_expires_on: '2027-08-04',
+        full_name: 'Sasha IRATA',
+        irata: { id: 'IRATA-188421', level: 'I', cert_expires_on: '2027-08-04' },
+        default_employer: 'Acme',
+      });
+      expect(profile.holds_sprat).toBe(false);
+      expect(profile.holds_irata).toBe(true);
+      expect(profile.sprat_id).toBeNull();
+      expect(profile.level).toBeNull();
+      expect(profile.cert_expires_on).toBeNull();
+      expect(profile.irata_id).toBe('IRATA-188421');
+      expect(profile.irata_level).toBe('I');
+      expect(profile.irata_expires_on).toBe('2027-08-04');
+      // Default primary: SPRAT if held, else IRATA.
+      expect(profile.primary_cert).toBe('irata');
+    });
+
+    it('creates a dual-cert profile when both blocks supplied + honours explicit primary_cert', async () => {
+      const profile = await service.createProfile({
+        full_name: 'Dual Tech',
+        sprat: { id: 'S-1', level: 'II', cert_expires_on: '2027-06-15' },
+        irata: { id: 'I-1', level: 'I', cert_expires_on: '2027-08-04' },
         primary_cert: 'irata',
       });
       expect(profile.holds_sprat).toBe(true);
       expect(profile.holds_irata).toBe(true);
-      expect(profile.irata_id).toBe('IRATA-188421');
-      expect(profile.irata_level).toBe('I');
-      expect(profile.irata_expires_on).toBe('2027-08-04');
       expect(profile.primary_cert).toBe('irata');
+      expect(profile.sprat_id).toBe('S-1');
+      expect(profile.irata_id).toBe('I-1');
     });
 
-    it('rejects creating an IRATA-flagged profile with missing IRATA fields', async () => {
+    it('rejects creation with neither SPRAT nor IRATA block', async () => {
       await expect(
-        service.createProfile({ ...validInput, holds_irata: true } as CreateProfileInput),
-      ).rejects.toThrow(/IRATA block incomplete/);
+        service.createProfile({ full_name: 'No Certs' } as CreateProfileInput),
+      ).rejects.toThrow(/must_hold_at_least_one_cert/);
+    });
+
+    it('rejects primary_cert pointing at a cert that is not held', async () => {
+      await expect(
+        service.createProfile({
+          full_name: 'Mismatch',
+          sprat: { id: 'S-1', level: 'II', cert_expires_on: '2027-06-15' },
+          primary_cert: 'irata',
+        }),
+      ).rejects.toThrow(/primary_cert_not_held/);
+    });
+  });
+
+  describe('upsertIrataCert', () => {
+    const irataBlock: CertBlockInput = {
+      id: 'IRATA-9000',
+      level: 'III',
+      cert_expires_on: '2028-01-01',
+    };
+
+    it('attaches an IRATA block to an existing SPRAT-only profile', async () => {
+      await service.createProfile(validInput);
+      const updated = await service.upsertIrataCert(irataBlock);
+      expect(updated.holds_irata).toBe(true);
+      expect(updated.irata_id).toBe('IRATA-9000');
+      expect(updated.irata_level).toBe('III');
+      expect(updated.irata_expires_on).toBe('2028-01-01');
+      // SPRAT block is untouched.
+      expect(updated.holds_sprat).toBe(true);
+      expect(updated.sprat_id).toBe('SPRAT-12345');
+      // Primary stays as it was.
+      expect(updated.primary_cert).toBe('sprat');
+    });
+  });
+
+  describe('removeCert', () => {
+    it('refuses to remove the only held cert', async () => {
+      await service.createProfile(validInput);
+      await expect(service.removeCert('sprat')).rejects.toThrow(/cannot_remove_only_cert/);
+    });
+
+    it('auto-flips primary_cert when removing the primary cert', async () => {
+      await service.createProfile({
+        full_name: 'Dual Primary IRATA',
+        sprat: { id: 'S-1', level: 'II', cert_expires_on: '2027-06-15' },
+        irata: { id: 'I-1', level: 'I', cert_expires_on: '2027-08-04' },
+        primary_cert: 'irata',
+      });
+      const after = await service.removeCert('irata');
+      expect(after.holds_irata).toBe(false);
+      expect(after.irata_id).toBeNull();
+      expect(after.primary_cert).toBe('sprat');
+    });
+
+    it('keeps primary_cert intact when removing the non-primary cert', async () => {
+      await service.createProfile({
+        full_name: 'Dual Primary SPRAT',
+        sprat: { id: 'S-1', level: 'II', cert_expires_on: '2027-06-15' },
+        irata: { id: 'I-1', level: 'I', cert_expires_on: '2027-08-04' },
+        primary_cert: 'sprat',
+      });
+      const after = await service.removeCert('irata');
+      expect(after.primary_cert).toBe('sprat');
     });
   });
 
@@ -102,6 +180,13 @@ describe('profileService', () => {
       const updated = await service.updateProfile({ full_name: 'Jane Doe' });
       expect(updated.updated_at).not.toBe(created.updated_at);
       jest.useRealTimers();
+    });
+
+    it('rejects switching primary_cert to a cert the profile does not hold', async () => {
+      await service.createProfile(validInput); // SPRAT-only
+      await expect(service.updateProfile({ primary_cert: 'irata' })).rejects.toThrow(
+        /primary_cert_not_held/,
+      );
     });
   });
 
