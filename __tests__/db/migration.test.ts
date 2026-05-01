@@ -214,4 +214,41 @@ describe('runSchemaMigrations', () => {
     expect(names).toContain('subscription_status');
     expect(names).not.toContain('subscription_tier');
   });
+
+  test('runSchemaMigrations migrates subscription_tier value pro -> active', async () => {
+    const db = createLegacyTestClient();
+    // Seed the intermediate schema state: has subscription_tier but not subscription_status
+    await db.exec(`ALTER TABLE profile ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'free'`);
+    await db.run(
+      `INSERT INTO profile (id, full_name, sprat_id, level, cert_expires_on, default_employer, created_at, updated_at, subscription_tier)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['p1', 'Test', 'S1', 'II', '2027-01-01', '', '2026-01-01', '2026-01-01', 'pro'],
+    );
+    await runSchemaMigrations(db);
+    const cols = await db.getAll<{ name: string }>(`PRAGMA table_info(profile)`);
+    const names = cols.map((c) => c.name);
+    expect(names).toContain('subscription_status');
+    expect(names).not.toContain('subscription_tier');
+    const row = await db.get<{ subscription_status: string }>(
+      `SELECT subscription_status FROM profile WHERE id = ?`,
+      ['p1'],
+    );
+    expect(row?.subscription_status).toBe('active');
+  });
+
+  test('runSchemaMigrations migrates subscription_tier value free -> unknown', async () => {
+    const db = createLegacyTestClient();
+    await db.exec(`ALTER TABLE profile ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'free'`);
+    await db.run(
+      `INSERT INTO profile (id, full_name, sprat_id, level, cert_expires_on, default_employer, created_at, updated_at, subscription_tier)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['p2', 'Test2', 'S2', 'II', '2027-01-01', '', '2026-01-01', '2026-01-01', 'free'],
+    );
+    await runSchemaMigrations(db);
+    const row = await db.get<{ subscription_status: string }>(
+      `SELECT subscription_status FROM profile WHERE id = ?`,
+      ['p2'],
+    );
+    expect(row?.subscription_status).toBe('unknown');
+  });
 });

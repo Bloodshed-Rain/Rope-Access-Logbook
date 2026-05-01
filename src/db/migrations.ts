@@ -46,7 +46,7 @@ async function rebuildProfileForDualCert(db: DbClient): Promise<void> {
     `);
 
     // Detect which "old" shape we're migrating from. Two real cases:
-    //   (a) very-old schema: profile lacks supervisor_* and subscription_tier
+    //   (a) very-old schema: profile lacks supervisor_* and subscription_status
     //   (b) immediate-pre-dual-cert schema: has those, lacks holds_irata
     // runSchemaMigrations runs ALTERs for case (a) before this rebuild, so by
     // the time we reach here the profile table has all the legacy columns.
