@@ -1,4 +1,7 @@
 import { DbClient } from '../db/client';
+import { generateId } from '../utils/uuid';
+
+type UuidFn = () => string;
 
 export type NotificationKind =
   | 'cert_expiry_60d'
@@ -31,25 +34,18 @@ export interface NotificationCenterService {
   dismiss(id: string): Promise<void>;
 }
 
-function uuid(): string {
-  // RFC4122 v4 lite — fine for client-side IDs
-  const r = (n: number) => Math.floor(Math.random() * n).toString(16).padStart(2, '0');
-  const bytes = Array.from({ length: 16 }, () => r(256));
-  bytes[6] = (parseInt(bytes[6], 16) & 0x0f | 0x40).toString(16).padStart(2, '0');
-  bytes[8] = (parseInt(bytes[8], 16) & 0x3f | 0x80).toString(16).padStart(2, '0');
-  const h = bytes.join('');
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
-}
-
 export function createNotificationCenterService(
   db: DbClient,
-  now: () => string
+  now: () => string,
+  uuid: UuidFn = generateId
 ): NotificationCenterService {
   return {
     async record({ kind, payload, dedupeOnDay }) {
       if (dedupeOnDay) {
         const today = now().slice(0, 10);
         const existing = await db.get<{ id: string }>(
+          // dismissed_at IS NULL: a dismissed nag can re-fire later — dedupe protects
+          // only against undismissed duplicates within the same day.
           `SELECT id FROM notifications WHERE kind = ? AND substr(created_at, 1, 10) = ? AND dismissed_at IS NULL ORDER BY created_at DESC LIMIT 1`,
           [kind, today]
         );
