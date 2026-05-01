@@ -39,7 +39,7 @@ async function rebuildProfileForDualCert(db: DbClient): Promise<void> {
         supervisor_capability_enabled INTEGER NOT NULL DEFAULT 0,
         supervisor_cert_number TEXT,
         supervisor_directory_visible INTEGER NOT NULL DEFAULT 1,
-        subscription_tier TEXT NOT NULL DEFAULT 'free',
+        subscription_status TEXT NOT NULL DEFAULT 'unknown',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
@@ -57,7 +57,7 @@ async function rebuildProfileForDualCert(db: DbClient): Promise<void> {
         primary_cert,
         default_employer, last_backup_at, photos_in_backup, last_cloud_backup_at, last_uploaded_backup_id,
         supervisor_capability_enabled, supervisor_cert_number, supervisor_directory_visible,
-        subscription_tier, created_at, updated_at
+        subscription_status, created_at, updated_at
       )
       SELECT
         id, full_name, 1, sprat_id, level, cert_expires_on, sprat_card_photo_path,
@@ -65,7 +65,7 @@ async function rebuildProfileForDualCert(db: DbClient): Promise<void> {
         'sprat',
         default_employer, last_backup_at, photos_in_backup, last_cloud_backup_at, last_uploaded_backup_id,
         supervisor_capability_enabled, supervisor_cert_number, supervisor_directory_visible,
-        subscription_tier, created_at, updated_at
+        subscription_status, created_at, updated_at
       FROM profile;
     `);
 
@@ -114,12 +114,36 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
   if (!(await hasColumn(db, 'profile', 'supervisor_directory_visible'))) {
     await db.exec('ALTER TABLE profile ADD COLUMN supervisor_directory_visible INTEGER NOT NULL DEFAULT 1');
   }
-  if (!(await hasColumn(db, 'profile', 'subscription_tier'))) {
-    await db.exec("ALTER TABLE profile ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'free'");
-  }
   if (!(await hasColumn(db, 'entries', 'pending_sign_request_id'))) {
     await db.exec('ALTER TABLE entries ADD COLUMN pending_sign_request_id TEXT');
   }
+
+  // 1. Rename subscription_tier -> subscription_status (idempotent)
+  const profileCols = await db.getAll<{ name: string }>(`PRAGMA table_info(profile)`);
+  const colNames = profileCols.map((c) => c.name);
+  if (colNames.includes('subscription_tier') && !colNames.includes('subscription_status')) {
+    await db.exec(`ALTER TABLE profile ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'unknown'`);
+    await db.exec(`UPDATE profile SET subscription_status = CASE
+      WHEN subscription_tier = 'pro' THEN 'active'
+      ELSE 'unknown'
+    END`);
+    await db.exec(`ALTER TABLE profile DROP COLUMN subscription_tier`);
+  } else if (!colNames.includes('subscription_status')) {
+    await db.exec(`ALTER TABLE profile ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'unknown'`);
+  }
+
+  // 2. notifications table (idempotent — for legacy devices that ran an older SCHEMA_SQL)
+  await db.exec(`CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    payload_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL,
+    read_at TEXT,
+    dismissed_at TEXT
+  )`);
+  await db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(read_at) WHERE read_at IS NULL`
+  );
 
   // Dual-cert rebuild. Idempotent gate: holds_irata is only present after rebuild.
   if (!(await hasColumn(db, 'profile', 'holds_irata'))) {

@@ -187,4 +187,31 @@ describe('runSchemaMigrations', () => {
     expect(row?.tech_level_snapshot).toBe('II');
     expect(row?.irata_level_snapshot).toBeNull();
   });
+
+  test('runSchemaMigrations creates notifications table with unread index', async () => {
+    const db = createLegacyTestClient();
+    await runSchemaMigrations(db);
+    const cols = await db.getAll<{ name: string }>(`PRAGMA table_info(notifications)`);
+    expect(cols.map((c) => c.name).sort()).toEqual([
+      'created_at',
+      'dismissed_at',
+      'id',
+      'kind',
+      'payload_json',
+      'read_at',
+    ]);
+    const idx = await db.getAll<{ name: string }>(
+      `SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='notifications'`
+    );
+    expect(idx.map((i) => i.name)).toContain('idx_notifications_unread');
+  });
+
+  test('runSchemaMigrations renames subscription_tier to subscription_status', async () => {
+    const db = createLegacyTestClient();
+    await runSchemaMigrations(db);
+    const cols = await db.getAll<{ name: string }>(`PRAGMA table_info(profile)`);
+    const names = cols.map((c) => c.name);
+    expect(names).toContain('subscription_status');
+    expect(names).not.toContain('subscription_tier');
+  });
 });

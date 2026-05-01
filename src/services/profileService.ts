@@ -37,7 +37,7 @@ interface ProfileRow {
   supervisor_capability_enabled: number;
   supervisor_cert_number: string | null;
   supervisor_directory_visible: number;
-  subscription_tier: 'free' | 'pro';
+  subscription_status: 'unknown' | 'trialing' | 'active' | 'lapsed';
   created_at: string;
   updated_at: string;
 }
@@ -66,7 +66,7 @@ function rowToProfile(row: ProfileRow | null | undefined): Profile | null {
     supervisor_capability_enabled: !!row.supervisor_capability_enabled,
     supervisor_cert_number: row.supervisor_cert_number,
     supervisor_directory_visible: !!row.supervisor_directory_visible,
-    subscription_tier: row.subscription_tier,
+    subscription_status: row.subscription_status,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

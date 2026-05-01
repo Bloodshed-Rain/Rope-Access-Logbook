@@ -25,7 +25,7 @@ export const SCHEMA_SQL = `
     supervisor_capability_enabled INTEGER NOT NULL DEFAULT 0,
     supervisor_cert_number TEXT,
     supervisor_directory_visible INTEGER NOT NULL DEFAULT 1,
-    subscription_tier TEXT NOT NULL DEFAULT 'free',
+    subscription_status TEXT NOT NULL DEFAULT 'unknown',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -111,4 +111,15 @@ export const SCHEMA_SQL = `
   -- when CREATE TABLE IF NOT EXISTS above no-ops on an existing entries table.
   CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_status ON sign_requests_cache(status);
   CREATE INDEX IF NOT EXISTS idx_sign_requests_cache_entry ON sign_requests_cache(entry_id);
+
+  CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    payload_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL,
+    read_at TEXT,
+    dismissed_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_notifications_unread
+    ON notifications(read_at) WHERE read_at IS NULL;
 `;

@@ -19,14 +19,15 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
   async function syncTierToDb(info: CustomerInfo): Promise<SubscriptionTier> {
     const isPro = typeof info.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
     const tier: SubscriptionTier = isPro ? 'pro' : 'free';
-    
+    const dbStatus = isPro ? 'active' : 'unknown';
+
     // Attempt local database sync. This allows offline capability querying from the profile
     try {
-      await db.run("UPDATE profile SET subscription_tier = ? WHERE 1=1", [tier]);
+      await db.run("UPDATE profile SET subscription_status = ? WHERE 1=1", [dbStatus]);
     } catch (e) {
       console.warn("Failed to sync tier to local DB", e);
     }
-    
+
     return tier;
   }
 
@@ -51,8 +52,8 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
       } catch (e) {
         console.error("Failed to fetch Customer Info", e);
         // Fallback to local DB if offline
-        const profile = await db.get<{ subscription_tier: SubscriptionTier }>('SELECT subscription_tier FROM profile LIMIT 1');
-        return profile?.subscription_tier ?? 'free';
+        const profile = await db.get<{ subscription_status: string }>('SELECT subscription_status FROM profile LIMIT 1');
+        return profile?.subscription_status === 'active' ? 'pro' : 'free';
       }
     },
 

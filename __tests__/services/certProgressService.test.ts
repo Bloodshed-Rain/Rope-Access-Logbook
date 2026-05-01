@@ -25,7 +25,7 @@ function profileFactory(overrides: Partial<Profile> = {}): Profile {
     supervisor_capability_enabled: false,
     supervisor_cert_number: null,
     supervisor_directory_visible: false,
-    subscription_tier: 'free',
+    subscription_status: 'unknown',
     created_at: '2026-01-01',
     updated_at: '2026-01-01',
     ...overrides,
