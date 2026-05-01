@@ -1,164 +1,254 @@
-// src/theme/tokens.ts
-// Industrial Gauge-Panel Design System
-// Dark-only. Aesthetic is machined metal: sharp edges, stencil typography,
-// safety-orange CTAs, status LEDs. See docs/superpowers/specs/2026-04-25-ui-overhaul-industrial-design.md.
+// Light theme — cream + deep red + Inter. See docs/superpowers/specs/2026-04-30-light-theme-redesign-design.md §1
 
-// --- Canonical color tokens (new) ---
+// ─── Canonical color palette ──────────────────────────────────────────────────
 const palette = {
-  bgBase:        '#0a0b0d',
-  bgRaised:      '#111418',
-  bgPanel:       '#181c22',
-  bgInset:       '#1f242b',
-  edgeBase:      '#262c34',
-  edgeHi:        '#3a4048',
-  edgeBright:    '#515864',
-  inkPrimary:    '#dde3eb',
-  inkSecondary:  '#a3abb6',
-  inkTertiary:   '#616977',
-  inkDisabled:   '#3f4650',
-  accentBase:    '#ff5a1f',
-  accentHot:     '#ff7a3d',
-  accentDeep:    '#c63f10',
-  statusWarn:    '#f5a524',
-  statusOk:      '#3fb950',
-  statusErr:     '#e5484d',
-  certL1:        '#6fb7ff',
-  certL2:        '#ffb857',
-  certL3:        '#ff7a3d',
+  // Backgrounds
+  bgApp:     '#FAF7F2', // warm off-white, primary background
+  bgSurface: '#FFFFFF', // cards, sheets
+  bgMuted:   '#F5F2ED', // inputs, inset blocks
+
+  // Borders / dividers
+  border:  '#E5E7EB',
+  divider: '#ECEAE5',
+
+  // Text
+  textPrimary:   '#111827',
+  textSecondary: '#6B7280',
+  textDisabled:  '#9CA3AF',
+
+  // Accent — deep red
+  accentPrimary: '#B71C1C', // CTAs, hero progress, focus rings
+  accentPressed: '#8E1212',
+  accentTint:    '#FCEAEA', // pressed surfaces, highlights
+
+  // Status
+  statusOk:   '#16A34A', // signed
+  statusWarn: '#F59E0B', // draft / awaiting / needs signature / lapse-soon
+  statusErr:  '#DC2626', // expired, lapsed
+  statusInfo: '#2563EB', // informational
+
+  // Cert level chips
+  certL1: '#2563EB', // blue
+  certL2: '#D97706', // deep amber
+  certL3: '#15803D', // deep green
 } as const;
 
 export const colors = {
-  // New canonical keys — preferred for new code.
+  // ── New canonical keys ────────────────────────────────────────────────────
   ...palette,
 
-  // Legacy aliases — every existing screen / primitive reads these. Mapped to
-  // new values so the dark theme applies without touching call sites.
-  bg:             palette.bgBase,
-  bg2:            palette.bgRaised,
-  paper:          palette.bgPanel,
-  ink:            palette.inkPrimary,
-  ink70:          palette.inkSecondary,
-  ink50:          palette.inkTertiary,
-  ink30:          palette.inkDisabled,
-  ink15:          palette.edgeBase,
-  blood:          palette.statusErr,
-  bloodD:         palette.statusErr,
-  success:        palette.statusOk,
-  background:     palette.bgBase,
-  surface:        palette.bgPanel,
-  surfaceElevated: palette.bgRaised,
-  textPrimary:    palette.inkPrimary,
-  textSecondary:  palette.inkSecondary,
-  textTertiary:   palette.inkTertiary,
-  textInverse:    palette.bgBase, // text "on accent" — dark on orange button
-  accent:         palette.accentBase,
-  accentDeep:     palette.accentDeep,
-  accentLight:    palette.bgRaised,
-  accentStripe:   palette.accentBase,
-  navy:           palette.bgRaised,    // chrome (was navy header bar)
-  navyDeep:       palette.bgBase,
-  navyLight:      palette.bgPanel,
-  ropeTan:        palette.accentBase,  // accent text on chrome
-  ropeTanLight:   palette.accentHot,
-  slate:          palette.inkSecondary,
-  slateLight:     palette.inkTertiary,
-  slateLighter:   palette.inkDisabled,
-  slateLightest:  palette.edgeBase,
+  // ── Legacy aliases — every existing screen/primitive reads these. Mapped to
+  //    the new light-theme palette so old code keeps compiling and rendering
+  //    until Phase F removes the aliases. ────────────────────────────────────
+
+  // Background aliases
+  bg:        palette.bgApp,
+  bg2:       palette.bgSurface,
+  bgBase:    palette.bgApp,
+  bgRaised:  palette.bgSurface,
+  bgPanel:   palette.bgSurface,
+  bgInset:   palette.bgMuted,
+
+  // Edge / border aliases
+  edgeBase:   palette.border,
+  edgeHi:     palette.border,
+  edgeBright: '#D1D5DB',
+
+  // Ink aliases
+  inkPrimary:  palette.textPrimary,
+  inkSecondary: palette.textSecondary,
+  inkTertiary: palette.textDisabled,
+  inkDisabled: palette.textDisabled,
+
+  // Accent aliases
+  accent:       palette.accentPrimary,
+  accentBase:   palette.accentPrimary,
+  accentHot:    palette.statusErr,  // was orange-hot; now maps to red
+  accentDeep:   palette.accentPressed,
+  accentStripe: palette.accentPrimary,
+  accentLight:  palette.accentTint,
+
+  // Status / semantic aliases
+  success:      palette.statusOk,
+  warning:      palette.statusWarn,
+  warningLight: '#FEF3C7',
+  error:        palette.statusErr,
+  errorLight:   '#FEE2E2',
+  info:         palette.statusInfo,
+  infoLight:    '#DBEAFE',
+
+  // Surface aliases
+  surface:         palette.bgSurface,
+  surfaceElevated: palette.bgSurface,
+  background:      palette.bgApp,
+  paper:           palette.bgSurface,
+
+  // Border aliases
+  // `border` is already the canonical key above via ...palette
+  borderFocused: palette.accentPrimary,
+  hairline:      palette.border,
+  // `divider` is already the canonical key above via ...palette
+
+  // Text aliases
+  // `textPrimary` / `textSecondary` / `textDisabled` are canonical above
+  textTertiary: palette.textDisabled,
+  textInverse:  '#FFFFFF',
+
+  // Chrome aliases (was dark navy header bars — now light surfaces)
+  navy:      palette.bgSurface,
+  navyDeep:  palette.bgApp,
+  navyLight: palette.bgMuted,
+
+  // Rope-tan aliases (accent text on chrome)
+  ropeTan:      palette.accentPrimary,
+  ropeTanLight: palette.statusErr,
+
+  // Slate aliases
+  slate:        palette.textSecondary,
+  slateLight:   palette.textDisabled,
+  slateLighter: '#D1D5DB',
+  slateLightest: palette.border,
+
+  // Ink opacity aliases
+  ink:   palette.textPrimary,
+  ink70: palette.textSecondary,
+  ink50: palette.textDisabled,
+  ink30: '#D1D5DB',
+  ink15: palette.border,
+
+  // Blood aliases (was safety-orange danger; now deep red)
+  blood:  palette.accentPrimary,
+  bloodD: palette.accentPressed,
+
+  // Status badge aliases
   statusSigned:       palette.statusOk,
-  statusSignedLight:  palette.bgPanel,
-  statusDraft:        palette.inkTertiary,
-  statusDraftLight:   palette.bgPanel,
-  statusAmended:      palette.statusErr,
-  statusAmendedLight: palette.bgPanel,
-  warning:        palette.statusWarn,
-  warningLight:   palette.bgPanel,
-  error:          palette.statusErr,
-  errorLight:     palette.bgPanel,
-  info:           palette.inkSecondary,
-  infoLight:      palette.bgPanel,
-  border:         palette.edgeBase,
-  borderFocused:  palette.accentBase,
-  hairline:       palette.edgeBase,
-  overlay:        'rgba(0, 0, 0, 0.7)',
+  statusSignedLight:  '#DCFCE7',
+  statusDraft:        palette.statusWarn,
+  statusDraftLight:   '#FEF3C7',
+  statusAmended:      palette.textSecondary,
+  statusAmendedLight: '#F3F4F6',
+
+  // Overlay
+  overlay: 'rgba(0, 0, 0, 0.4)', // lighter than industrial since bg is now light
 } as const;
 
+// ─── Spacing — base 4px ───────────────────────────────────────────────────────
 export const spacing = {
-  s1: 4,
-  s2: 8,
-  s3: 12,
-  s4: 16,
-  s5: 20,
-  s6: 24,
-  s8: 32,
+  // Canonical keys
+  xs:   4,
+  sm:   8,
+  md:   12,
+  base: 16,
+  lg:   24,
+  xl:   32,
+  xxl:  48,
+  // Legacy numeric keys (sN = N × 4)
+  s1:  4,
+  s2:  8,
+  s3:  12,
+  s4:  16,
+  s5:  20,
+  s6:  24,
+  s8:  32,
   s10: 40,
   s12: 48,
   s16: 64,
-  // Legacy aliases
-  xs: 4, sm: 8, md: 12, base: 16, lg: 24, xl: 32, xxl: 48,
 } as const;
 
-export const touchTarget = {
-  min: 48,
-  preferred: 56,
-} as const;
-
-const FONT = {
-  REGULAR: 'JetBrainsMono_400Regular',
-  MEDIUM: 'JetBrainsMono_500Medium',
-  BOLD: 'JetBrainsMono_700Bold',
-  EXTRABOLD: 'JetBrainsMono_800ExtraBold',
-  STENCIL: 'Michroma_400Regular',
-} as const;
-
-export const typography = {
-  display:    { fontFamily: FONT.EXTRABOLD, fontSize: 46, letterSpacing: -0.92, lineHeight: 46 },
-  h1:         { fontFamily: FONT.EXTRABOLD, fontSize: 24, letterSpacing: -0.48, lineHeight: 28 },
-  h2:         { fontFamily: FONT.BOLD,      fontSize: 18, letterSpacing: -0.18, lineHeight: 22 },
-  h3:         { fontFamily: FONT.BOLD,      fontSize: 14, letterSpacing: 0,     lineHeight: 18 },
-  body:       { fontFamily: FONT.REGULAR,   fontSize: 14, letterSpacing: 0,     lineHeight: 20 },
-  bodyBold:   { fontFamily: FONT.BOLD,      fontSize: 14, letterSpacing: 0,     lineHeight: 20 },
-  bodySmall:  { fontFamily: FONT.REGULAR,   fontSize: 12, letterSpacing: 0.24,  lineHeight: 17 },
-  numeric:    { fontFamily: FONT.BOLD,      fontSize: 22, letterSpacing: -0.44, lineHeight: 22 },
-  caption:    { fontFamily: FONT.MEDIUM,    fontSize: 10, letterSpacing: 0.4,   lineHeight: 14 },
-  label:      { fontFamily: FONT.STENCIL,   fontSize: 9.5, letterSpacing: 2.1,  textTransform: 'uppercase' as const },
-  micro:      { fontFamily: FONT.STENCIL,   fontSize: 8.5, letterSpacing: 1.7,  textTransform: 'uppercase' as const },
-  mono:       { fontFamily: FONT.MEDIUM,    fontSize: 13, letterSpacing: 0,     lineHeight: 18 },
-  stencil:    { fontFamily: FONT.STENCIL,   fontSize: 9.5, letterSpacing: 2.1,  textTransform: 'uppercase' as const },
-  stencilSm:  { fontFamily: FONT.STENCIL,   fontSize: 8.5, letterSpacing: 1.7,  textTransform: 'uppercase' as const },
-  stencilLg:  { fontFamily: FONT.STENCIL,   fontSize: 11,  letterSpacing: 2.0,  textTransform: 'uppercase' as const },
-} as const;
-
-// Industrial = sharp. Most surfaces are squared.
+// ─── Radii ────────────────────────────────────────────────────────────────────
 export const radii = {
   none: 0,
-  xs: 2,
-  sm: 4,
-  md: 0,    // legacy alias — sharp
-  lg: 0,    // legacy alias — sharp
-  full: 999,
+  xs:   4,   // small chip rounding (legacy)
+  sm:   8,
+  md:   12,
+  lg:   16,
   pill: 999,
+  full: 999,
 } as const;
 
+// ─── Borders ─────────────────────────────────────────────────────────────────
 export const borders = {
-  hair: 1,
-  rule: 1.5,
+  hair:  1,
+  rule:  1.5,
   block: 2,
   heavy: 3,
 } as const;
 
-// Glow on accent surfaces lives via shadowColor + accent base; layered strokes
-// elsewhere. Keep stub for legacy callers.
+// ─── Shadows — real depth now that bg is light ────────────────────────────────
 export const shadows = {
-  sm: { shadowOpacity: 0, elevation: 0 },
-  md: { shadowOpacity: 0, elevation: 0 },
+  sm: {
+    shadowColor:   '#000',
+    shadowOpacity: 0.04,
+    shadowRadius:  4,
+    shadowOffset:  { width: 0, height: 1 },
+    elevation:     1,
+  },
+  md: {
+    shadowColor:   '#000',
+    shadowOpacity: 0.06,
+    shadowRadius:  8,
+    shadowOffset:  { width: 0, height: 2 },
+    elevation:     2,
+  },
   accentGlow: {
-    shadowColor: palette.accentBase,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
+    shadowColor:   '#B71C1C',
+    shadowOpacity: 0.18,
+    shadowRadius:  8,
+    shadowOffset:  { width: 0, height: 0 },
+    elevation:     4,
   },
 } as const;
 
-export const theme = { colors, spacing, typography, radii, shadows, borders, touchTarget } as const;
+// ─── Touch targets — 44pt minimum (glove use assumed) ────────────────────────
+export const touchTarget = {
+  min:       44,
+  preferred: 44,
+} as const;
+
+// ─── Typography — Inter family ────────────────────────────────────────────────
+// B2 will register these font names in app.config.ts.
+// Until then they fall back to the system font — expected and tolerated.
+const FONT = {
+  REGULAR:  'Inter_400Regular',
+  MEDIUM:   'Inter_500Medium',
+  SEMIBOLD: 'Inter_600SemiBold',
+} as const;
+
+export const typography = {
+  // ── Canonical new keys ────────────────────────────────────────────────────
+  title1:  { fontFamily: FONT.SEMIBOLD, fontSize: 28, lineHeight: 34, fontWeight: '600' as const },
+  title2:  { fontFamily: FONT.SEMIBOLD, fontSize: 20, lineHeight: 28, fontWeight: '600' as const },
+  body:    { fontFamily: FONT.REGULAR,  fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
+  bodyMed: { fontFamily: FONT.MEDIUM,   fontSize: 16, lineHeight: 24, fontWeight: '500' as const },
+  label:   { fontFamily: FONT.MEDIUM,   fontSize: 14, lineHeight: 20, fontWeight: '500' as const },
+  caption: { fontFamily: FONT.REGULAR,  fontSize: 12, lineHeight: 16, fontWeight: '400' as const },
+
+  // ── Legacy keys — mapped to Inter so industrial screens remain readable ───
+  // (visual oddities tolerated; aliases removed in Phase F)
+  display:   { fontFamily: FONT.SEMIBOLD, fontSize: 28, lineHeight: 34, fontWeight: '600' as const },
+  h1:        { fontFamily: FONT.SEMIBOLD, fontSize: 24, lineHeight: 32, fontWeight: '600' as const },
+  h2:        { fontFamily: FONT.SEMIBOLD, fontSize: 20, lineHeight: 28, fontWeight: '600' as const },
+  h3:        { fontFamily: FONT.SEMIBOLD, fontSize: 18, lineHeight: 24, fontWeight: '600' as const },
+  bodyBold:  { fontFamily: FONT.MEDIUM,   fontSize: 16, lineHeight: 24, fontWeight: '500' as const },
+  bodySmall: { fontFamily: FONT.REGULAR,  fontSize: 14, lineHeight: 20, fontWeight: '400' as const },
+  numeric:   { fontFamily: FONT.SEMIBOLD, fontSize: 20, lineHeight: 28, fontWeight: '600' as const },
+  mono:      { fontFamily: FONT.MEDIUM,   fontSize: 14, lineHeight: 20, fontWeight: '500' as const },
+  // Stencil: Michroma is gone; render as Inter semibold — still readable
+  stencil:   { fontFamily: FONT.SEMIBOLD, fontSize: 16, lineHeight: 22, fontWeight: '600' as const },
+  stencilSm: { fontFamily: FONT.SEMIBOLD, fontSize: 12, lineHeight: 16, fontWeight: '600' as const },
+  stencilLg: { fontFamily: FONT.SEMIBOLD, fontSize: 24, lineHeight: 32, fontWeight: '600' as const },
+  micro:     { fontFamily: FONT.REGULAR,  fontSize: 11, lineHeight: 14, fontWeight: '400' as const },
+} as const;
+
+// ─── Theme composite + type ───────────────────────────────────────────────────
+export const theme = {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  borders,
+  touchTarget,
+} as const;
+
 export type Theme = typeof theme;
