@@ -1,6 +1,6 @@
 // __tests__/services/subscriptionService.test.ts
 import { createTestClient } from '../setup';
-import { createSubscriptionService, SubscriptionStatus } from '../../src/services/subscriptionService';
+import { createSubscriptionService, deriveStatus, SubscriptionStatus } from '../../src/services/subscriptionService';
 import { DbClient } from '../../src/db/client';
 
 jest.mock('react-native-purchases', () => ({
@@ -203,5 +203,64 @@ describe('subscriptionService', () => {
       const renewal = await svc.getRenewalDate();
       expect(renewal).toBeNull();
     });
+  });
+
+  describe('purchase() and restore() DB sync', () => {
+    it('purchase() syncs status to DB on TRIAL success', async () => {
+      const trialInfo = makeCustomerInfo(
+        { pro: { periodType: 'TRIAL', expirationDate: '2026-06-01T00:00:00Z' } },
+        { pro: { periodType: 'TRIAL', expirationDate: '2026-06-01T00:00:00Z' } },
+      );
+      mockPurchases.purchasePackage.mockResolvedValueOnce({ customerInfo: trialInfo } as any);
+      const svc = createSubscriptionService(db);
+      const status = await svc.purchase({} as any);
+      expect(status).toBe('trialing');
+      const row = await db.get<{ subscription_status: string }>(
+        'SELECT subscription_status FROM profile LIMIT 1',
+      );
+      expect(row?.subscription_status).toBe('trialing');
+    });
+
+    it('restore() syncs status to DB on NORMAL active success', async () => {
+      const activeInfo = makeCustomerInfo(
+        { pro: { periodType: 'NORMAL', expirationDate: '2026-12-01T00:00:00Z' } },
+        { pro: { periodType: 'NORMAL', expirationDate: '2026-12-01T00:00:00Z' } },
+      );
+      mockPurchases.restorePurchases.mockResolvedValueOnce(activeInfo as any);
+      const svc = createSubscriptionService(db);
+      const status = await svc.restore();
+      expect(status).toBe('active');
+      const row = await db.get<{ subscription_status: string }>(
+        'SELECT subscription_status FROM profile LIMIT 1',
+      );
+      expect(row?.subscription_status).toBe('active');
+    });
+  });
+});
+
+describe('deriveStatus', () => {
+  test('TRIAL periodType -> trialing', () => {
+    const info = { entitlements: { active: { pro: { periodType: 'TRIAL' } }, all: { pro: {} } } } as any;
+    expect(deriveStatus(info)).toBe('trialing');
+  });
+
+  test('INTRO periodType -> trialing', () => {
+    const info = { entitlements: { active: { pro: { periodType: 'INTRO' } }, all: { pro: {} } } } as any;
+    expect(deriveStatus(info)).toBe('trialing');
+  });
+
+  test('NORMAL active -> active', () => {
+    const info = { entitlements: { active: { pro: { periodType: 'NORMAL' } }, all: { pro: {} } } } as any;
+    expect(deriveStatus(info)).toBe('active');
+  });
+
+  test('in all but not active -> lapsed', () => {
+    const info = { entitlements: { active: {}, all: { pro: {} } } } as any;
+    expect(deriveStatus(info)).toBe('lapsed');
+  });
+
+  test('absent everywhere -> unknown', () => {
+    const info = { entitlements: { active: {}, all: {} } } as any;
+    expect(deriveStatus(info)).toBe('unknown');
   });
 });

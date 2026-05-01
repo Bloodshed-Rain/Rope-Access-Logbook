@@ -14,12 +14,14 @@ export function useSubscriptionStatus() {
     queryKey: ['subscriptionStatus', 'trialDays'],
     queryFn: () => createSubscriptionService(getClient()).getTrialDaysRemaining(),
     enabled: statusQ.data === 'trialing',
+    staleTime: 1000 * 60 * 5,
   });
 
   const renewalQ = useQuery<string | null>({
     queryKey: ['subscriptionStatus', 'renewal'],
     queryFn: () => createSubscriptionService(getClient()).getRenewalDate(),
     enabled: statusQ.data === 'active',
+    staleTime: 1000 * 60 * 5,
   });
 
   const status = statusQ.data ?? 'unknown';
@@ -29,8 +31,8 @@ export function useSubscriptionStatus() {
     isActive: status === 'active',
     isLapsed: status === 'lapsed',
     isPaid: status === 'trialing' || status === 'active',
-    trialDaysRemaining: trialQ.data ?? null,
-    renewalDate: renewalQ.data ?? null,
+    trialDaysRemaining: status === 'trialing' ? (trialQ.data ?? null) : null,
+    renewalDate: status === 'active' ? (renewalQ.data ?? null) : null,
     isLoading: statusQ.isLoading,
   };
 }

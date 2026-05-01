@@ -21,7 +21,7 @@ export interface SubscriptionService {
 
 const VALID_STATUSES = new Set<string>(['unknown', 'trialing', 'active', 'lapsed']);
 
-function deriveStatus(info: CustomerInfo): SubscriptionStatus {
+export function deriveStatus(info: CustomerInfo): SubscriptionStatus {
   const activeEnt = info.entitlements.active[ENTITLEMENT_ID];
   if (activeEnt) {
     const period = activeEnt.periodType;
@@ -42,9 +42,25 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     }
   }
 
-  async function fetchStatus(): Promise<SubscriptionStatus> {
-    const info = await Purchases.getCustomerInfo();
-    return deriveStatus(info);
+  // Full-semantics helper: live RC fetch → DB sync → offline fallback.
+  // Used both as the public getStatus() body and inside purchase()'s
+  // user-cancelled branch so no `this` reference is needed.
+  async function resolveStatus(): Promise<SubscriptionStatus> {
+    try {
+      const info = await Purchases.getCustomerInfo();
+      const status = deriveStatus(info);
+      await syncStatusToDb(status);
+      return status;
+    } catch (e) {
+      console.error('Failed to fetch CustomerInfo from RevenueCat', e);
+      // Offline fallback: read persisted status from DB
+      const profile = await db.get<{ subscription_status: string }>(
+        'SELECT subscription_status FROM profile LIMIT 1',
+      );
+      const stored = profile?.subscription_status ?? 'unknown';
+      // Coerce any legacy value (e.g. 'free', 'pro') that slipped through migration
+      return VALID_STATUSES.has(stored) ? (stored as SubscriptionStatus) : 'unknown';
+    }
   }
 
   return {
@@ -62,20 +78,7 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async getStatus() {
-      try {
-        const status = await fetchStatus();
-        await syncStatusToDb(status);
-        return status;
-      } catch (e) {
-        console.error('Failed to fetch CustomerInfo from RevenueCat', e);
-        // Offline fallback: read persisted status from DB
-        const profile = await db.get<{ subscription_status: string }>(
-          'SELECT subscription_status FROM profile LIMIT 1',
-        );
-        const stored = profile?.subscription_status ?? 'unknown';
-        // Coerce any legacy value (e.g. 'free', 'pro') that slipped through migration
-        return VALID_STATUSES.has(stored) ? (stored as SubscriptionStatus) : 'unknown';
-      }
+      return resolveStatus();
     },
 
     async getTrialDaysRemaining() {
@@ -129,7 +132,7 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
           console.error('Purchase failed', e);
           throw e;
         }
-        return this.getStatus();
+        return resolveStatus();
       }
     },
 
