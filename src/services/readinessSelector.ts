@@ -40,8 +40,10 @@ export function computeReadiness({ profile, entries, now, isSignedIn }: Readines
     ? { state: 'ok', label: 'Profile complete' }
     : { state: 'warn', label: 'Complete your profile' };
 
-  // 2. Signed entries (signed + amended count toward "lifetime work logged")
-  const signedCount = entries.filter((e) => e.status === 'signed' || e.status === 'amended').length;
+  // 2. Signed entries — count only 'signed'; 'amended' originals are excluded to avoid
+  //    double-counting after an amendment cycle (original flips to 'amended', amendment
+  //    becomes the new 'signed' entry — one logical shift = one count).
+  const signedCount = entries.filter((e) => e.status === 'signed').length;
   const signedEntries: ReadinessItem =
     signedCount === 0
       ? { state: 'muted', label: 'Log and sign your first entry' }
@@ -54,7 +56,7 @@ export function computeReadiness({ profile, entries, now, isSignedIn }: Readines
       ? { state: 'ok', label: 'No entries waiting to be signed' }
       : {
           state: 'warn',
-          label: `${pendingCount} ${pendingCount === 1 ? 'entry needs' : 'entries need'} signatures`,
+          label: `${pendingCount} ${pendingCount === 1 ? 'entry needs a signature' : 'entries need signatures'}`,
         };
 
   // 4. Backup recency (signed-in branch) / sign-in prompt (signed-out branch)
@@ -66,7 +68,8 @@ export function computeReadiness({ profile, entries, now, isSignedIn }: Readines
     if (!last) {
       backupRecency = { state: 'err', label: 'No backups yet — back up now' };
     } else {
-      const days = daysBetween(last, now);
+      const rawDays = daysBetween(last, now);
+      const days = Math.max(0, rawDays);
       if (days <= 7) {
         backupRecency = {
           state: 'ok',

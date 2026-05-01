@@ -153,15 +153,41 @@ describe('computeReadiness', () => {
     expect(r.signedEntries.label).toMatch(/Log and sign your first entry/);
   });
 
-  test('counts amended entries as signed', () => {
+  test('amended entries are not counted in signedEntries (avoids double-count after amendment)', () => {
+    // After amending: original flips from 'signed' to 'amended', amendment is the
+    // new 'signed' entry. Counting only 'signed' tracks one entry per logical shift.
     const r = computeReadiness({
       profile: completeProfile,
-      entries: [entry({ id: 'a', status: 'signed' }), entry({ id: 'b', status: 'amended' })],
+      entries: [
+        entry({ id: 'orig', status: 'amended' }),
+        entry({ id: 'amend', status: 'signed', amends_entry_id: 'orig' }),
+      ],
       now: '2026-04-30T00:00:00Z',
       isSignedIn: true,
     });
     expect(r.signedEntries.state).toBe('ok');
-    expect(r.signedEntries.label).toMatch(/2 signed entries/);
+    expect(r.signedEntries.label).toMatch(/1 signed entry/);
+  });
+
+  test('clock skew (now before last backup) clamps to today', () => {
+    const r = computeReadiness({
+      profile: { ...completeProfile, last_cloud_backup_at: '2026-05-01T00:00:00Z' },
+      entries: [],
+      now: '2026-04-30T00:00:00Z', // 1 day before backup timestamp
+      isSignedIn: true,
+    });
+    expect(r.backupRecency.state).toBe('ok');
+    expect(r.backupRecency.label).toBe('Backup today');
+  });
+
+  test('singular form when exactly one entry needs signature', () => {
+    const r = computeReadiness({
+      profile: completeProfile,
+      entries: [entry({ id: 'a', status: 'draft' })],
+      now: '2026-04-30T00:00:00Z',
+      isSignedIn: true,
+    });
+    expect(r.entriesNeedingSignature.label).toMatch(/1 entry needs a signature/);
   });
 
   test('null profile shows incomplete + muted entries + sign-in prompt', () => {
