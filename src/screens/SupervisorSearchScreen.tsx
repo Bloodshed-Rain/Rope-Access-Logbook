@@ -10,8 +10,7 @@ import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { SupervisorSearchKind, SupervisorSearchResult } from '../types';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { useSubscriptionTier } from '../hooks/useSubscription';
-import { ProBadge } from '../primitives/ProBadge';
+import { useSubscriptionStatus } from '../hooks/useSubscription';
 import { Search } from 'lucide-react-native';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -23,12 +22,12 @@ export function SupervisorSearchScreen() {
   const cloud = useMemo(() => createSupabaseCloudClient(), []);
   const search = useSupervisorSearch(cloud);
   const conns = useSupervisorConnections({ db, cloud });
-  const { data: tier } = useSubscriptionTier();
+  const { isPaid } = useSubscriptionStatus();
   const [tab, setTab] = useState<SupervisorSearchKind>('email');
   const [query, setQuery] = useState('');
 
   const runSearch = async () => {
-    if (tier !== 'pro') {
+    if (!isPaid) {
       navigation.navigate('Paywall');
       return;
     }
@@ -69,10 +68,9 @@ export function SupervisorSearchScreen() {
       <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl, padding: spacing.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: spacing.xs }}>
           <Text style={[typography.h1, { color: colors.textPrimary }]}>Directory Search</Text>
-          {tier === 'pro' && <ProBadge />}
         </View>
 
-        {tier !== 'pro' && (
+        {!isPaid && (
           <Banner variant="info" message="Remote Supervisor Signatures are a Pro feature." />
         )}
 
@@ -125,7 +123,7 @@ export function SupervisorSearchScreen() {
           <Button
             title={tab === 'email' ? 'Send invite' : 'Search Directory'}
             onPress={runSearch}
-            disabled={(!query.trim() && tier === 'pro') || (tab === 'name' && query.trim().length < 3)}
+            disabled={(!query.trim() && isPaid) || (tab === 'name' && query.trim().length < 3)}
             haptic
           />
         </Card>

@@ -6,12 +6,11 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useBackupStatus } from '../hooks/useBackupStatus';
 import { useBackup } from '../hooks/useBackup';
-import { useSubscriptionTier } from '../hooks/useSubscription';
+import { useSubscriptionStatus } from '../hooks/useSubscription';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createAuthService } from '../services/authService';
 import { createExportService } from '../services/exportService';
-import { ProBadge } from '../primitives/ProBadge';
 import { sha256 } from '../utils/hash';
 import { DbClient } from '../db/client';
 import { APP_VERSION } from '../constants';
@@ -45,7 +44,7 @@ export function ProfileCloudSection({
     clock: () => new Date().toISOString(),
     appVersion: APP_VERSION,
   });
-  const { data: tier } = useSubscriptionTier();
+  const { isPaid } = useSubscriptionStatus();
   const [signingOut, setSigningOut] = useState(false);
   const toast = useToast();
 
@@ -117,7 +116,7 @@ export function ProfileCloudSection({
         )}
 
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          {tier === 'pro' ? (
+          {isPaid ? (
             <Button
               title={backup.isPending ? 'Backing up…' : 'Back up now'}
               onPress={() =>

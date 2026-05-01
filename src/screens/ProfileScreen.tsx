@@ -11,8 +11,7 @@ import { useMilestones } from '../hooks/useMilestones';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { useSubscriptionTier } from '../hooks/useSubscription';
-import { ProBadge } from '../primitives/ProBadge';
+import { useSubscriptionStatus } from '../hooks/useSubscription';
 import { createExportService } from '../services/exportService';
 import { createEntriesService } from '../services/entriesService';
 import { createSigningService } from '../services/signingService';
@@ -30,7 +29,7 @@ export function ProfileScreen() {
   const updateLastBackup = useUpdateLastBackupAt();
   const queryClient = useQueryClient();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { data: tier } = useSubscriptionTier();
+  const { isPaid } = useSubscriptionStatus();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [milestoneDismissed, setMilestoneDismissed] = useState(false);
 
@@ -56,7 +55,7 @@ export function ProfileScreen() {
   };
 
   const handleExportPdf = async () => {
-    if (tier !== 'pro') {
+    if (!isPaid) {
       navigation.navigate('Paywall');
       return;
     }
@@ -76,7 +75,7 @@ export function ProfileScreen() {
   };
 
   const handleExportCsv = async () => {
-    if (tier !== 'pro') {
+    if (!isPaid) {
       navigation.navigate('Paywall');
       return;
     }
@@ -192,14 +191,8 @@ export function ProfileScreen() {
               </Text>
             )}
             <Button title="Export full logbook (JSON)" onPress={handleExportJson} variant="secondary" />
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Button title="Export full logbook (PDF)" onPress={handleExportPdf} style={{ flex: 1 }} />
-              {tier !== 'pro' && <ProBadge />}
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Button title="Export full logbook (CSV)" onPress={handleExportCsv} style={{ flex: 1 }} />
-              {tier !== 'pro' && <ProBadge />}
-            </View>
+            <Button title="Export full logbook (PDF)" onPress={handleExportPdf} />
+            <Button title="Export full logbook (CSV)" onPress={handleExportCsv} />
           </View>
         </Card>
 

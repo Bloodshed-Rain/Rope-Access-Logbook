@@ -28,4 +28,4 @@ export { SyncLED } from './SyncLED';
 export { FabButton } from './FabButton';
 export { SectionLabel } from './SectionLabel';
 // Rivet and NoiseTexture are intentionally not re-exported — consumers import
-// directly from their files (mirrors the existing ProBadge handling).
+// directly from their files.

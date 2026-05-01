@@ -25,8 +25,8 @@ export function PaywallScreen({ navigation }: Props) {
 
   const handlePurchase = async (pkg: PurchasesPackage) => {
     try {
-      const tier = await purchase.mutateAsync(pkg);
-      if (tier === 'pro') {
+      const status = await purchase.mutateAsync(pkg);
+      if (status === 'active' || status === 'trialing') {
         Alert.alert("Success!", "You are now a Pro user.", [{ text: "Awesome", onPress: () => navigation.goBack() }]);
       }
     } catch (e: any) {
@@ -36,8 +36,8 @@ export function PaywallScreen({ navigation }: Props) {
 
   const handleRestore = async () => {
     try {
-      const tier = await restore.mutateAsync();
-      if (tier === 'pro') {
+      const status = await restore.mutateAsync();
+      if (status === 'active' || status === 'trialing') {
         Alert.alert("Restored", "Your PRO subscription has been restored.", [{ text: "Awesome", onPress: () => navigation.goBack() }]);
       } else {
         Alert.alert("No Subscription", "We couldn't find an active PRO subscription on this account.");
