@@ -26,6 +26,50 @@ export function formatDate(iso: string): string {
   return FULL_DATE_FMT.format(parseISODate(iso));
 }
 
+// Relative-time helper for NotificationsScreen rows. Accepts a full ISO
+// timestamp (created_at on a notification row) and a `now` reference; returns
+// "Just now" / "5m ago" / "2h ago" / "Yesterday" / "3d ago" / "Apr 12".
+export function getRelativeTime(iso: string, now: Date = new Date()): string {
+  const then = new Date(iso);
+  const diffMs = now.getTime() - then.getTime();
+  if (Number.isNaN(diffMs)) return '';
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return 'Just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  // Day-boundary comparison uses local-time YYYY-MM-DD so "yesterday" lines up
+  // with the section header logic below.
+  const todayStr = toISODate(now);
+  const thenStr = toISODate(then);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = toISODate(yesterday);
+  if (thenStr === yStr) return 'Yesterday';
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}d ago`;
+  // Older than a week — fall back to the absolute "Mon DD" rendering.
+  const m = MONTH_FMT.format(then);
+  return `${m} ${then.getDate()}`;
+}
+
+// Day-bucket label used by NotificationsScreen's SectionList headers.
+// Returns "Today", "Yesterday", or an absolute "Mon DD" (no year — the table
+// is local and short-lived; the year is rarely useful here).
+export function getDayLabel(iso: string, now: Date = new Date()): string {
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return '';
+  const todayStr = toISODate(now);
+  const thenStr = toISODate(then);
+  if (thenStr === todayStr) return 'Today';
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (thenStr === toISODate(yesterday)) return 'Yesterday';
+  const m = MONTH_FMT.format(then);
+  return `${m} ${then.getDate()}`;
+}
+
 function parseISODate(iso: string): Date {
   const [y, m, d] = iso.split('-').map((s) => parseInt(s, 10));
   return new Date(Date.UTC(y, (m || 1) - 1, d || 1));

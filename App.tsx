@@ -22,6 +22,8 @@ import { createSupervisorConnectionsService } from './src/services/supervisorCon
 import { createSignRequestsService } from './src/services/signRequestsService';
 import { createExportService } from './src/services/exportService';
 import { createSubscriptionService } from './src/services/subscriptionService';
+import { createNotificationCenterService } from './src/services/notificationCenterService';
+import { createProfileService } from './src/services/profileService';
 import { sha256 } from './src/utils/hash';
 import { APP_VERSION } from './src/constants';
 
@@ -61,6 +63,68 @@ export default function App() {
       clock: () => new Date().toISOString(),
       appVersion: APP_VERSION,
     });
+    // Foreground reminders → notifications table. Mirrors expo-notifications
+    // local nags (cert expiry, backup stale) into the in-app bell so the same
+    // signal is visible whether the OS surfaces it or not. Both kinds dedupe
+    // on (kind, day) so re-foregrounding the app doesn't accumulate rows.
+    async function recordForegroundReminders() {
+      try {
+        const notif = createNotificationCenterService(db, () => new Date().toISOString());
+        const profile = await createProfileService(db).getProfile();
+        if (!profile) return;
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+
+        // Cert-expiry: pick whichever cert(s) the profile holds. For each held
+        // cert, if the expiry is today → record cert_expiry_0d; else if within
+        // 60 days → record cert_expiry_60d. dedupeOnDay keeps the badge from
+        // double-incrementing on tab-back.
+        const certWindows: Array<{ scheme: 'sprat' | 'irata'; expiresOn: string | null }> = [
+          { scheme: 'sprat', expiresOn: profile.holds_sprat ? profile.cert_expires_on : null },
+          { scheme: 'irata', expiresOn: profile.holds_irata ? profile.irata_expires_on : null },
+        ];
+        for (const c of certWindows) {
+          if (!c.expiresOn) continue;
+          if (c.expiresOn === todayStr) {
+            await notif.record({
+              kind: 'cert_expiry_0d',
+              payload: { scheme: c.scheme, expiresOn: c.expiresOn },
+              dedupeOnDay: true,
+            });
+            continue;
+          }
+          // Compute days-until in UTC to match the convention used by
+          // backupService.certExpiryStatus.
+          const expiryMs = new Date(c.expiresOn + 'T00:00:00Z').getTime();
+          const daysUntil = Math.floor((expiryMs - today.getTime()) / (24 * 60 * 60 * 1000));
+          if (daysUntil > 0 && daysUntil <= 60) {
+            await notif.record({
+              kind: 'cert_expiry_60d',
+              payload: { scheme: c.scheme, expiresOn: c.expiresOn, daysUntil },
+              dedupeOnDay: true,
+            });
+          }
+        }
+
+        // Backup stale: only meaningful when the user has at least one cloud
+        // backup on record. A never-backed-up user is nudged by the existing
+        // local-export reminder (backupService.shouldShowReminder), not this.
+        if (profile.last_cloud_backup_at) {
+          const lastMs = new Date(profile.last_cloud_backup_at).getTime();
+          const daysSince = Math.floor((today.getTime() - lastMs) / (24 * 60 * 60 * 1000));
+          if (daysSince > 30) {
+            await notif.record({
+              kind: 'backup_stale',
+              payload: { daysSince, lastBackupAt: profile.last_cloud_backup_at },
+              dedupeOnDay: true,
+            });
+          }
+        }
+      } catch {
+        /* best-effort, silent */
+      }
+    }
+
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
         svc.backup().catch(() => { /* swallow; errors surface via UI hooks */ });
@@ -75,9 +139,14 @@ export default function App() {
           } catch {
             // best-effort, silent
           }
+          await recordForegroundReminders();
         })();
       }
     });
+    // Also fire once on mount — AppState 'active' doesn't re-fire on cold
+    // boot, so without this the foreground reminders only land on a true
+    // background→foreground transition.
+    recordForegroundReminders();
     return () => sub.remove();
   }, [dbReady]);
 

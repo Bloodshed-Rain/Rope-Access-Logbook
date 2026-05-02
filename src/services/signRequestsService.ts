@@ -10,6 +10,7 @@ import {
   signRequestPhotoPath,
 } from '../utils/fileStorage';
 import { generateId } from '../utils/uuid';
+import { createNotificationCenterService } from './notificationCenterService';
 
 type Clock = () => string;
 type UuidFn = () => string;
@@ -245,6 +246,24 @@ export function createSignRequestsService(
       [now, entry.id],
     );
     try { await cloud.cleanupRequestAssets(row.id); } catch {}
+
+    // Local notification: tech-side "your supervisor signed". Mirrors the
+    // push the tech's device receives, so the in-app bell agrees with the OS
+    // banner. Best-effort — a failed insert never breaks signature application.
+    try {
+      const notif = createNotificationCenterService(db, clock, uuid);
+      await notif.record({
+        kind: 'sign_request_signed',
+        payload: {
+          requestId: row.id,
+          entryId: entry.id,
+          supervisorName: row.supervisor_name_snapshot ?? '',
+        },
+      });
+    } catch {
+      /* swallow */
+    }
+
     return (await db.get<Signature>('SELECT * FROM signatures WHERE id = ?', [sigId]))!;
   }
 
