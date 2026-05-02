@@ -4,7 +4,7 @@ This file orients Claude Code sessions working in this repository. Read it first
 
 ## Project
 
-Rope Access Logbook is an offline-first iOS + Android app for SPRAT-certified rope access technicians. It replaces the paper work-experience logbook that techs carry to every job site: entries with hours and work descriptions, on-screen supervisor signatures captured at the end of each shift, and a PDF export suitable for re-certification audits.
+Rope Access Logbook is an offline-first iOS + Android app for SPRAT- and IRATA-certified rope access technicians. It replaces the paper work-experience logbook that techs carry to every job site: entries with hours and work descriptions, on-screen supervisor signatures captured at the end of each shift, and a PDF export suitable for re-certification audits. The app is a paid product distributed behind a $2.99/month subscription with a 7-day free trial; trial entry happens in onboarding via RevenueCat.
 
 The app is one product being built incrementally. Do not describe the codebase as "MVP plus add-ons" or as a sequence of phases or sub-projects — that framing is planning-internal and the user has rejected it. When describing state, use plain "currently implemented" vs. "not yet implemented" language. The "Not yet implemented" section at the bottom of this file enumerates what's in scope but unbuilt.
 
@@ -13,8 +13,9 @@ Primary design references:
 - Core app design: `docs/superpowers/specs/2026-04-15-rope-access-logbook-design.md` (referenced by later specs; check for presence before relying on it — it may not be in the repo).
 - Cloud backup and restore: `docs/superpowers/specs/2026-04-16-cloud-backup-and-restore-design.md`. Section 4 (path normalization + v1→v2 hash migration) and section 6.3 (conflict scenarios A/B/C) are load-bearing.
 - Implementation plan history: `docs/superpowers/plans/2026-04-16-cloud-backup-and-restore.md`. The spec is canonical; the plan is history.
-- Entry-logging enhancements (in-flight, not yet implemented): `docs/superpowers/specs/2026-04-17-entry-logging-enhancements-design.md`.
-- **UI/UX overhaul + dual-cert (current)**: `docs/superpowers/specs/2026-04-25-ui-overhaul-industrial-design.md`. Industrial gauge-panel dark theme, IRATA + SPRAT support, Dashboard tab, drops Analytics standalone screen.
+- **Light-theme redesign + paid-app pivot (current)**: `docs/superpowers/specs/2026-04-30-light-theme-redesign-design.md`. Cream + deep-red light theme, Inter typography, Today/Records/Me tab structure, role-fork onboarding, four-state subscription with lapse-driven read-only mode, in-app notification center.
+- UI/UX overhaul + dual-cert: `docs/superpowers/specs/2026-04-25-ui-overhaul-industrial-design.md` — **superseded** by the 2026-04-30 spec above. Kept for historical context on the prior industrial dark-theme aesthetic; do not use as the canonical UI reference.
+- Entry-logging enhancements: `docs/superpowers/specs/2026-04-17-entry-logging-enhancements-design.md`.
 
 ## Commands
 
@@ -51,7 +52,12 @@ supabase secrets set SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROL
 
 ### Persistence (`src/db/`)
 
-The `DbClient` interface in `client.ts` is the only DB abstraction. It exposes `run`, `get`, `getAll`, `exec` against parameterized SQL. The runtime implementation (`expoClient.ts`) wraps `expo-sqlite` and is instantiated by `initialize.ts`; tests use `better-sqlite3` in-memory via `__tests__/setup.ts`'s `createTestClient()`. Schema lives in `schema.ts` — five tables (`profile`, `entries`, `signatures`, `supervisor_connections_cache`, `sign_requests_cache`) plus indexes. New columns are added idempotently by `migrations.ts` via guarded `PRAGMA table_info` + `ALTER TABLE`; the profile table currently carries `photos_in_backup`, `last_cloud_backup_at`, `last_uploaded_backup_id`, `supervisor_capability_enabled`, `supervisor_cert_number`, `supervisor_directory_visible`, `subscription_tier`; the entries table carries `pending_sign_request_id` (with a partial index); the signatures table carries `hash_version`.
+The `DbClient` interface in `client.ts` is the only DB abstraction. It exposes `run`, `get`, `getAll`, `exec` against parameterized SQL. The runtime implementation (`expoClient.ts`) wraps `expo-sqlite` and is instantiated by `initialize.ts`; tests use `better-sqlite3` in-memory via `__tests__/setup.ts`'s `createTestClient()`. Schema lives in `schema.ts` — six tables (`profile`, `entries`, `signatures`, `supervisor_connections_cache`, `sign_requests_cache`, `notifications`) plus indexes. New columns are added idempotently by `migrations.ts` via guarded `PRAGMA table_info` + `ALTER TABLE`; the profile table currently carries `photos_in_backup`, `last_cloud_backup_at`, `last_uploaded_backup_id`, `supervisor_capability_enabled`, `supervisor_cert_number`, `supervisor_directory_visible`, `subscription_status`; the entries table carries `pending_sign_request_id` (with a partial index); the signatures table carries `hash_version`.
+
+Two migrations landed in the light-theme redesign (A1) and are guarded for idempotency:
+
+- **`subscription_tier` → `subscription_status`**: legacy column (values `'free' | 'pro'`) is renamed to `subscription_status` (values `'unknown' | 'trialing' | 'active' | 'lapsed'`); pro-tier rows map to `'active'`, everything else to `'unknown'`. The old column is dropped in the same step — the app is pre-launch so there are no production rows to preserve.
+- **`notifications` table**: added with `id, kind, payload_json, created_at, read_at, dismissed_at` and a partial index `idx_notifications_unread ON notifications(read_at) WHERE read_at IS NULL` for fast unread-count queries. See "Notifications" section below.
 
 Boot sequence, `initialize.ts::initializeDatabase()`:
 
@@ -76,7 +82,8 @@ Pure functions taking a `DbClient` (and, for cloud services, a `CloudClient` + `
 - `restoreService.ts` — `previewCloudState()`, `restore()`, `uploadCurrentAsCloud()`. See "Cloud backup" below.
 - `supervisorConnectionsService.ts` — `inviteSupervisor`, `acceptInvite`, `declineInvite`, `revokeConnection`, `searchDirectory`, `syncConnections`. See "Supervisor accounts" below.
 - `signRequestsService.ts` — `sendSignRequest`, `withdrawRequest`, `declineRequest`, `signRequest`, `applyIncomingSignature`, `syncSignRequests`. See "Supervisor accounts" below.
-- `subscriptionService.ts` — `init`, `getTier`, `getPackages`, `purchase`, `restore`. RevenueCat wrapper that resolves to `'free' | 'pro'` and mirrors the tier into `profile.subscription_tier` for offline reads. See "Subscriptions / Pro tier" below.
+- `subscriptionService.ts` — `init`, `getStatus`, `getPackages`, `purchase`, `restore`. RevenueCat wrapper that resolves to `'unknown' | 'trialing' | 'active' | 'lapsed'` and mirrors the status into `profile.subscription_status` for offline reads. See "Subscriptions" below.
+- `notificationCenterService.ts` — `record`, `list`, `unreadCount`, `markAllRead`, `dismiss`. Local-only notification store backed by the `notifications` table; not synced to the cloud. See "Notifications" below.
 
 Invariants the service layer enforces (these are contract, not convention):
 
@@ -88,19 +95,21 @@ Invariants the service layer enforces (these are contract, not convention):
 
 ### UI (`src/primitives/`, `screens/`, `components/`, `navigation/`, `theme/`, `hooks/`)
 
-Screens compose from the primitive set exported by `src/primitives/index.ts` — kept primitives: `Screen`, `Button`, `IconButton`, `Input`, `Textarea`, `Card`, `Badge`, `Banner`, `Chip`, `ListRow`, `EmptyState`, `ProgressBar`, `SectionHeader`, `LoadingSpinner`. Industrial-aesthetic primitives added in the UI overhaul: `Panel` (rivet-cornered container), `Gauge` (semi-circular SVG with tick ring + needle), `PunchCardRow` (entry row with date "punch"), `BreakdownBar`, `RecertStrip`, `StatStrip`, `SegmentedToggle`, `SyncLED`, `FabButton`, `SectionLabel`. `ProBadge`, `Rivet`, and `NoiseTexture` live in their own files but are imported directly (not re-exported from the barrel). Primitives read tokens from `theme/ThemeProvider`'s `useTheme()` hook. Screens should not define their own style sheets for anything a primitive already covers.
+Screens compose from the primitive set exported by `src/primitives/index.ts`. Existing primitives: `Screen`, `Button`, `IconButton`, `Input`, `Textarea`, `Card`, `Badge`, `Banner`, `Chip`, `ListRow`, `EmptyState`, `ProgressBar`, `SectionHeader`, `LoadingSpinner`, `Toast` (`ToastProvider` + `useToast`). Light-theme primitives (built in B3, promoted to the main set in F2): `StatusPill`, `FilterChips`, `SegmentedControl`, `Sheet`, `CenterModal`, `ChecklistRow`, `MultiSelectListRow`, `StatCard`, `AvatarUpload`, `SubscriptionStrip`. Primitives read tokens from `theme/ThemeProvider`'s `useTheme()` hook. Screens should not define their own style sheets for anything a primitive already covers.
 
-Design tokens (`theme/tokens.ts`): **dark industrial gauge-panel aesthetic.** Background scale `bgBase #0a0b0d → bgRaised #111418 → bgPanel #181c22 → bgInset #1f242b`; edge scale `edgeBase #262c34 → edgeHi #3a4048 → edgeBright #515864`; ink scale `inkPrimary #dde3eb → inkSecondary → inkTertiary → inkDisabled`. Accent **safety orange** `accentBase #ff5a1f` (primary CTAs, gauge progress, focus rings) with `accentHot #ff7a3d` and `accentDeep #c63f10` for highlights and pressed states. Status: `statusOk #3fb950` (sync, signed), `statusWarn #f5a524` (recert reval, pending), `statusErr #e5484d` (errors, amendments, missing). Cert level chips: `certL1 #6fb7ff`, `certL2 #ffb857`, `certL3 #ff7a3d`. Spacing base 4px (`xs|sm|md|base|lg|xl|xxl`). Sharp corners by default (`radii.none = 0`). Touch targets: 48px minimum, 56px preferred — glove use is assumed. Typography: **JetBrains Mono** for body/numeric/mono variants (`display` 46px gauge numerator, `h1/h2/h3`, `body/bodyBold/bodySmall`, `numeric`, `caption`, `mono`); **Michroma** stencil for `stencil`/`stencilSm`/`stencilLg`/`label`/`micro` (section labels, brand mark, button labels). All legacy color and typography keys are aliased to the new palette so older code paths keep working.
+Design tokens (`theme/tokens.ts`): **light theme — cream background, deep red CTAs, Inter typography.** Surface scale `bgApp #FAF7F2` (warm cream root), `bgSurface #FFFFFF` (cards/sheets), `bgMuted #F5F2ED` (insets, disabled fills); ink scale `inkPrimary` near-black on cream → `inkSecondary` → `inkTertiary` → `inkDisabled`. Accent **deep red** `accentPrimary #B71C1C` for primary CTAs, focus rings, and the lapsed-subscription strip. Status: `statusOk #16A34A` (signed, sync OK), `statusWarn #F59E0B` (pending, cert nearing expiry), `statusErr #DC2626` (lapsed, amendments, missing), `statusInfo #2563EB`. Cert level chips: `certL1` blue, `certL2` amber, `certL3` green. Spacing base 4px. Touch targets: 44pt minimum (Apple HIG). Typography is **Inter only** (JetBrains Mono and Michroma were retired in B2/F1) with roles `title1`, `title2`, `body`, `bodyMed`, `label`, `caption`. There are no legacy industrial aliases — F2 dropped them.
 
-React Query hooks in `src/hooks/` wrap service calls: `useProfile`, `useEntries`, `useSignatures`, `useBackupReminder` (local reminders), `useAuthSession`, `useBackup`, `useBackupStatus`, `useRestore`, `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`, `useSubscriptionTier` / `useSubscriptionPackages` / `usePurchasePackage` / `useRestorePurchases`. `useSignEntry` accepts an optional `afterSign` callback — `SignatureScreen` passes `() => backup.mutate()` to trigger a cloud backup as a post-sign side effect without any event-bus indirection.
+React Query hooks in `src/hooks/` wrap service calls: `useProfile`, `useEntries`, `useSignatures`, `useBackupReminder` (local reminders), `useAuthSession`, `useBackup`, `useBackupStatus`, `useRestore`, `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`, `useSubscriptionStatus` / `useSubscriptionPackages` / `usePurchasePackage` / `useRestorePurchases`, `useReadOnly` (lapse gate — see "Subscriptions" below), `useNotificationCenter`, `useNotifications` (push handler). `useSignEntry` accepts an optional `afterSign` callback — `SignatureScreen` passes `() => backup.mutate()` to trigger a cloud backup as a post-sign side effect without any event-bus indirection.
 
-Composite `src/components/` are wider than a primitive but narrower than a screen — currently `ProfileCloudSection`, `DeleteAccountModal`, and `SupervisorsSection`, all mounted inside `ProfileScreen`.
+Composite `src/components/` are wider than a primitive but narrower than a screen — currently `ProfileCloudSection`, `DeleteAccountModal`, and `SupervisorsSection`, all mounted inside `MeScreen`.
 
 ## Navigation
 
-`src/navigation/RootNavigator.tsx` owns a single `NavigationContainer` with a native-stack of gated branches. If `useProfile()` returns no profile, the Onboarding branch is shown (Onboarding + Auth + MagicLinkWait screens). Once a profile exists and an authenticated session is present, the cloud-state preview runs; if `preview.data.backup_id !== backupStatus.last_uploaded_backup_id` and both local and cloud have data, the CloudConflict branch is the sole route until resolved (Scenario C). Otherwise the Main branch is rendered with bottom tabs — **Dashboard** (primary), **Profile**, and **Inbox** (conditionally when supervisor capability is on) — plus stack screens for `LogbookList` (the demoted entry list, reachable from Dashboard's "ALL N →" link), EntryForm, EntryDetail, Signature, Auth, MagicLinkWait, SupervisorSearch, SignRequestDetail, and Paywall (modal). The standalone `AnalyticsScreen` was deleted in the UI overhaul; its features (work breakdown, year-over-year stats) live on the Dashboard.
+`src/navigation/RootNavigator.tsx` owns a single `NavigationContainer` with a native-stack of gated branches. If `useProfile()` returns no profile, the Onboarding branch is shown (the multi-step `OnboardingScreen` + Auth + MagicLinkWait screens — see "Onboarding" below). Once a profile exists and an authenticated session is present, the cloud-state preview runs; if `preview.data.backup_id !== backupStatus.last_uploaded_backup_id` and both local and cloud have data, the CloudConflict branch is the sole route until resolved (Scenario C). Otherwise the Main branch is rendered with bottom tabs — **Today** (primary), **Records**, **Me**, and **Inbox** (conditionally when supervisor capability is on) — plus stack screens for EntryForm, EntryDetail, Signature, Auth, MagicLinkWait, SupervisorSearch, SignRequestDetail, SupervisorsList, Notifications, SendSignRequest, and the modal sheets PostSaveSheet, SignatureOptionsSheet, and Paywall.
 
-Cloud-related screens (`AuthScreen`, `MagicLinkWaitScreen`, `CloudConflictScreen`) and the `LogbookList` sub-screen are registered in the stack. The default stack header is themed dark (bgRaised chrome with edgeHi hairline divider, Michroma title). Individual screens opt out via `headerShown: false`.
+Tab mapping vs. previous structure: **Today** replaces the old Dashboard (work breakdown, year-over-year stats, cert progress all live here), **Records** replaces the old `LogbookScreen` / `LogbookList` (the standalone `LogbookList` stack route was removed in C2), **Me** replaces the old `ProfileScreen`. The standalone `AnalyticsScreen` and `DashboardScreen` are gone; their content was absorbed into Today and Me.
+
+Cloud-related screens (`AuthScreen`, `MagicLinkWaitScreen`, `CloudConflictScreen`) are registered in the stack. The default stack header uses light-theme chrome (`bgSurface` background, `inkPrimary` Inter title, hairline divider). Individual screens opt out via `headerShown: false`.
 
 `App.tsx` bootstraps in this order:
 
@@ -160,7 +169,7 @@ Detection happens in `RootNavigator` using `useAuthSession`, `useCloudStatePrevi
 
 ## Supervisor accounts
 
-One account type. Every user has a profile and a logbook; any Level III tech can opt into the "I supervise others" capability via the toggle in `ProfileScreen`'s `SupervisorsSection`. Opting in requires a supervisor cert number and publishes a row to the searchable supervisor directory; opting out tombstones the directory row and fails any in-flight inbound requests. Remote signing flips the signer: the supervisor signs on their own device, the tech's local entry is updated via `applyIncomingSignature`.
+One account type. Every user has a profile and a logbook; any Level III tech can opt into the "I supervise others" capability via the toggle in `MeScreen`'s `SupervisorsSection`. Opting in requires a supervisor cert number and publishes a row to the searchable supervisor directory; opting out tombstones the directory row and fails any in-flight inbound requests. Remote signing flips the signer: the supervisor signs on their own device, the tech's local entry is updated via `applyIncomingSignature`.
 
 Unlike cloud backup, this feature uses Postgres. Three tables in Supabase — the first server-side relational state in the project — provisioned by `supabase/migrations/20260418_supervisor_accounts.sql`:
 
@@ -181,7 +190,7 @@ Both factory-pattern, pure functions over `DbClient + CloudClient + FileSystemAb
 
 ### Hooks and UI
 
-React Query hooks: `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`. New screens: `InboxScreen` (pending invites + incoming sign requests; conditionally added as a bottom tab only when the user has supervisor capability enabled), `SignRequestDetailScreen` (supervisor-side review + sign), `SupervisorSearchScreen` (tech-side directory search). `ProfileScreen` gained `SupervisorsSection`. `EntryForm`, `EntryDetail`, and `LogbookScreen` gained send-for-signature surfaces plus pending/declined/awaiting status chips and banners.
+React Query hooks: `useSupervisorConnections`, `useSupervisorSearch`, `useSignRequests`. New screens: `InboxScreen` (pending invites + incoming sign requests; conditionally added as a bottom tab only when the user has supervisor capability enabled), `SignRequestDetailScreen` (supervisor-side review + sign), `SupervisorSearchScreen` (tech-side directory search). `MeScreen` gained `SupervisorsSection`. `EntryFormScreen`, `EntryDetailScreen`, and `RecordsScreen` gained send-for-signature surfaces plus pending/declined/awaiting status chips and banners.
 
 ### Local SQLite deltas
 
@@ -208,22 +217,63 @@ Wiring:
 
 Local notifications (cert expiry at 60 days and at-expiry, plus the supervisor-side "new request" tap target) go through `expo-notifications` and don't touch Supabase.
 
-## Subscriptions / Pro tier
+## Subscriptions
 
-`subscriptionService.ts` wraps `react-native-purchases` (RevenueCat) and resolves the user to `'free' | 'pro'` based on the `pro` entitlement (`ENTITLEMENT_ID = 'pro'`). Keys live in `app.config.ts`'s `extra` as `revenueCatAppleKey` / `revenueCatGoogleKey`, fed from `.env` at build time; `init()` picks the right one per platform and warns if absent. `getTier()` falls back to `profile.subscription_tier` on offline / RevenueCat failures, which is how Pro gating survives without network — every resolution writes the tier back into `profile.subscription_tier`.
+The app is paid: $2.99/month with a 7-day free trial, dispatched via RevenueCat. Onboarding ends at a `SubscribeStep` that starts the trial; there is no skip. `subscriptionService.ts` wraps `react-native-purchases` and resolves the user to one of four states — `'unknown' | 'trialing' | 'active' | 'lapsed'` — based on the `pro` entitlement (`ENTITLEMENT_ID = 'pro'`). Keys live in `app.config.ts`'s `extra` as `revenueCatAppleKey` / `revenueCatGoogleKey`, fed from `.env` at build time; `init()` picks the right one per platform and warns if absent. `getStatus()` falls back to `profile.subscription_status` on offline / RevenueCat failures, which is how status gating survives without network — every resolution writes the value back into `profile.subscription_status`. State semantics:
+
+- **`unknown`** — pre-resolution / offline-with-no-prior-state. Read-only by default until resolution succeeds.
+- **`trialing`** — entitlement active, customer info indicates a trial period. Full app access.
+- **`active`** — entitlement active, paid period. Full app access.
+- **`lapsed`** — entitlement was previously granted but is no longer active. Read-only mode (see below).
+
+**Lapse semantics** — when `subscription_status === 'lapsed'`, the app enters **read-only mode**. The logbook is fully viewable; PDF and JSON export still work (Apple HIG / store policy: users keep access to their content). All write paths are blocked: Add Work CTA, Sign actions, Send-for-Signature, "Back up now," supervisor-mutation flows. The Paywall is re-presentable as a full-screen modal on next launch and on attempted writes. The `useReadOnly()` hook in `src/hooks/useSubscription.ts` returns a boolean derived from `useSubscriptionStatus()`; screens consume it to disable CTAs and show a "Subscription lapsed — renew to continue" banner. Treat `useReadOnly() === true` as the single authority for write-gating in the UI; services don't enforce this gate themselves (it lives in the UI layer because lapse is a user-experience concern, not a data invariant).
 
 Surfaces:
 
 - `PaywallScreen` is registered as a modal in the root stack and presents RevenueCat's packages with a Restore button.
-- `AnalyticsScreen` is Pro-gated — `ProfileScreen` routes to `Paywall` instead when `tier !== 'pro'`.
-- Search by name (as opposed to cert number) in `SupervisorSearchScreen` is a Pro feature; non-Pro users see `ProBadge` affordances linking to Paywall.
-- `ProfileCloudSection` surfaces Pro status on the cloud-backup card.
+- `MeScreen`'s `SubscriptionStrip` primitive renders state-specific copy — "Free trial · {N} days left" + manage link for trialing, "Logbook Pro · renews {date}" + manage link for active, a red "Subscription lapsed" strip with Renew CTA for lapsed.
+- `ProfileCloudSection` continues to surface cloud-backup status alongside subscription state.
+- Search by name (as opposed to cert number) in `SupervisorSearchScreen` remains a paid feature; non-subscribers route to Paywall.
 
-Hooks in `src/hooks/useSubscription.ts`: `useSubscriptionTier`, `useSubscriptionPackages`, `usePurchasePackage`, `useRestorePurchases`. All invalidate the `profile` query on success so the persisted tier stays in sync with React Query cache. The subscription tier is intentionally *not* part of the cloud backup snapshot — it's owned by RevenueCat and resolved per-device.
+Hooks in `src/hooks/useSubscription.ts`: `useSubscriptionStatus`, `useSubscriptionPackages`, `usePurchasePackage`, `useRestorePurchases`, `useReadOnly`. All purchase/restore mutations invalidate the `profile` query on success so the persisted status stays in sync with React Query cache. The subscription status is intentionally *not* part of the cloud backup snapshot — it's owned by RevenueCat and resolved per-device.
+
+## Onboarding
+
+`OnboardingScreen.tsx` is a host component that drives a 6-step state machine; each step is a sibling component in `src/screens/onboarding/` with state shape declared in `onboarding/types.ts`. The canonical sequence is:
+
+1. **welcome** — value prop + "Get started" CTA (`WelcomeStep.tsx`).
+2. **name** — first + last name (`NameStep.tsx`).
+3. **cert** — pick IRATA, SPRAT, or both; for each, level (L1/L2/L3) + cert number + expiry + optional card photo (`CertStep.tsx`).
+4. **role_fork** — *conditional*: only shown when at least one captured cert is L3. Choice between "Use as Tech" (capability OFF) and "Use as Supervisor" (capability ON, requires supervisor cert number + directory visibility default ON). Skipped entirely when no L3 cert is present (`RoleForkStep.tsx`).
+5. **subscribe** — RevenueCat sheet showing $2.99/mo + 7-day trial; CTA "Start free trial." No skip (`SubscribeStep.tsx`).
+6. **cloud_signin** — Supabase magic-link / OAuth (`CloudSignInStep.tsx`). For tech-only signups this step is **deferred** — cloud screens prompt-then-route to sign-in when first used. For supervisor signups (capability ON from step 4) cloud sign-in is required because the supervisor directory row needs an authenticated `auth.uid()`; **steps 5 and 6 are swapped for this path** (cloud sign-in runs before subscribe — see spec §3 line 124).
+
+On final success the host writes the profile, configures the supervisor directory row if applicable, and navigates to Today.
+
+## Notifications
+
+In-app notifications are recorded into a local `notifications` table (`id`, `kind`, `payload_json`, `created_at`, `read_at`, `dismissed_at`) added in A1. Eight kinds are currently emitted:
+
+- `cert_expiry_60d`, `cert_expiry_0d` — local cert-expiry checks (60 days out, at expiry).
+- `sign_request_received`, `sign_request_signed`, `sign_request_declined`, `sign_request_withdrawn` — supervisor / tech mutation echoes.
+- `level_upgrade` — cert level promotion (e.g. lifetime hours threshold met).
+- `backup_stale` — local-export reminder past the staleness threshold.
+
+The kinds are an exhaustive union typed as `NotificationKind` in `src/services/notificationCenterService.ts`. The service exposes `record({ kind, payload, dedupeOnDay })` — dedupe-on-day collapses repeats of the same kind on the same calendar day (used for cert-expiry and backup-stale so we don't spam the bell every minute the app is open) — plus `list`, `unreadCount`, `markAllRead`, and `dismiss`.
+
+Hook surface: `useNotificationCenter()` in `src/hooks/useNotifications.ts` returns `{ items, unreadCount, markAllRead, dismiss, isLoading }`. The bell icon on Today shows a red dot when `unreadCount > 0`. The full list lives at `NotificationsScreen.tsx` (registered in the root stack).
+
+Write side, by source:
+
+- **Sign-request mutations** record locally inside `signRequestsService` after the underlying Postgres write succeeds (mirrors the push-dispatch pattern — see "Push notifications" above).
+- **Foreground checks** in `App.tsx` write `cert_expiry_*` and `backup_stale` rows on `AppState → active` transitions, deduped on `kind + day`.
+- **Inbound push** is handled by `useNotifications` (in `src/hooks/useNotifications.ts`); the handler derives a `kind` from `sign_requests_cache` lookups and records into the notification center so the bell badge updates regardless of whether the OS-level notification was tapped.
+
+Notifications are **local-only** — they are not part of the cloud backup snapshot. A device that restores from cloud starts with an empty notification list.
 
 ## Testing
 
-The suite currently has **17 test files / 150 tests** (`__tests__/services/` × 12, `__tests__/db/` × 3, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
+The suite currently has **21 test files / 229 tests** (`__tests__/services/` × 16, `__tests__/db/` × 3, `__tests__/utils/` × 2). Real SQLite via `better-sqlite3` in-memory — not mocks — through `createTestClient()`. Every test exercises `runSchemaMigrations()` against the canonical schema so any drift between `schema.ts` and `migrations.ts` fails a test. `__tests__/testHash.ts` mirrors `expo-crypto`'s SHA-256 using Node's `crypto` module so hashes match between tests and production.
 
 Cloud tests use `createMockCloudClient()` + `createMockFs()`. The jest config (`jest.config.js`) uses the `jest-expo` preset and `transformIgnorePatterns` tuned to leave RN / Expo packages untransformed. Individual service test files mock `expo-file-system/legacy` with a stable `documentDirectory` (see the top of `signingService.test.ts`) so `normalizeAppPath` behaves deterministically; `@react-native-async-storage/async-storage` is mocked with an in-memory map as part of the jest-expo preset.
 
@@ -246,7 +296,7 @@ All persistent images live under `FileSystem.documentDirectory/logbook/` with su
 ## Known state
 
 - `npx tsc --noEmit` is clean. `supabase/` is excluded from the app's tsconfig — the `delete-account` Edge Function is Deno code (URL imports, `Deno` global) and doesn't participate in the app type check.
-- `npx jest` is clean: 150 passed, 17 suites (run with `--runInBand` if you see flakes from parallel mock-cloud state).
+- `npx jest` is clean: 229 passed, 21 suites (run with `--runInBand` if you see flakes from parallel mock-cloud state).
 
 ## Not yet implemented
 
