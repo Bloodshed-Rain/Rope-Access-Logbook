@@ -116,8 +116,9 @@ Cloud-related screens (`AuthScreen`, `MagicLinkWaitScreen`, `CloudConflictScreen
 1. `react-native-url-polyfill/auto` sits above every other import (it must load before `@supabase/supabase-js` pulls in `URL`).
 2. `initializeDatabase()` runs; while it's running a `LoadingSpinner` is shown.
 3. On DB-ready, `createSubscriptionService(db).init()` configures RevenueCat with the platform-appropriate key from `app.config.ts`'s `extra` block.
-4. An `AppState` listener is attached: `background` fires a best-effort `cloudBackupService.backup()`; `active` fires best-effort `supervisorConnectionsService.sync()` + `signRequestsService.sync()` so invites and incoming sign requests catch up after the app returns from the background.
-5. An `expo-linking` listener consumes `logbook://auth-callback` URLs for magic-link completion.
+4. The same effect bridges Supabase identity into RevenueCat: a one-shot `cloud.getSession()` for cold-boot session restore plus a live `cloud.onAuthStateChange` subscription. Both call `subscriptionService.identify(user_id)` on a present session and `subscriptionService.signOut()` on a null session, then invalidate the React Query `subscriptionStatus` cache so screens re-read.
+5. An `AppState` listener is attached: `background` fires a best-effort `cloudBackupService.backup()`; `active` fires best-effort `supervisorConnectionsService.sync()` + `signRequestsService.sync()` so invites and incoming sign requests catch up after the app returns from the background.
+6. An `expo-linking` listener consumes `logbook://auth-callback` URLs for magic-link completion.
 
 ## Cloud backup
 
@@ -219,7 +220,7 @@ Local notifications (cert expiry at 60 days and at-expiry, plus the supervisor-s
 
 ## Subscriptions
 
-The app is paid: $2.99/month with a 7-day free trial, dispatched via RevenueCat. Onboarding ends at a `SubscribeStep` that starts the trial; there is no skip. `subscriptionService.ts` wraps `react-native-purchases` and resolves the user to one of four states — `'unknown' | 'trialing' | 'active' | 'lapsed'` — based on the `pro` entitlement (`ENTITLEMENT_ID = 'pro'`). Keys live in `app.config.ts`'s `extra` as `revenueCatAppleKey` / `revenueCatGoogleKey`, fed from `.env` at build time; `init()` picks the right one per platform and warns if absent. `getStatus()` falls back to `profile.subscription_status` on offline / RevenueCat failures, which is how status gating survives without network — every resolution writes the value back into `profile.subscription_status`. State semantics:
+The app is paid: $2.99/month with a 7-day free trial, dispatched via RevenueCat. Onboarding ends at a `SubscribeStep` that starts the trial; there is no skip. `subscriptionService.ts` wraps `react-native-purchases` and resolves the user to one of four states — `'unknown' | 'trialing' | 'active' | 'lapsed'` — based on the `pro` entitlement (`ENTITLEMENT_ID = 'pro'`). Keys live in `app.config.ts`'s `extra` as `revenueCatAppleKey` / `revenueCatGoogleKey`, fed from `.env` at build time; `init()` picks the right one per platform and warns if absent. `getStatus()` falls back to `profile.subscription_status` on offline / RevenueCat failures, which is how status gating survives without network — every resolution writes the value back into `profile.subscription_status`. Dev/test currently uses RC's Test Store key (one `test_…` value pasted into both env vars); real `appl_` / `goog_` platform keys swap in once App Store Connect / Play Console products are wired. The full dashboard + per-store setup runbook is `docs/runbooks/revenuecat.md`. State semantics:
 
 - **`unknown`** — pre-resolution / offline-with-no-prior-state. Read-only by default until resolution succeeds.
 - **`trialing`** — entitlement active, customer info indicates a trial period. Full app access.
@@ -236,6 +237,8 @@ Surfaces:
 - Search by name (as opposed to cert number) in `SupervisorSearchScreen` remains a paid feature; non-subscribers route to Paywall.
 
 Hooks in `src/hooks/useSubscription.ts`: `useSubscriptionStatus`, `useSubscriptionPackages`, `usePurchasePackage`, `useRestorePurchases`, `useReadOnly`. All purchase/restore mutations invalidate the `profile` query on success so the persisted status stays in sync with React Query cache. The subscription status is intentionally *not* part of the cloud backup snapshot — it's owned by RevenueCat and resolved per-device.
+
+**Identity bridge** — `subscriptionService.identify(userId)` calls `Purchases.logIn(userId)` and `subscriptionService.signOut()` calls `Purchases.logOut()`. `App.tsx` subscribes to `cloud.onAuthStateChange` (plus a one-shot `cloud.getSession()` for cold-boot) and forwards every transition into the bridge so any RevenueCat entitlement granted under the user's Supabase id appears on this device automatically, and signing out reverts to an anonymous RC user. Both methods swallow RC failures and fall back to `resolveStatus()` so a network blip during sign-in never breaks the auth state listener. Without the bridge, every install would get a fresh anonymous RC profile and purchases wouldn't carry across reinstalls or to a second device.
 
 ## Onboarding
 
