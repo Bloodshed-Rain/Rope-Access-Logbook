@@ -1,171 +1,216 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressable } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import Svg, { Path } from 'react-native-svg';
-import { Screen, Button, Input, useToast } from '../primitives';
-import { useTheme } from '../theme/ThemeProvider';
+// src/screens/OnboardingScreen.tsx
+// Multi-step onboarding wizard host. Spec §3 lines 113-124. Plan task E1.
+//
+// Single mounted screen — internal `step` state drives which sub-step renders.
+// Keeping the wizard in one stack route avoids losing form state on navigation
+// (the magic-link path navigates to MagicLinkWait, which pops back here with
+// our state intact). Hardware-back is intercepted to step backward; from
+// `welcome` it falls through and exits the app, matching native onboarding
+// expectations.
+//
+// Profile creation is the final side-effect, fired only after all required
+// steps resolve:
+//   - tech path:   subscribe → createProfile → done
+//   - supervisor:  cloud_signin → createProfile → enableSupervisorCapability → done
+// Subscription status is re-synced post-create so the just-purchased trial is
+// reflected in `profile.subscription_status` (purchase() runs an UPDATE, which
+// is a no-op until a profile row exists).
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, BackHandler } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../primitives';
 import { useCreateProfile } from '../hooks/useProfile';
-import { SpratLevel } from '../types';
-import { Chip } from '../primitives/Chip';
-
-type Step = 'welcome' | 'data-warning' | 'profile';
-
-function Figure8Knot() {
-  const { colors } = useTheme();
-  return (
-    <Svg width="160" height="160" viewBox="0 0 100 100">
-      <Path
-        d="M 50 10 C 30 10 30 40 50 40 C 70 40 70 70 50 70 C 30 70 30 50 50 50 C 70 50 70 20 50 20"
-        fill="none"
-        stroke={colors.navy}
-        strokeWidth="12"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M 50 10 C 30 10 30 40 50 40 C 70 40 70 70 50 70 C 30 70 30 50 50 50 C 70 50 70 20 50 20"
-        fill="none"
-        stroke={colors.ropeTanLight}
-        strokeWidth="6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
+import { createSupabaseCloudClient } from '../cloud/supabaseClient';
+import { createProfileService } from '../services/profileService';
+import { createSubscriptionService } from '../services/subscriptionService';
+import { getClient } from '../db/initialize';
+import { CertBlockInput, CreateProfileInput } from '../types';
+import {
+  OnboardingState,
+  hasAnyL3,
+  initialOnboardingState,
+} from './onboarding/types';
+import { WelcomeStep } from './onboarding/WelcomeStep';
+import { NameStep } from './onboarding/NameStep';
+import { CertStep } from './onboarding/CertStep';
+import { RoleForkStep } from './onboarding/RoleForkStep';
+import { SubscribeStep } from './onboarding/SubscribeStep';
+import { CloudSignInStep } from './onboarding/CloudSignInStep';
 
 export function OnboardingScreen() {
-  const { colors, spacing, typography, radii, touchTarget } = useTheme();
-  const nav = useNavigation();
-  const navTo = (name: string) =>
-    (nav as unknown as { navigate: (n: string) => void }).navigate(name);
-  const [step, setStep] = useState<Step>('welcome');
-  const [fullName, setFullName] = useState('');
-  const [spratId, setSpratId] = useState('');
-  const [level, setLevel] = useState<SpratLevel>('I');
-  const [certExpiresOn, setCertExpiresOn] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [employer, setEmployer] = useState('');
+  const [state, setState] = useState<OnboardingState>(initialOnboardingState);
+  const [completing, setCompleting] = useState(false);
   const createProfile = useCreateProfile();
+  const queryClient = useQueryClient();
   const toast = useToast();
+  const cloud = useMemo(() => createSupabaseCloudClient(), []);
 
-  const levels: SpratLevel[] = ['I', 'II', 'III'];
+  // Derived: skip role_fork unless any cert is L3.
+  const showRoleFork = hasAnyL3(state);
 
-  if (step === 'welcome') {
-    return (
-      <Screen>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.lg, padding: spacing.xl }}>
-          <Figure8Knot />
-          <Text style={[typography.h1, { color: colors.textPrimary, textAlign: 'center', marginTop: spacing.md }]}>
-            ROPE ACCESS LOGBOOK
-          </Text>
-          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center' }]}>
-            Your digital SPRAT work-experience logbook. Log hours, capture signatures, export for re-certification.
-          </Text>
-          
-          <View style={{ width: '100%', marginTop: spacing.xl, gap: spacing.base }}>
-            <Button title="START LOGGING" onPress={() => setStep('data-warning')} />
-            <Button title="SIGN IN" variant="ghost" onPress={() => navTo('Auth')} />
-          </View>
-        </View>
-      </Screen>
-    );
+  const goTo = (step: OnboardingState['step']) =>
+    setState((s) => ({ ...s, step }));
+
+  const goBack = useCallback(() => {
+    setState((s) => {
+      switch (s.step) {
+        case 'welcome':
+          return s;
+        case 'name':
+          return { ...s, step: 'welcome' };
+        case 'cert':
+          return { ...s, step: 'name' };
+        case 'role_fork':
+          return { ...s, step: 'cert' };
+        case 'subscribe':
+          return { ...s, step: hasAnyL3(s) ? 'role_fork' : 'cert' };
+        case 'cloud_signin':
+          return { ...s, step: 'subscribe' };
+        default:
+          return s;
+      }
+    });
+  }, []);
+
+  // Hardware back: step backward unless we're on welcome.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (state.step === 'welcome') return false;
+      goBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, [state.step, goBack]);
+
+  // Build CreateProfileInput from captured state. Throws if no cert held —
+  // the cert step's "Continue" gate guarantees this can't happen at runtime.
+  function buildProfileInput(s: OnboardingState): CreateProfileInput {
+    const fullName = `${s.name.first.trim()} ${s.name.last.trim()}`.trim();
+    const sprat: CertBlockInput | undefined =
+      s.certs.sprat.held && s.certs.sprat.level
+        ? {
+            id: s.certs.sprat.id.trim(),
+            level: s.certs.sprat.level,
+            cert_expires_on: s.certs.sprat.expires,
+            card_photo_path: s.certs.sprat.cardPhotoUri ?? null,
+          }
+        : undefined;
+    const irata: CertBlockInput | undefined =
+      s.certs.irata.held && s.certs.irata.level
+        ? {
+            id: s.certs.irata.id.trim(),
+            level: s.certs.irata.level,
+            cert_expires_on: s.certs.irata.expires,
+            card_photo_path: s.certs.irata.cardPhotoUri ?? null,
+          }
+        : undefined;
+    return {
+      full_name: fullName,
+      sprat,
+      irata,
+      primary_cert: s.certs.primary,
+    };
   }
 
-  if (step === 'data-warning') {
-    return (
-      <Screen>
-        <View style={{ flex: 1, justifyContent: 'center', gap: spacing.lg, padding: spacing.xl }}>
-          <Text style={[typography.h1, { color: colors.textPrimary, textAlign: 'center' }]}>Local storage</Text>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>
-            Your data is stored locally on this device. There is no cloud backup in this version.
-          </Text>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>
-            Export your logbook regularly. A lost or broken phone means a lost logbook without a backup.
-          </Text>
-          <Button title="I UNDERSTAND" onPress={() => setStep('profile')} style={{ marginTop: spacing.lg }} />
-        </View>
-      </Screen>
-    );
+  // Final commit. Tech path runs after subscribe; supervisor path runs after
+  // cloud_signin (which guarantees an authed session, required for the
+  // directory upsert).
+  const finishOnboarding = useCallback(async () => {
+    if (completing) return;
+    setCompleting(true);
+    try {
+      const input = buildProfileInput(state);
+      await createProfile.mutateAsync(input);
+
+      if (state.role === 'supervisor') {
+        const db = getClient();
+        const profileSvc = createProfileService(db);
+        await profileSvc.enableSupervisorCapability(
+          state.supervisorCertNumber.trim(),
+          input.full_name,
+          state.directoryVisible,
+          cloud,
+        );
+      }
+
+      // Re-sync RC status into the just-created profile row so trial state is
+      // reflected in subsequent reads (subscriptionService.purchase already
+      // ran an UPDATE, but it was a no-op pre-create).
+      try {
+        await createSubscriptionService(getClient()).getStatus();
+      } catch {
+        /* offline-tolerant — defaults to 'unknown' */
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] });
+      toast.show({ message: 'Profile created', variant: 'ok' });
+    } catch (e) {
+      const message = (e as Error)?.message ?? 'Could not create profile.';
+      Alert.alert('Setup failed', message);
+      setCompleting(false);
+    }
+  }, [completing, state, createProfile, queryClient, toast, cloud]);
+
+  // Step renderer.
+  switch (state.step) {
+    case 'welcome':
+      return <WelcomeStep onNext={() => goTo('name')} />;
+
+    case 'name':
+      return (
+        <NameStep
+          state={state}
+          onChange={(name) => setState((s) => ({ ...s, name }))}
+          onBack={goBack}
+          onNext={() => goTo('cert')}
+        />
+      );
+
+    case 'cert':
+      return (
+        <CertStep
+          state={state}
+          onChange={(certs) => setState((s) => ({ ...s, certs }))}
+          onBack={goBack}
+          onNext={() => {
+            if (showRoleFork) goTo('role_fork');
+            else setState((s) => ({ ...s, role: 'tech', step: 'subscribe' }));
+          }}
+        />
+      );
+
+    case 'role_fork':
+      return (
+        <RoleForkStep
+          state={state}
+          onChange={(patch) => setState((s) => ({ ...s, ...patch }))}
+          onBack={goBack}
+          onNext={() => goTo('subscribe')}
+        />
+      );
+
+    case 'subscribe':
+      return (
+        <SubscribeStep
+          onBack={goBack}
+          onPurchased={() => {
+            if (state.role === 'supervisor') goTo('cloud_signin');
+            else finishOnboarding();
+          }}
+        />
+      );
+
+    case 'cloud_signin':
+      return (
+        <CloudSignInStep
+          onBack={goBack}
+          onSignedIn={() => finishOnboarding()}
+        />
+      );
+
+    default:
+      return <WelcomeStep onNext={() => goTo('name')} />;
   }
-
-  const canSubmit = fullName.trim() && spratId.trim() && certExpiresOn.trim();
-
-  return (
-    <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ gap: spacing.base, padding: spacing.base, paddingBottom: spacing.xxl }}>
-          <Text style={[typography.h1, { color: colors.textPrimary, marginTop: spacing.md }]}>Create your profile</Text>
-          <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>You can update this later in your profile tab.</Text>
-          <Input label="Full name" value={fullName} onChangeText={setFullName} placeholder="John Doe" />
-          <Input
-            label="SPRAT ID"
-            value={spratId}
-            onChangeText={(t) => setSpratId(t.replace(/\D/g, '').slice(0, 5))}
-            placeholder="12345"
-            keyboardType="number-pad"
-            maxLength={5}
-          />
-          <View style={{ gap: spacing.xs }}>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3 }]}>Current level</Text>
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              {levels.map((l) => (
-                <Chip key={l} label={`Level ${l}`} selected={level === l} onPress={() => setLevel(l)} />
-              ))}
-            </View>
-          </View>
-          <View style={{ gap: spacing.sm }}>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3 }]}>Certification expiry date</Text>
-            <Pressable onPress={() => setShowDatePicker(true)}>
-              <View style={{
-                borderWidth: 2, borderColor: colors.border, borderRadius: radii.md,
-                paddingHorizontal: spacing.base, paddingVertical: spacing.base,
-                minHeight: touchTarget.min, justifyContent: 'center',
-                backgroundColor: colors.surface,
-              }}>
-                <Text style={[typography.body, { color: certExpiresOn ? colors.textPrimary : colors.textTertiary }]}>
-                  {certExpiresOn || 'Select date'}
-                </Text>
-              </View>
-            </Pressable>
-            {showDatePicker && (
-              <DateTimePicker
-                value={certExpiresOn ? new Date(certExpiresOn) : new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                minimumDate={new Date()}
-                onChange={(event, selectedDate) => {
-                  if (Platform.OS === 'android') setShowDatePicker(false);
-                  if (event.type === 'set' && selectedDate) {
-                    setCertExpiresOn(selectedDate.toISOString().slice(0, 10));
-                    if (Platform.OS === 'ios') setShowDatePicker(false);
-                  } else if (Platform.OS === 'ios' && event.type === 'dismissed') {
-                    setShowDatePicker(false);
-                  }
-                }}
-              />
-            )}
-          </View>
-          <Input label="Default employer" value={employer} onChangeText={setEmployer} placeholder="Company name" />
-          <Button title="CREATE PROFILE" onPress={() => createProfile.mutate({
-            full_name: fullName.trim(), sprat_id: spratId.trim(), level,
-            cert_expires_on: certExpiresOn.trim(), default_employer: employer.trim(),
-          }, {
-            onSuccess: () => {
-              toast.show({ message: 'Profile created', variant: 'ok' });
-              Alert.alert(
-                'Back up your logbook?',
-                'Sign in to keep your logbook safe in the cloud and restore it on a new phone. You can do this later from Profile.',
-                [
-                  { text: 'Not now', style: 'cancel' },
-                  { text: 'Sign up', onPress: () => navTo('Auth') },
-                ],
-              );
-            },
-          })} disabled={!canSubmit} loading={createProfile.isPending} style={{ marginTop: spacing.lg }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Screen>
-  );
 }
