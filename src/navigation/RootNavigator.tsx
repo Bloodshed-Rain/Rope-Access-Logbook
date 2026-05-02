@@ -264,15 +264,21 @@ export function RootNavigator() {
             <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+            {/* Both sheets render their visual presentation through the v2
+                CenterModal / Sheet primitives, which already wrap content in
+                an RN `<Modal>` with their own scrim + animation. The screen
+                itself just hosts the route — `animation: 'none'` so the
+                native-stack transition doesn't fight the inner Modal's
+                animation. F2 cleanup may collapse this double-Modal pattern. */}
             <Stack.Screen
               name="PostSaveSheet"
               component={PostSaveSheet}
-              options={{ presentation: 'transparentModal', animation: 'fade', headerShown: false }}
+              options={{ presentation: 'transparentModal', animation: 'none', headerShown: false }}
             />
             <Stack.Screen
               name="SignatureOptionsSheet"
               component={SignatureOptionsSheet}
-              options={{ presentation: 'transparentModal', animation: 'slide_from_bottom', headerShown: false }}
+              options={{ presentation: 'transparentModal', animation: 'none', headerShown: false }}
             />
           </>
         )}

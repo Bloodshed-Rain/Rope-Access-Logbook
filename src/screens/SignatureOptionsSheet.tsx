@@ -31,7 +31,7 @@ interface BigTapTargetProps {
 }
 
 function BigTapTarget({ Icon, title, subtitle, onPress }: BigTapTargetProps) {
-  const { colors, spacing, radii, borders, typography } = useTheme();
+  const { colors, spacing, radii, borders, typography, touchTarget } = useTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -46,6 +46,7 @@ function BigTapTarget({ Icon, title, subtitle, onPress }: BigTapTargetProps) {
         padding: spacing.base,
         borderWidth: borders.hair,
         borderColor: colors.border,
+        minHeight: Math.max(touchTarget.preferred, 56),
       })}
     >
       <Icon size={28} color={colors.accentPrimary} />
@@ -63,6 +64,10 @@ export function SignatureOptionsSheet() {
   const route = useRoute<R>();
   const { entryId } = route.params;
 
+  // goBack rather than popToTop: SignatureOptionsSheet is reachable from
+  // multiple entry points (PostSaveSheet now, EntryDetail in D4). goBack
+  // returns to whichever screen pushed the sheet; popToTop would wrongly
+  // dump the user past EntryDetail when they expected to return to it.
   const handleClose = () => navigation.goBack();
 
   return (
