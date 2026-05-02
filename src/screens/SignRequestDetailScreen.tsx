@@ -67,7 +67,10 @@ export function SignRequestDetailScreen() {
   }>({ paths: [], missingCount: 0, pending: true });
 
   useEffect(() => {
-    if (!req) return;
+    if (!req) {
+      setPhotoView({ paths: [], missingCount: 0, pending: true });
+      return;
+    }
     let cancelled = false;
     (async () => {
       const row = await db.get<{ local_photo_paths_json: string | null }>(
@@ -109,10 +112,8 @@ export function SignRequestDetailScreen() {
     entry.work_types.includes('other') &&
     (entry.other_work_description ?? '').trim().length > 0;
 
-  const requestMessage =
-    typeof (req as { message?: unknown }).message === 'string'
-      ? ((req as { message?: string }).message ?? '').trim()
-      : '';
+  const rawMessage = (req as { message?: unknown }).message;
+  const requestMessage = typeof rawMessage === 'string' ? rawMessage.trim() : '';
 
   const handleSign = async (png_base64: string) => {
     setSigning(true);
@@ -321,18 +322,28 @@ export function SignRequestDetailScreen() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
               {Array.from({ length: entry.photo_paths.length }).map((_, i) => {
                 const localPath = photoView.pending ? '' : (photoView.paths[i] ?? '');
+                const photoKey = entry.photo_paths[i] ?? `ph-${i}`;
                 if (localPath) {
                   return (
                     <Image
-                      key={i}
+                      key={photoKey}
                       source={{ uri: localPath }}
                       style={{ width: 100, height: 100, borderRadius: radii.sm }}
+                      onError={() => {
+                        // Local file disappeared between cache resolve and
+                        // render — drop the path so the placeholder renders.
+                        setPhotoView((cur) => {
+                          const next = [...cur.paths];
+                          next[i] = '';
+                          return { ...cur, paths: next, missingCount: cur.missingCount + 1 };
+                        });
+                      }}
                     />
                   );
                 }
                 return (
                   <View
-                    key={i}
+                    key={photoKey}
                     style={{
                       width: 100,
                       height: 100,
