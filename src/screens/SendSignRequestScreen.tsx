@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, X } from 'lucide-react-native';
+import { Check, ChevronRight, X } from 'lucide-react-native';
 import { Screen, Button, Textarea, LoadingSpinner, useToast } from '../primitives';
 import { Sheet } from '../primitives/v2/Sheet';
 import { useTheme } from '../theme/ThemeProvider';
@@ -131,6 +131,12 @@ export function SendSignRequestScreen() {
       // once SignRequest carries an optional message column.
       toast.show({ message: 'Request sent', variant: 'ok' });
       isLeavingIntentionally.current = true;
+      // popToTop lands the user at Main from the PostSaveSheet/SignatureOptionsSheet
+      // entry-points (those `replace`d the wizard, so popToTop unwinds the modal
+      // chain). D4 will wire EntryDetail → SignatureOptionsSheet → here; from
+      // that path popToTop also drops EntryDetail off the stack, which may not
+      // be desired. Revisit in D4 — likely a contextual return-to via route
+      // params or a smarter pop count.
       navigation.popToTop();
     } catch (err) {
       const m = (err as Error)?.message ?? String(err);
@@ -309,37 +315,45 @@ export function SendSignRequestScreen() {
           </View>
         ) : (
           <View style={{ gap: spacing.xs }}>
-            {accepted.map((c) => (
-              <Pressable
-                key={c.id}
-                accessibilityRole="button"
-                accessibilityLabel={c.supervisor_display_name ?? c.invited_email}
-                onPress={() => {
-                  setPicked(c);
-                  setPickerOpen(false);
-                }}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  backgroundColor: pressed ? colors.bgMuted : colors.bgSurface,
-                  borderRadius: radii.md,
-                  borderWidth: borders.hair,
-                  borderColor: colors.border,
-                  paddingHorizontal: spacing.base,
-                  paddingVertical: spacing.md,
-                  minHeight: touchTarget.preferred,
-                })}
-              >
-                {/* No level chip: supervisor_connections_cache doesn't carry
-                    a level column today, and the spec instructs us to drop
-                    the chip when the data isn't locally available. */}
-                <Text style={[typography.body, { color: colors.textPrimary, flex: 1 }]}>
-                  {c.supervisor_display_name ?? c.invited_email}
-                </Text>
-                <ChevronRight size={20} color={colors.textSecondary} />
-              </Pressable>
-            ))}
+            {accepted.map((c) => {
+              const isSelected = picked?.id === c.id;
+              return (
+                <Pressable
+                  key={c.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={c.supervisor_display_name ?? c.invited_email}
+                  onPress={() => {
+                    setPicked(c);
+                    setPickerOpen(false);
+                  }}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: pressed ? colors.bgMuted : colors.bgSurface,
+                    borderRadius: radii.md,
+                    borderWidth: borders.hair,
+                    borderColor: isSelected ? colors.accentPrimary : colors.border,
+                    paddingHorizontal: spacing.base,
+                    paddingVertical: spacing.md,
+                    minHeight: touchTarget.preferred,
+                  })}
+                >
+                  {/* No level chip: supervisor_connections_cache doesn't carry
+                      a level column today, and the spec instructs us to drop
+                      the chip when the data isn't locally available. */}
+                  <Text style={[typography.body, { color: colors.textPrimary, flex: 1 }]}>
+                    {c.supervisor_display_name ?? c.invited_email}
+                  </Text>
+                  {isSelected ? (
+                    <Check size={20} color={colors.accentPrimary} />
+                  ) : (
+                    <ChevronRight size={20} color={colors.textSecondary} />
+                  )}
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </Sheet>
