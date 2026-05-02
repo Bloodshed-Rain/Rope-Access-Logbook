@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -8,10 +8,13 @@ export interface SheetProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  scrollable?: boolean;
 }
 
-export function Sheet({ open, onClose, title, children }: SheetProps) {
+export function Sheet({ open, onClose, title, children, scrollable = true }: SheetProps) {
   const { colors, radii, spacing, typography, borders } = useTheme();
+
+  const Body = scrollable ? ScrollView : View;
 
   return (
     <Modal
@@ -23,10 +26,12 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
     >
       <Pressable
         onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
         style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
       >
         <Pressable
-          onPress={(e) => e.stopPropagation()}
+          onPress={() => {}}
           style={{
             backgroundColor: colors.bgSurface,
             borderTopLeftRadius: radii.lg,
@@ -64,13 +69,20 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
               onPress={onClose}
               hitSlop={8}
               style={{ padding: spacing.xs }}
+              accessibilityRole="button"
               accessibilityLabel="Close"
             >
               <X size={24} color={colors.textSecondary} />
             </Pressable>
           </View>
 
-          <View style={{ padding: spacing.base }}>{children}</View>
+          <Body
+            {...(scrollable
+              ? { contentContainerStyle: { padding: spacing.base } }
+              : { style: { padding: spacing.base } })}
+          >
+            {children}
+          </Body>
         </Pressable>
       </Pressable>
     </Modal>

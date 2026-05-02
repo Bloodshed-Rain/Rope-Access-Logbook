@@ -71,6 +71,7 @@ export function StatCard({ title, big, caption, progress, illustration, onPress 
     return (
       <Pressable
         onPress={onPress}
+        accessibilityRole="button"
         style={({ pressed }) => [cardStyle, shadows.sm, { opacity: pressed ? 0.8 : 1 }]}
       >
         {inner}

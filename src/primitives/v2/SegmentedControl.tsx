@@ -33,6 +33,9 @@ export function SegmentedControl({ options, value, onChange }: SegmentedControlP
           <Pressable
             key={option.value}
             onPress={() => onChange(option.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            accessibilityLabel={option.label}
             style={({ pressed }) => ({
               flex: 1,
               paddingVertical: spacing.md,

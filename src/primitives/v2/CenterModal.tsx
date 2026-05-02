@@ -15,6 +15,8 @@ export function CenterModal({ open, onClose, children }: CenterModalProps) {
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
         onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
         style={{
           flex: 1,
           backgroundColor: colors.overlay,
@@ -24,7 +26,7 @@ export function CenterModal({ open, onClose, children }: CenterModalProps) {
         }}
       >
         <Pressable
-          onPress={(e) => e.stopPropagation()}
+          onPress={() => {}}
           style={[
             {
               backgroundColor: colors.bgSurface,

@@ -39,6 +39,8 @@ export function SubscriptionStrip({
         {onRenew && (
           <Pressable
             onPress={onRenew}
+            accessibilityRole="button"
+            accessibilityLabel="Renew subscription"
             style={({ pressed }) => ({
               backgroundColor: pressed ? colors.accentPressed : colors.accentPrimary,
               borderRadius: radii.md,
@@ -87,6 +89,8 @@ export function SubscriptionStrip({
       {onManage && (
         <Pressable
           onPress={onManage}
+          accessibilityRole="button"
+          accessibilityLabel="Manage subscription"
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
           <Text style={[typography.label, { color: colors.accentPrimary }]}>

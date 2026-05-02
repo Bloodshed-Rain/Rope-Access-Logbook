@@ -23,6 +23,9 @@ export function FilterChips({ chips, selectedChip, onSelectChip }: FilterChipsPr
           <Pressable
             key={chip}
             onPress={() => onSelectChip(chip)}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            accessibilityLabel={chip}
             style={({ pressed }) => ({
               paddingHorizontal: spacing.md,
               paddingVertical: spacing.sm,
