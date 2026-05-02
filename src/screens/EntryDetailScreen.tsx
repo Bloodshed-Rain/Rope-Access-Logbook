@@ -5,13 +5,13 @@
 // from the industrial-aesthetic version — this re-skin only touches visuals,
 // button copy, and routes Get-signature through SignatureOptionsSheet.
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Alert, Image, Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import { CheckCircle2 } from 'lucide-react-native';
-import { Screen, Button, Banner } from '../primitives';
+import { Screen, Button, Banner, LoadingSpinner, useToast } from '../primitives';
 import { StatusPill } from '../primitives/v2';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry, useDeleteEntry, useAmendmentForEntry } from '../hooks/useEntries';
@@ -36,18 +36,23 @@ export function EntryDetailScreen() {
   const route = useRoute<DetailRoute>();
   const entryId = route.params.entryId;
 
-  const { data: entry } = useEntry(entryId);
+  const { data: entry, isLoading: entryIsLoading } = useEntry(entryId);
   const { data: signature } = useSignatureForEntry(entryId);
   const { data: integrity } = useVerifyIntegrity(entryId);
   const { data: amendment } = useAmendmentForEntry(entryId);
   const deleteEntry = useDeleteEntry();
+  const toast = useToast();
 
   const db = useMemo(() => getClient(), []);
   const cloud = useMemo(() => createSupabaseCloudClient(), []);
   const fs = useMemo(() => createExpoFsAbstraction(), []);
   const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
   const connections = useSupervisorConnections({ db, cloud });
-  const myRequest = (signReqs.query.data ?? []).find((r) => r.entry_payload.id === entryId);
+  // Stale withdrawn/declined/expired requests would otherwise satisfy the
+  // awaiting check and surface the wrong banner; restrict to active.
+  const myRequest = (signReqs.query.data ?? []).find(
+    (r) => r.entry_payload.id === entryId && r.status === 'pending',
+  );
   // Resolve a display name for the awaiting banner. Sign-requests carry
   // `supervisor_user_id` + `connection_id`; the cached connection row carries
   // a display name. Match on connection_id first (canonical), then by user.
@@ -61,8 +66,45 @@ export function EntryDetailScreen() {
   }, [myRequest, connections.query.data]);
 
   const [signatureImageFailed, setSignatureImageFailed] = useState(false);
+  // Reset the broken-image flag when the underlying signature URI changes so
+  // a post-restore re-download (or any re-mount with a new path) re-attempts
+  // the load rather than sticking on "missing" forever.
+  useEffect(() => {
+    setSignatureImageFailed(false);
+  }, [signature?.signature_png_path]);
 
-  if (!entry) return null;
+  if (entryIsLoading) {
+    return <LoadingSpinner fullScreen label="Loading entry" />;
+  }
+
+  if (!entry) {
+    return (
+      <Screen>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.base,
+            paddingHorizontal: spacing.base,
+          }}
+        >
+          <Text style={[typography.title2, { color: colors.textPrimary, textAlign: 'center' }]}>
+            Entry not found
+          </Text>
+          <Text
+            style={[
+              typography.body,
+              { color: colors.textSecondary, textAlign: 'center' },
+            ]}
+          >
+            This entry may have been deleted.
+          </Text>
+          <Button title="Go back" variant="secondary" onPress={() => navigation.goBack()} />
+        </View>
+      </Screen>
+    );
+  }
 
   const classification = classifyEntry(entry);
   const pill = pillFor(entry, classification);
@@ -78,12 +120,42 @@ export function EntryDetailScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await deleteEntry.mutateAsync(entryId);
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          navigation.goBack();
+          try {
+            await deleteEntry.mutateAsync(entryId);
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            navigation.goBack();
+          } catch (err) {
+            // Stay on screen so the user can react (e.g. signed-entry guard
+            // race or DB lock); never silently goBack on failure.
+            Alert.alert('Delete failed', String((err as Error)?.message ?? err));
+          }
         },
       },
     ]);
+  };
+
+  const handleWithdraw = () => {
+    if (!myRequest) return;
+    const requestId = myRequest.id;
+    Alert.alert(
+      'Withdraw request',
+      'The supervisor will be notified that this request was canceled.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Withdraw',
+          style: 'destructive',
+          onPress: () =>
+            signReqs.withdraw.mutate(requestId, {
+              onError: (e) =>
+                toast.show({
+                  message: `Withdraw failed: ${String((e as Error)?.message ?? e)}`,
+                  variant: 'err',
+                }),
+            }),
+        },
+      ],
+    );
   };
 
   // Card styling — used by every body card. Matches spec §6 surface tokens.
@@ -129,7 +201,7 @@ export function EntryDetailScreen() {
                 : 'Awaiting supervisor signature.'
             }
             actionLabel="Withdraw"
-            onAction={() => signReqs.withdraw.mutate(myRequest.id)}
+            onAction={handleWithdraw}
           />
         )}
 
@@ -298,6 +370,22 @@ export function EntryDetailScreen() {
               onPress={() => navigation.navigate('SignatureOptionsSheet', { entryId: entry.id })}
             />
             <Button title="Delete" variant="ghost" onPress={handleDelete} />
+          </View>
+        )}
+
+        {/* Signed entries are immutable, but amending creates a new draft via
+            createAmendment (CLAUDE.md: "Editing a signed entry goes through
+            entriesService.createAmendment"). Lock semantics preserved — the
+            signed row is untouched. Suppress when an amendment already exists. */}
+        {isSigned && !amendment && (
+          <View style={{ marginTop: spacing.md }}>
+            <Button
+              title="Amend this entry"
+              variant="secondary"
+              onPress={() =>
+                navigation.navigate('EntryForm', { amendEntryId: entry.id })
+              }
+            />
           </View>
         )}
       </ScrollView>
