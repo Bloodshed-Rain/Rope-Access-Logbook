@@ -3,12 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { AppState, View, Text } from 'react-native';
 import {
   useFonts,
-  JetBrainsMono_400Regular,
-  JetBrainsMono_500Medium,
-  JetBrainsMono_700Bold,
-  JetBrainsMono_800ExtraBold,
-} from '@expo-google-fonts/jetbrains-mono';
-import { Michroma_400Regular } from '@expo-google-fonts/michroma';
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from '@expo-google-fonts/inter';
 import * as Linking from 'expo-linking';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -31,11 +29,9 @@ const queryClient = new QueryClient();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    JetBrainsMono_400Regular,
-    JetBrainsMono_500Medium,
-    JetBrainsMono_700Bold,
-    JetBrainsMono_800ExtraBold,
-    Michroma_400Regular,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
   });
 
   const [dbReady, setDbReady] = useState(false);
