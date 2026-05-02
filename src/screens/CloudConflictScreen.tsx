@@ -1,7 +1,15 @@
+// src/screens/CloudConflictScreen.tsx
+// Light-theme conflict resolution. Renders its own header (the route is
+// configured `headerShown: false` in RootNavigator) plus two side-by-side
+// surface cards (device vs cloud) and two destructive primary CTAs gated
+// behind confirm Alerts. Shows a full-screen scrim + spinner while either
+// mutation is in flight.
+
 import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Button, Card, Banner, SectionHeader } from '../primitives';
+import { Cloud, Smartphone } from 'lucide-react-native';
+import { Screen, Button, Banner, LoadingSpinner } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useCloudStatePreview, useRestore, useReplaceCloud } from '../hooks/useRestore';
 import { useBackup } from '../hooks/useBackup';
@@ -11,7 +19,6 @@ import { sha256 } from '../utils/hash';
 import { DbClient } from '../db/client';
 import { createExportService } from '../services/exportService';
 import { APP_VERSION } from '../constants';
-import { CloudOff } from 'lucide-react-native';
 
 interface CloudConflictScreenProps {
   db: DbClient;
@@ -26,7 +33,7 @@ export function CloudConflictScreen({
   localSignaturesCount,
   localLastBackupAt,
 }: CloudConflictScreenProps) {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, typography, radii, borders, shadows } = useTheme();
   const nav = useNavigation();
   const cloud = createSupabaseCloudClient();
   const fs = createExpoFsAbstraction();
@@ -71,60 +78,146 @@ export function CloudConflictScreen({
     }
   }
 
+  function confirmKeepCloud() {
+    Alert.alert(
+      'Keep cloud, replace this device?',
+      'This will overwrite the local data on this device permanently.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Replace device', style: 'destructive', onPress: keepCloud },
+      ],
+    );
+  }
+
+  function confirmReplaceCloud() {
+    Alert.alert(
+      'Replace cloud with this device?',
+      'This will overwrite the cloud data permanently.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Replace cloud', style: 'destructive', onPress: replaceCloud },
+      ],
+    );
+  }
+
+  const cloudEntries = preview.data?.entries_count ?? 0;
+  const cloudSignatures = preview.data?.signatures_count ?? 0;
+  const cloudBackedUpAt = preview.data?.cloud_backed_up_at ?? 'unknown';
+
   return (
-    <Screen topDivider>
-      <View style={{ flex: 1, padding: spacing.base, paddingBottom: spacing.xxl }}>
-        <View style={{ alignItems: 'center', marginVertical: spacing.lg }}>
-          <CloudOff color={colors.error} size={48} />
-          <Text style={[typography.h1, { color: colors.textPrimary, textAlign: 'center', marginTop: spacing.md }]}>
-            Conflict Detected
+    <Screen padded={false}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: spacing.base,
+          paddingBottom: spacing.xxl,
+          gap: spacing.lg,
+        }}
+      >
+        <View style={{ gap: spacing.sm }}>
+          <Text style={[typography.title2, { color: colors.textPrimary }]}>
+            Sync conflict — choose your data
           </Text>
-          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }]}>
-            This device and your cloud backup have different data. Pick the one to keep. This cannot be undone.
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
+            Your local data and cloud data don&apos;t match. Pick which one to keep —
+            the other will be overwritten.
           </Text>
         </View>
 
         {error && <Banner variant="error" message={error} />}
 
-        <SectionHeader label="CLOUD BACKUP" />
-        <Card accent="orange" style={{ marginBottom: spacing.md }}>
-          <Text style={[typography.body, { color: colors.textPrimary }]}>
-            {preview.data?.entries_count ?? 0} entries, {preview.data?.signatures_count ?? 0}{' '}
-            signatures
-          </Text>
-          <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-            Last backed up: {preview.data?.cloud_backed_up_at ?? 'unknown'}
-          </Text>
-        </Card>
+        {/* Comparison cards — stacked */}
+        <View style={{ gap: spacing.md }}>
+          <View
+            style={[
+              {
+                backgroundColor: colors.bgSurface,
+                borderRadius: radii.md,
+                borderWidth: borders.hair,
+                borderColor: colors.border,
+                padding: spacing.base,
+                gap: spacing.sm,
+              },
+              shadows.sm,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Smartphone size={20} color={colors.textPrimary} />
+              <Text style={[typography.bodyMed, { color: colors.textPrimary }]}>
+                On this device
+              </Text>
+            </View>
+            <Text style={[typography.body, { color: colors.textPrimary }]}>
+              {localEntriesCount} entries · {localSignaturesCount} signatures
+            </Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>
+              Last synced: {localLastBackupAt ?? 'never'}
+            </Text>
+          </View>
 
-        <SectionHeader label="LOCAL DEVICE" />
-        <Card accent="navy" style={{ marginBottom: spacing.xl }}>
-          <Text style={[typography.body, { color: colors.textPrimary }]}>
-            {localEntriesCount} entries, {localSignaturesCount} signatures
-          </Text>
-          <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-            Last synced: {localLastBackupAt ?? 'never'}
-          </Text>
-        </Card>
+          <View
+            style={[
+              {
+                backgroundColor: colors.bgSurface,
+                borderRadius: radii.md,
+                borderWidth: borders.hair,
+                borderColor: colors.border,
+                padding: spacing.base,
+                gap: spacing.sm,
+              },
+              shadows.sm,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Cloud size={20} color={colors.textPrimary} />
+              <Text style={[typography.bodyMed, { color: colors.textPrimary }]}>
+                In the cloud
+              </Text>
+            </View>
+            <Text style={[typography.body, { color: colors.textPrimary }]}>
+              {cloudEntries} entries · {cloudSignatures} signatures
+            </Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>
+              Last backed up: {cloudBackedUpAt}
+            </Text>
+          </View>
+        </View>
 
+        {/* CTAs */}
         <View style={{ gap: spacing.md }}>
           <Button
-            title={busy ? 'Working…' : 'Keep Cloud Data'}
-            onPress={keepCloud}
+            title="Keep cloud, replace this device"
+            onPress={confirmKeepCloud}
             disabled={busy}
-            variant="danger"
+            variant="primary"
             haptic
           />
           <Button
-            title={busy ? 'Working…' : 'Keep Local Device Data'}
-            onPress={replaceCloud}
+            title="Replace cloud with this device"
+            onPress={confirmReplaceCloud}
             disabled={busy}
-            variant="danger"
+            variant="primary"
             haptic
           />
         </View>
-        
-      </View>
+      </ScrollView>
+
+      {busy && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: colors.overlay,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          pointerEvents="auto"
+        >
+          <LoadingSpinner label="Working" />
+        </View>
+      )}
     </Screen>
   );
 }

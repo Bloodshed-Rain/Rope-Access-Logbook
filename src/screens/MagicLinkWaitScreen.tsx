@@ -1,36 +1,133 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
-import { Screen, Card, SectionHeader } from '../primitives';
-import { useTheme } from '../theme/ThemeProvider';
+// src/screens/MagicLinkWaitScreen.tsx
+// Light-theme "check your email" screen. Centered card with the Mail icon,
+// title, the email address echoed back, plus Resend (ghost) and Back link.
+// Stack header supplies the route title; we render an in-screen card-style
+// layout below it.
+
+import React, { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { Mail } from 'lucide-react-native';
+import { Screen, Button, Banner } from '../primitives';
+import { useTheme } from '../theme/ThemeProvider';
+import { createSupabaseCloudClient } from '../cloud/supabaseClient';
+import { createAuthService } from '../services/authService';
 
 type Params = { MagicLinkWait: { email: string } };
 
 export function MagicLinkWaitScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, typography, radii, borders, shadows } = useTheme();
   const route = useRoute<RouteProp<Params, 'MagicLinkWait'>>();
+  const nav = useNavigation();
   const email = route.params.email;
 
-  return (
-    <Screen topDivider>
-      <View style={{ flex: 1, justifyContent: 'center', padding: spacing.base, paddingBottom: spacing.xxl }}>
-        <SectionHeader label="AUTHENTICATION" />
-        
-        <Card accent="orange" bg="paper" style={{ gap: spacing.base, paddingVertical: spacing.lg }}>
-          <View style={{ alignItems: 'center', marginBottom: spacing.sm }}>
-            <Mail color={colors.accent} size={48} />
-          </View>
-          
-          <Text style={[typography.h1, { color: colors.textPrimary, textAlign: 'center' }]}>Check your email</Text>
-          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center' }]}>
-            We sent a sign-in link to {email}. Open it on this device to continue.
-          </Text>
-          <Text style={[typography.bodySmall, { color: colors.textTertiary, textAlign: 'center', fontStyle: 'italic', marginTop: spacing.base }]}>
-            The link expires in an hour. You can close this screen and come back anytime.
-          </Text>
-        </Card>
+  const cloud = createSupabaseCloudClient();
+  const auth = createAuthService(cloud);
 
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  async function resend() {
+    try {
+      setError(null);
+      setResendStatus('sending');
+      await auth.signInWithMagicLink(email);
+      setResendStatus('sent');
+    } catch (e) {
+      setError((e as Error).message ?? 'Could not resend link.');
+      setResendStatus('idle');
+    }
+  }
+
+  return (
+    <Screen padded={false}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          paddingHorizontal: spacing.base,
+          paddingBottom: spacing.xxl,
+        }}
+      >
+        <View
+          style={[
+            {
+              backgroundColor: colors.bgSurface,
+              borderRadius: radii.md,
+              borderWidth: borders.hair,
+              borderColor: colors.border,
+              padding: spacing.lg,
+              gap: spacing.base,
+              alignItems: 'center',
+            },
+            shadows.sm,
+          ]}
+        >
+          <Mail color={colors.accentPrimary} size={48} />
+
+          <Text
+            style={[
+              typography.title2,
+              { color: colors.textPrimary, textAlign: 'center' },
+            ]}
+          >
+            Check your email
+          </Text>
+
+          <Text
+            style={[
+              typography.body,
+              { color: colors.textSecondary, textAlign: 'center' },
+            ]}
+          >
+            We sent a sign-in link to{' '}
+            <Text style={{ color: colors.textPrimary }}>{email}</Text>.
+          </Text>
+
+          <Text
+            style={[
+              typography.body,
+              { color: colors.textSecondary, textAlign: 'center' },
+            ]}
+          >
+            Tap the link in the email to sign in.
+          </Text>
+
+          {error && (
+            <View style={{ alignSelf: 'stretch' }}>
+              <Banner variant="error" message={error} />
+            </View>
+          )}
+
+          <View style={{ alignSelf: 'stretch', gap: spacing.sm, marginTop: spacing.sm }}>
+            <Button
+              title={
+                resendStatus === 'sending'
+                  ? 'Resending…'
+                  : resendStatus === 'sent'
+                    ? 'Link resent'
+                    : 'Resend'
+              }
+              variant="ghost"
+              onPress={resend}
+              disabled={resendStatus !== 'idle'}
+            />
+            <Pressable
+              onPress={() => nav.goBack()}
+              accessibilityRole="link"
+              hitSlop={12}
+              style={{
+                alignSelf: 'center',
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.md,
+              }}
+            >
+              <Text style={[typography.label, { color: colors.accentPrimary }]}>
+                Back
+              </Text>
+            </Pressable>
+          </View>
+        </View>
       </View>
     </Screen>
   );
