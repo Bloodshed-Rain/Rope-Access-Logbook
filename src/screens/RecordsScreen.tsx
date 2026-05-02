@@ -102,6 +102,7 @@ function toISODate(d: Date): string {
 function fromISODate(iso: string | null): Date {
   if (!iso) return new Date();
   const [y, m, d] = iso.split('-').map((s) => parseInt(s, 10));
+  if (Number.isNaN(y)) return new Date();
   return new Date(y, (m || 1) - 1, d || 1);
 }
 
@@ -132,13 +133,15 @@ export function RecordsScreen() {
 
   // Pick up deep-link filter changes when this screen is focused (e.g. Today's
   // "Needs signature" card navigates here with { filter: 'needs_signature' }).
+  // Clear the param after consuming so a later return-to-tab doesn't snap the
+  // chip back to the deep-link value when the user has manually changed it.
   useFocusEffect(
     useCallback(() => {
-      if (route.params?.filter && route.params.filter !== chipKey) {
+      if (route.params?.filter) {
         setChipKey(route.params.filter);
+        navigation.setParams({ filter: undefined } as never);
       }
-      // Intentionally no cleanup; we don't reset the chip on blur.
-    }, [route.params?.filter, chipKey]),
+    }, [route.params?.filter, navigation]),
   );
 
   // Distinct employers across all entries — used for the multi-select picker.
@@ -241,6 +244,7 @@ export function RecordsScreen() {
     setChipKey('all');
     setQuery('');
     setAdvanced(EMPTY_FILTERS);
+    setSheetDraft(EMPTY_FILTERS);
   }, []);
 
   const openSheet = () => {
@@ -265,6 +269,7 @@ export function RecordsScreen() {
       <Pressable
         onPress={() => navigation.navigate('EntryDetail', { entryId: item.id })}
         accessibilityRole="button"
+        accessibilityLabel={`${item.site || 'No site'}, ${dateRangeText}, ${item.work_hours} hours, ${pill.label}`}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
