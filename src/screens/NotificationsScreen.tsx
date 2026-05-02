@@ -48,8 +48,12 @@ interface KindMeta {
 
 function metaForKind(item: NotificationRow): KindMeta {
   const p = (item.payload ?? {}) as Record<string, unknown>;
-  const supervisorName = typeof p.supervisorName === 'string' && p.supervisorName ? p.supervisorName : 'Your supervisor';
-  const techName = typeof p.techName === 'string' && p.techName ? p.techName : 'A tech';
+  // Tech / supervisor display names aren't currently snapshotted into the
+  // notification payload (sign_requests_cache lacks the columns), so we fall
+  // back to actor-neutral copy. The previous "A tech …" / "Your supervisor …"
+  // placeholders read as misleading, since they implied a name was redacted.
+  const supervisorName = typeof p.supervisorName === 'string' && p.supervisorName ? p.supervisorName : null;
+  const techName = typeof p.techName === 'string' && p.techName ? p.techName : null;
   const reason = typeof p.reason === 'string' && p.reason ? ` — ${p.reason}` : '';
   const scheme = typeof p.scheme === 'string' ? p.scheme.toUpperCase() : 'cert';
   const daysUntil = typeof p.daysUntil === 'number' ? p.daysUntil : null;
@@ -59,28 +63,36 @@ function metaForKind(item: NotificationRow): KindMeta {
     case 'sign_request_received':
       return {
         title: 'New sign-request',
-        body: `${techName} sent you a sign-request`,
+        body: techName
+          ? `${techName} sent you a sign-request`
+          : 'A tech sent you a sign-request — tap to review',
         Icon: InboxIcon,
         iconColor: 'accentPrimary',
       };
     case 'sign_request_signed':
       return {
         title: 'Signature received',
-        body: `${supervisorName} signed your entry`,
+        body: supervisorName
+          ? `${supervisorName} signed your entry`
+          : 'Your sign-request was signed',
         Icon: CheckCircle2,
         iconColor: 'statusOk',
       };
     case 'sign_request_declined':
       return {
         title: 'Sign-request declined',
-        body: `${supervisorName} declined${reason}`,
+        body: supervisorName
+          ? `${supervisorName} declined${reason}`
+          : `Your sign-request was declined${reason}`,
         Icon: XCircle,
         iconColor: 'statusErr',
       };
     case 'sign_request_withdrawn':
       return {
         title: 'Sign-request withdrawn',
-        body: `${techName} withdrew their request`,
+        body: techName
+          ? `${techName} withdrew their request`
+          : 'A pending sign-request was withdrawn',
         Icon: Undo2,
         iconColor: 'textSecondary',
       };
@@ -218,6 +230,20 @@ export function NotificationsScreen() {
   if (items.length === 0) {
     return (
       <Screen padded={false}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: spacing.base,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.sm,
+          }}
+        >
+          <Text style={[typography.title1, { color: colors.textPrimary }]}>
+            Notifications
+          </Text>
+        </View>
         <View
           style={{
             flex: 1,
