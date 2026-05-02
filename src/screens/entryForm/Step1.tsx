@@ -15,7 +15,6 @@ export interface Step1Props {
   state: WizardState;
   update: WizardStateUpdate;
   setState: React.Dispatch<React.SetStateAction<WizardState>>;
-  isAmend: boolean;
   distinctEmployers: string[];
   step1Valid: boolean;
   onNext: () => void;
@@ -32,7 +31,7 @@ function yesterdayISO(): string {
 }
 
 export function Step1(props: Step1Props) {
-  const { state, update, setState, isAmend, distinctEmployers, step1Valid, onNext } = props;
+  const { state, update, setState, distinctEmployers, step1Valid, onNext } = props;
   const { colors, spacing, typography, radii, borders } = useTheme();
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
@@ -83,15 +82,6 @@ export function Step1(props: Step1Props) {
   return (
     <>
       <Text style={[typography.title2, { color: colors.textPrimary }]}>Where & when</Text>
-
-      {isAmend && (
-        <Input
-          label="Reason for amendment"
-          value={state.amendmentReason}
-          onChangeText={(t) => update('amendmentReason', t)}
-          placeholder="Why is this entry being amended?"
-        />
-      )}
 
       <Input
         label="Site"
