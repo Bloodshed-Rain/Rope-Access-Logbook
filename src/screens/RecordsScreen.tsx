@@ -24,7 +24,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useEntries } from '../hooks/useEntries';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { entryRequiredFieldsFilled } from '../utils/entryComplete';
-import { formatEntryDateRange } from '../utils/dateRange';
+import { formatEntryDateRange, toISODate, fromISODate } from '../utils/dateRange';
 import { TechSittingIllustration } from '../components/illustrations/TechSittingIllustration';
 import { WORK_TYPE_LABELS } from '../constants';
 import { Entry, WorkType, CertLevel } from '../types';
@@ -91,20 +91,6 @@ const ALL_WORK_TYPES: WorkType[] = [
 ];
 
 const ALL_CERT_LEVELS: CertLevel[] = ['I', 'II', 'III'];
-
-function toISODate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function fromISODate(iso: string | null): Date {
-  if (!iso) return new Date();
-  const [y, m, d] = iso.split('-').map((s) => parseInt(s, 10));
-  if (Number.isNaN(y)) return new Date();
-  return new Date(y, (m || 1) - 1, d || 1);
-}
 
 const MONTH_TITLE_FMT = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
 

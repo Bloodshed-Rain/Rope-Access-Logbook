@@ -1,465 +1,392 @@
 // src/screens/EntryFormScreen.tsx
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Alert, Pressable } from 'react-native';
+// Add Work — 2-step wizard. Spec §7 lines 319-336.
+//
+//   Step 1 — "Where & when":  site, employer, when (Today/Yesterday/Custom),
+//             hours.  See entryForm/Step1.tsx.
+//   Step 2 — "What did you do": work types (multi-select), Other description,
+//             notes.  See entryForm/Step2.tsx.
+//
+// Edit (route.params.entryId) and amend (route.params.amendEntryId) modes are
+// preserved. Photo attachment UI is dropped from the wizard per spec; existing
+// entries with photo_paths pass through edit untouched so EntryDetail keeps
+// rendering them. Equipment notes / weather / client likewise survive but no
+// longer have a wizard surface.
+//
+// After save, the wizard navigates to EntryDetail as a temporary landing
+// target. D2 will redirect into the PostSaveSheet.
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { copyPhotoToAppStorage } from '../utils/fileStorage';
-import { Screen, Button, Input, Textarea, Chip, Banner, Card, ListRow, SectionHeader, useToast } from '../primitives';
+import { X } from 'lucide-react-native';
+import { Screen, LoadingSpinner } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
-import { useEntry, useCreateEntry, useUpdateEntry, useCreateAmendment } from '../hooks/useEntries';
-import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
-import { useSignRequests } from '../hooks/useSignRequests';
-import { useAuthSession } from '../hooks/useAuthSession';
-import { getClient } from '../db/initialize';
-import { createSupabaseCloudClient } from '../cloud/supabaseClient';
-import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
-import { sha256 } from '../utils/hash';
+import {
+  useEntries,
+  useEntry,
+  useCreateEntry,
+  useUpdateEntry,
+  useCreateAmendment,
+} from '../hooks/useEntries';
+import { toISODate } from '../utils/dateRange';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { WorkType } from '../types';
+import { Entry } from '../types';
+import { Step1 } from './entryForm/Step1';
+import { Step2 } from './entryForm/Step2';
+import { WhenChoice, WizardState, WizardStep } from './entryForm/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type FormRoute = RouteProp<RootStackParamList, 'EntryForm'>;
 
-const WORK_TYPES: { value: WorkType; label: string }[] = [
-  { value: 'inspection', label: 'Inspection' },
-  { value: 'ndt', label: 'NDT' },
-  { value: 'welding', label: 'Welding' },
-  { value: 'painting', label: 'Painting' },
-  { value: 'window_cleaning', label: 'Window Cleaning' },
-  { value: 'rescue', label: 'Rescue' },
-  { value: 'training', label: 'Training' },
-  { value: 'rigging', label: 'Rigging' },
-  { value: 'other', label: 'Other' },
-];
-
-function toISODate(d: Date): string {
-  return d.toISOString().split('T')[0];
+function todayISO(): string {
+  return toISODate(new Date());
 }
 
-function fromISODate(s: string): Date {
-  return new Date(`${s}T12:00:00Z`);
+function yesterdayISO(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return toISODate(d);
+}
+
+function inferWhenChoice(from: string, to: string): WhenChoice {
+  if (from !== to) return 'custom';
+  if (from === todayISO()) return 'today';
+  if (from === yesterdayISO()) return 'yesterday';
+  return 'custom';
+}
+
+function buildInitialState(defaultEmployer: string, existing: Entry | undefined): WizardState {
+  if (existing) {
+    return {
+      site: existing.site,
+      employer: existing.employer,
+      dateFrom: existing.date_from,
+      dateTo: existing.date_to,
+      when: inferWhenChoice(existing.date_from, existing.date_to),
+      workHours: existing.work_hours > 0 ? String(existing.work_hours) : '',
+      workTypes: existing.work_types,
+      otherWorkDescription: existing.other_work_description ?? '',
+      notes: existing.description,
+      amendmentReason: '',
+      client: existing.client,
+      equipmentNotes: existing.equipment_notes ?? '',
+      weather: existing.weather ?? '',
+      photoPaths: existing.photo_paths ?? [],
+    };
+  }
+  const today = todayISO();
+  return {
+    site: '',
+    employer: defaultEmployer,
+    dateFrom: today,
+    dateTo: today,
+    when: 'today',
+    workHours: '',
+    workTypes: [],
+    otherWorkDescription: '',
+    notes: '',
+    amendmentReason: '',
+    client: '',
+    equipmentNotes: '',
+    weather: '',
+    photoPaths: [],
+  };
+}
+
+function statesEqual(a: WizardState, b: WizardState): boolean {
+  if (a.site !== b.site) return false;
+  if (a.employer !== b.employer) return false;
+  if (a.dateFrom !== b.dateFrom) return false;
+  if (a.dateTo !== b.dateTo) return false;
+  if (a.when !== b.when) return false;
+  if (a.workHours !== b.workHours) return false;
+  if (a.notes !== b.notes) return false;
+  if (a.otherWorkDescription !== b.otherWorkDescription) return false;
+  if (a.amendmentReason !== b.amendmentReason) return false;
+  if (a.workTypes.length !== b.workTypes.length) return false;
+  for (const t of a.workTypes) if (!b.workTypes.includes(t)) return false;
+  return true;
 }
 
 export function EntryFormScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, typography, radii } = useTheme();
   const navigation = useNavigation<Nav>();
   const route = useRoute<FormRoute>();
-  const { data: profile } = useProfile();
 
   const editId = route.params?.entryId;
   const amendId = route.params?.amendEntryId;
-  const { data: existingEntry } = useEntry(editId ?? amendId ?? '');
+  const isEdit = !!editId;
+  const isAmend = !!amendId;
+  const needsExistingEntry = isEdit || isAmend;
+
+  const { data: profile } = useProfile();
+  const { data: existingEntry, isLoading: existingLoading } = useEntry(
+    editId ?? amendId ?? '',
+  );
+  const { data: allEntries = [] } = useEntries();
 
   const createEntry = useCreateEntry();
   const updateEntry = useUpdateEntry();
   const createAmendment = useCreateAmendment();
 
-  const isEdit = !!editId;
-  const isAmend = !!amendId;
-
-  const today = toISODate(new Date());
-  const [dateFrom, setDateFrom] = useState<string>(today);
-  const [dateTo, setDateTo] = useState<string>(today);
-  const [showFromPicker, setShowFromPicker] = useState(false);
-  const [showToPicker, setShowToPicker] = useState(false);
-  const [employer, setEmployer] = useState(profile?.default_employer ?? '');
-  const [site, setSite] = useState('');
-  const [client, setClient] = useState('');
-  const [description, setDescription] = useState('');
-  const [workHours, setWorkHours] = useState('');
-  const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
-  const [otherWorkDescription, setOtherWorkDescription] = useState('');
-  const [equipmentNotes, setEquipmentNotes] = useState('');
-  const [weather, setWeather] = useState('');
-  const [amendmentReason, setAmendmentReason] = useState('');
-  const [photoPaths, setPhotoPaths] = useState<string[]>([]);
-  const [showPicker, setShowPicker] = useState(false);
-
-  const [isDirty, setIsDirty] = useState(false);
+  const [initial, setInitial] = useState<WizardState>(() =>
+    buildInitialState(profile?.default_employer ?? '', undefined),
+  );
+  const [state, setState] = useState<WizardState>(initial);
+  const [step, setStep] = useState<WizardStep>(1);
+  const [hydrated, setHydrated] = useState<boolean>(!needsExistingEntry);
   const isLeavingIntentionally = useRef(false);
 
-  const db = useMemo(() => getClient(), []);
-  const cloud = useMemo(() => createSupabaseCloudClient(), []);
-  const fs = useMemo(() => createExpoFsAbstraction(), []);
-  const conns = useSupervisorConnections({ db, cloud });
-  const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
-  const { session } = useAuthSession(cloud);
-  const toast = useToast();
+  const isDirty = useMemo(() => !statesEqual(state, initial), [state, initial]);
 
-  const accepted = (conns.query.data ?? []).filter(
-    (c) => c.tech_user_id === session?.user_id && c.status === 'accepted' && c.supervisor_user_id,
-  );
-
+  // Hydrate from the loaded existing entry once for edit/amend. The default
+  // covers the new-entry path; this effect re-seeds both `initial` and `state`
+  // so the dirty check stays anchored to the loaded values. We only hydrate
+  // once: if the user has begun editing, a late-arriving query result must not
+  // clobber their input.
   useEffect(() => {
-    if (existingEntry) {
-      setDateFrom(existingEntry.date_from);
-      setDateTo(existingEntry.date_to);
-      setEmployer(existingEntry.employer);
-      setSite(existingEntry.site);
-      setClient(existingEntry.client);
-      setDescription(existingEntry.description);
-      setWorkHours(existingEntry.work_hours > 0 ? String(existingEntry.work_hours) : '');
-      setWorkTypes(existingEntry.work_types);
-      setOtherWorkDescription(existingEntry.other_work_description ?? '');
-      setEquipmentNotes(existingEntry.equipment_notes ?? '');
-      setWeather(existingEntry.weather ?? '');
-      setPhotoPaths(existingEntry.photo_paths ?? []);
-    }
-  }, [existingEntry]);
+    if (!needsExistingEntry || hydrated || !existingEntry) return;
+    const seed = buildInitialState(profile?.default_employer ?? '', existingEntry);
+    setInitial(seed);
+    setState(seed);
+    setHydrated(true);
+  }, [needsExistingEntry, hydrated, existingEntry, profile?.default_employer]);
 
+  // Cancel guard.
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (isLeavingIntentionally.current || !isDirty) { return; }
+    const sub = navigation.addListener('beforeRemove', (e) => {
+      if (isLeavingIntentionally.current || !isDirty) return;
       e.preventDefault();
       Alert.alert(
-        'Discard changes?',
-        'You have unsaved changes. Are you sure you want to discard them?',
+        'Discard this entry?',
+        'You have unsaved changes. Discard them?',
         [
-          { text: "Don't leave", style: 'cancel', onPress: () => {} },
-          { text: 'Discard', style: 'destructive', onPress: () => {
+          { text: 'Keep editing', style: 'cancel', onPress: () => {} },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
               isLeavingIntentionally.current = true;
               navigation.dispatch(e.data.action);
-            } 
+            },
           },
-        ]
+        ],
       );
     });
-    return unsubscribe;
+    return sub;
   }, [navigation, isDirty]);
 
-  const markDirty = () => !isDirty && setIsDirty(true);
-
-  const handleAddPhoto = async () => {
-    markDirty();
-    if (photoPaths.length >= 5) {
-      Alert.alert('Maximum photos', 'You can attach up to 5 photos per entry.');
-      return;
+  // Distinct prior employers, sorted, for the Step1 picker.
+  const distinctEmployers = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of allEntries) {
+      const v = e.employer.trim();
+      if (v) set.add(v);
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      const saved = await copyPhotoToAppStorage(result.assets[0].uri, editId ?? 'new', photoPaths.length);
-      setPhotoPaths((prev) => [...prev, saved]);
-    }
+    return Array.from(set).sort();
+  }, [allEntries]);
+
+  const update = <K extends keyof WizardState>(key: K, value: WizardState[K]) => {
+    setState((prev) => ({ ...prev, [key]: value }));
   };
 
-  const toggleWorkType = (wt: WorkType) => {
-    markDirty();
-    setWorkTypes((prev) => (prev.includes(wt) ? prev.filter((t) => t !== wt) : [...prev, wt]));
-  };
+  const hoursNum = parseFloat(state.workHours);
+  const step1Valid =
+    state.site.trim().length > 0 &&
+    state.employer.trim().length > 0 &&
+    !Number.isNaN(hoursNum) &&
+    hoursNum > 0 &&
+    !!state.dateFrom &&
+    !!state.dateTo &&
+    state.dateFrom <= state.dateTo;
 
-  const onChangeFrom = (_e: DateTimePickerEvent, d?: Date) => {
-    markDirty();
-    if (Platform.OS !== 'ios') setShowFromPicker(false);
-    if (d) {
-      const iso = toISODate(d);
-      setDateFrom(iso);
-      if (iso > dateTo) setDateTo(iso);
-    }
-  };
+  const step2Valid =
+    state.workTypes.length >= 1 &&
+    (!state.workTypes.includes('other') || state.otherWorkDescription.trim().length > 0) &&
+    (!isAmend || state.amendmentReason.trim().length > 0);
 
-  const onChangeTo = (_e: DateTimePickerEvent, d?: Date) => {
-    markDirty();
-    if (Platform.OS !== 'ios') setShowToPicker(false);
-    if (d) setDateTo(toISODate(d));
-  };
-
-  const canSubmit = !isAmend || !!amendmentReason.trim();
+  const isSaving =
+    createEntry.isPending || updateEntry.isPending || createAmendment.isPending;
 
   const handleSave = async () => {
     if (!profile) return;
-    const hours = workHours.trim() === '' ? 0 : parseFloat(workHours);
-    if (workHours.trim() !== '' && (isNaN(hours) || hours < 0)) {
-      Alert.alert('Invalid hours', 'Please enter a valid number of work hours.');
-      return;
-    }
+    if (!step1Valid || !step2Valid) return;
 
-    const otherText = workTypes.includes('other') && otherWorkDescription.trim()
-      ? otherWorkDescription.trim()
+    const otherText = state.workTypes.includes('other') && state.otherWorkDescription.trim()
+      ? state.otherWorkDescription.trim()
       : null;
+    const techLevel = profile.level ?? 'I';
 
+    let savedId: string;
     if (isAmend && amendId) {
-      await createAmendment.mutateAsync({ entryId: amendId, reason: amendmentReason.trim(), techLevel: profile.level ?? 'I' });
+      // Amend: createAmendment clones the original. Preserves existing
+      // semantics — the wizard's edits to the body are discarded; only the
+      // reason is taken. The new draft is what the user then edits via
+      // EntryDetail → "Edit Entry".
+      const amendment = await createAmendment.mutateAsync({
+        entryId: amendId,
+        reason: state.amendmentReason.trim(),
+        techLevel,
+      });
+      savedId = amendment.id;
     } else if (isEdit && editId) {
       await updateEntry.mutateAsync({
         id: editId,
         input: {
-          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
-          work_hours: hours, work_types: workTypes, other_work_description: otherText,
-          equipment_notes: equipmentNotes || null, weather: weather || null, photo_paths: photoPaths,
+          date_from: state.dateFrom,
+          date_to: state.dateTo,
+          employer: state.employer.trim(),
+          site: state.site.trim(),
+          // Preserved-but-hidden fields pass through unchanged.
+          client: state.client,
+          description: state.notes,
+          work_hours: hoursNum,
+          work_types: state.workTypes,
+          other_work_description: otherText,
+          equipment_notes: state.equipmentNotes || null,
+          weather: state.weather || null,
+          photo_paths: state.photoPaths,
         },
       });
-    } else {
-      await createEntry.mutateAsync({
-        input: {
-          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
-          work_hours: hours, work_types: workTypes, other_work_description: otherText,
-          equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
-          photo_paths: photoPaths.length > 0 ? photoPaths : undefined,
-        },
-        techLevel: profile.level ?? 'I',
-      });
-    }
-
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    isLeavingIntentionally.current = true;
-    navigation.goBack();
-  };
-
-  const saveEntry = async (): Promise<string> => {
-    if (!profile) throw new Error('profile_not_loaded');
-    const hours = workHours.trim() === '' ? 0 : parseFloat(workHours);
-    if (workHours.trim() !== '' && (isNaN(hours) || hours < 0)) {
-      throw new Error('invalid_hours');
-    }
-
-    const otherText = workTypes.includes('other') && otherWorkDescription.trim()
-      ? otherWorkDescription.trim()
-      : null;
-
-    if (isEdit && editId) {
-      await updateEntry.mutateAsync({
-        id: editId,
-        input: {
-          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
-          work_hours: hours, work_types: workTypes, other_work_description: otherText,
-          equipment_notes: equipmentNotes || null, weather: weather || null, photo_paths: photoPaths,
-        },
-      });
-      return editId;
+      savedId = editId;
     } else {
       const created = await createEntry.mutateAsync({
         input: {
-          date_from: dateFrom, date_to: dateTo, employer, site, client, description,
-          work_hours: hours, work_types: workTypes, other_work_description: otherText,
-          equipment_notes: equipmentNotes || undefined, weather: weather || undefined,
-          photo_paths: photoPaths.length > 0 ? photoPaths : undefined,
+          date_from: state.dateFrom,
+          date_to: state.dateTo,
+          employer: state.employer.trim(),
+          site: state.site.trim(),
+          description: state.notes,
+          work_hours: hoursNum,
+          work_types: state.workTypes,
+          other_work_description: otherText,
         },
-        techLevel: profile.level ?? 'I',
+        techLevel,
       });
-      return typeof created === 'string' ? created : (created as any).id;
+      savedId = created.id;
     }
+
+    isLeavingIntentionally.current = true;
+    // TODO(D2): swap this for the PostSaveSheet handoff.
+    navigation.replace('EntryDetail', { entryId: savedId });
   };
 
-  const title = isAmend ? 'AMEND ENTRY' : isEdit ? 'EDIT ENTRY' : 'NEW ENTRY';
-  const spanDays = Math.max(
-    1,
-    Math.round(
-      (fromISODate(dateTo).getTime() - fromISODate(dateFrom).getTime()) / (24 * 60 * 60 * 1000),
-    ) + 1,
-  );
-  const hoursLabel = spanDays > 1
-    ? `Hours worked across this ${spanDays}-day span`
-    : 'Hours worked';
-  const hoursPlaceholder = spanDays > 1 ? String(spanDays * 8) : '8';
+  const headerTitle = isAmend ? 'Amend entry' : isEdit ? 'Edit entry' : 'New entry';
 
-  const needed = (
-    <Text style={[typography.caption, { color: colors.accent }]}>needed to sign</Text>
-  );
+  // Block the wizard render until existing-entry data is hydrated so the user
+  // can never type into a stale form that's about to be overwritten. The
+  // header's close button stays available the whole time.
+  const showLoading = needsExistingEntry && !hydrated && existingLoading;
 
   return (
-    <Screen topDivider>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl, paddingTop: spacing.md }}>
-          <Text style={[typography.h1, { color: colors.textPrimary, paddingHorizontal: spacing.base }]}>{title}</Text>
+    <Screen padded={false}>
+      {/* Header */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: spacing.base,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.sm,
+        }}
+      >
+        <Text style={[typography.title1, { color: colors.textPrimary }]}>
+          {headerTitle}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <X size={22} color={colors.textPrimary} />
+        </Pressable>
+      </View>
 
-          {isAmend && (
-            <View style={{ paddingHorizontal: spacing.base }}>
-              <Textarea label="Amendment reason (required)" value={amendmentReason}
-                onChangeText={(t) => { markDirty(); setAmendmentReason(t); }} placeholder="Why is this entry being amended?" />
-            </View>
-          )}
+      {/* Progress strip */}
+      <View
+        style={{
+          paddingHorizontal: spacing.base,
+          paddingBottom: spacing.md,
+          gap: spacing.xs,
+        }}
+      >
+        <Text style={[typography.caption, { color: colors.textSecondary }]}>
+          {`Step ${step} of 2`}
+        </Text>
+        <View
+          style={{
+            height: 4,
+            backgroundColor: colors.bgMuted,
+            borderRadius: radii.pill,
+            overflow: 'hidden',
+          }}
+        >
+          <View
+            style={{
+              width: step === 1 ? '50%' : '100%',
+              height: '100%',
+              backgroundColor: colors.accentPrimary,
+              borderRadius: radii.pill,
+            }}
+          />
+        </View>
+      </View>
 
-          <View style={{ paddingHorizontal: spacing.base }}>
-            <SectionHeader label="WHEN & WHERE" />
-            <Card accent="navy" style={{ gap: spacing.md }}>
-              <View style={{ gap: spacing.xs }}>
-                <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>From</Text>
-                <Pressable
-                  onPress={() => setShowFromPicker(true)}
-                  style={{
-                    borderWidth: 2, borderColor: colors.border, borderRadius: 10,
-                    paddingHorizontal: spacing.base, paddingVertical: spacing.base,
-                    backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
-                  }}>
-                  <Text style={[typography.body, { color: colors.textPrimary }]}>{dateFrom}</Text>
-                </Pressable>
-                {needed}
-                {showFromPicker && (
-                  <DateTimePicker
-                    value={fromISODate(dateFrom)}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                    onChange={onChangeFrom}
-                  />
-                )}
-              </View>
-
-              <View style={{ gap: spacing.xs }}>
-                <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '600' }]}>To</Text>
-                <Pressable
-                  onPress={() => setShowToPicker(true)}
-                  style={{
-                    borderWidth: 2, borderColor: colors.border, borderRadius: 10,
-                    paddingHorizontal: spacing.base, paddingVertical: spacing.base,
-                    backgroundColor: colors.surface, minHeight: 48, justifyContent: 'center',
-                  }}>
-                  <Text style={[typography.body, { color: colors.textPrimary }]}>{dateTo}</Text>
-                </Pressable>
-                {needed}
-                {showToPicker && (
-                  <DateTimePicker
-                    value={fromISODate(dateTo)}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                    minimumDate={fromISODate(dateFrom)}
-                    onChange={onChangeTo}
-                  />
-                )}
-              </View>
-
-              <Input label="Employer" value={employer} onChangeText={(t) => { markDirty(); setEmployer(t); }} />
-              <Input label="Job site / location" value={site} onChangeText={(t) => { markDirty(); setSite(t); }} />
-              <Input label="Client / project" value={client} onChangeText={(t) => { markDirty(); setClient(t); }} />
-            </Card>
-          </View>
-
-          <View style={{ paddingHorizontal: spacing.base }}>
-            <SectionHeader label="WORK" />
-            <Card accent="navy" style={{ gap: spacing.md }}>
-              <View style={{ gap: spacing.xs }}>
-                <Input
-                  label={hoursLabel}
-                  value={workHours}
-                  onChangeText={(t) => { markDirty(); setWorkHours(t); }}
-                  keyboardType="decimal-pad"
-                  placeholder={hoursPlaceholder}
-                />
-                {needed}
-              </View>
-
-              <View style={{ gap: spacing.xs }}>
-                <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Type of work</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                  {WORK_TYPES.map((wt) => (
-                    <Chip key={wt.value} label={wt.label} selected={workTypes.includes(wt.value)} onPress={() => toggleWorkType(wt.value)} />
-                  ))}
-                </View>
-                {workTypes.includes('other') && (
-                  <Input
-                    label="Describe the other work"
-                    value={otherWorkDescription}
-                    onChangeText={(t) => { markDirty(); setOtherWorkDescription(t); }}
-                    placeholder="e.g. paint stripping"
-                  />
-                )}
-              </View>
-
-              <View style={{ gap: spacing.xs }}>
-                <Textarea label="Description of work" value={description} onChangeText={(t) => { markDirty(); setDescription(t); }} placeholder="What did you do?" />
-                {needed}
-              </View>
-            </Card>
-          </View>
-
-          <View style={{ paddingHorizontal: spacing.base }}>
-            <SectionHeader label="OPTIONAL" />
-            <Card accent="navy" style={{ gap: spacing.md }}>
-              <Input label="Equipment / rigging notes" value={equipmentNotes} onChangeText={(t) => { markDirty(); setEquipmentNotes(t); }} />
-              <Input label="Weather / conditions" value={weather} onChangeText={(t) => { markDirty(); setWeather(t); }} />
-              <Button title={`Add photo (${photoPaths.length}/5)`} variant="secondary" onPress={handleAddPhoto} />
-            </Card>
-          </View>
-
-          <View style={{ paddingHorizontal: spacing.base }}>
-            {isEdit && existingEntry && existingEntry.status === 'draft' && (
-              existingEntry.pending_sign_request_id ? (
-                <Banner
-                  variant="info"
-                  message="Awaiting signature"
-                  actionLabel="Withdraw"
-                  onAction={async () => {
-                    try {
-                      await signReqs.withdraw.mutateAsync(existingEntry.pending_sign_request_id!);
-                    } catch (e: any) {
-                      Alert.alert('Could not withdraw', e.message);
-                    }
-                  }}
-                />
-              ) : (
-                <>
-                  {(() => {
-                    const entryIsComplete =
-                      !!dateFrom && !!dateTo && parseFloat(workHours || '0') > 0 && !!description.trim();
-                    return (
-                      <Button
-                        title="REQUEST SIGNATURE"
-                        variant="secondary"
-                        onPress={() => setShowPicker(true)}
-                        disabled={!entryIsComplete || accepted.length === 0}
-                      />
-                    );
-                  })()}
-                  {accepted.length === 0 && (
-                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      Add a supervisor in your profile before requesting a signature.
-                    </Text>
-                  )}
-                  {showPicker && (
-                    <Card style={{ marginTop: spacing.md }} accent="orange">
-                      <Text style={[typography.bodyBold, { color: colors.textPrimary, marginBottom: spacing.xs }]}>
-                        Pick a supervisor
-                      </Text>
-                      {accepted.map((c) => (
-                        <ListRow
-                          key={c.id}
-                          title={c.supervisor_display_name ?? c.invited_email}
-                          subtitle="Tap to send"
-                          onPress={async () => {
-                            try {
-                              const entryId = await saveEntry();
-                              await signReqs.send.mutateAsync({
-                                entry_id: entryId,
-                                connection_id: c.id,
-                                supervisor_user_id: c.supervisor_user_id!,
-                              });
-                              toast.show({ message: 'Sent for signature', variant: 'ok' });
-                              setShowPicker(false);
-                              isLeavingIntentionally.current = true;
-                              navigation.goBack();
-                            } catch (e: any) {
-                              if (e.message === 'invalid_hours') {
-                                Alert.alert('Invalid hours', 'Please enter a valid number of work hours.');
-                              } else {
-                                Alert.alert('Could not send', e.message);
-                              }
-                            }
-                          }}
-                        />
-                      ))}
-                      <View style={{ height: spacing.xs }} />
-                      <Button title="Cancel" variant="ghost" onPress={() => setShowPicker(false)} />
-                    </Card>
-                  )}
-                </>
-              )
+      {showLoading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <LoadingSpinner />
+        </View>
+      ) : (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <ScrollView
+            contentContainerStyle={{
+              paddingHorizontal: spacing.base,
+              paddingBottom: spacing.xxl,
+              gap: spacing.base,
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {step === 1 ? (
+              <Step1
+                state={state}
+                update={update}
+                setState={setState}
+                isAmend={isAmend}
+                distinctEmployers={distinctEmployers}
+                step1Valid={step1Valid}
+                onNext={() => setStep(2)}
+              />
+            ) : (
+              <Step2
+                state={state}
+                update={update}
+                setState={setState}
+                step1Valid={step1Valid}
+                step2Valid={step2Valid}
+                isSaving={isSaving}
+                onBack={() => setStep(1)}
+                onSave={handleSave}
+              />
             )}
-
-            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
-              <Button title={isEdit ? 'SAVE CHANGES' : 'SAVE AS DRAFT'} onPress={handleSave} disabled={!canSubmit}
-                loading={createEntry.isPending || updateEntry.isPending || createAmendment.isPending}
-                style={{ flex: 1 }} haptic />
-              <Button title="CANCEL" variant="ghost" onPress={() => { isLeavingIntentionally.current = true; navigation.goBack(); }} style={{ flex: 1 }} />
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      )}
     </Screen>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import {
   NavigationContainer,
   NavigatorScreenParams,
@@ -247,15 +247,7 @@ export function RootNavigator() {
             <Stack.Screen
               name="EntryForm"
               component={EntryFormScreen}
-              options={({ navigation }) => ({
-                presentation: 'modal',
-                title: 'Entry',
-                headerLeft: () => (
-                  <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-                    <Text style={{ color: colors.textInverse, fontSize: 16, fontWeight: '600' }}>Close</Text>
-                  </Pressable>
-                ),
-              })}
+              options={{ presentation: 'modal', headerShown: false }}
             />
             <Stack.Screen name="EntryDetail" component={EntryDetailScreen} options={{ title: 'Entry detail' }} />
             <Stack.Screen name="Signature" component={SignatureScreen} options={{ title: 'Sign entry' }} />

@@ -31,6 +31,24 @@ function parseISODate(iso: string): Date {
   return new Date(Date.UTC(y, (m || 1) - 1, d || 1));
 }
 
+// Local-time helpers shared by date-picker UIs (RecordsScreen filter sheet,
+// EntryFormScreen wizard step 1). These intentionally use *local* components
+// rather than UTC so the picker round-trips a user-selected day without DST
+// drift when the device is east/west of UTC.
+export function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function fromISODate(iso: string | null): Date {
+  if (!iso) return new Date();
+  const [y, m, d] = iso.split('-').map((s) => parseInt(s, 10));
+  if (Number.isNaN(y)) return new Date();
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
 function fmtMonth(d: Date): string {
   return MONTH_FMT.format(d);
 }
