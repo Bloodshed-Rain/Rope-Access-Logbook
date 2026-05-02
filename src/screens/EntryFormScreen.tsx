@@ -12,8 +12,9 @@
 // rendering them. Equipment notes / weather / client likewise survive but no
 // longer have a wizard surface.
 //
-// After save, the wizard navigates to EntryDetail as a temporary landing
-// target. D2 will redirect into the PostSaveSheet.
+// After save, edit and amend modes navigate to EntryDetail directly. New
+// entries route through PostSaveSheet so the user can pick Sign now / Send
+// request / Later before landing on the detail screen.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -238,6 +239,12 @@ export function EntryFormScreen() {
 
     try {
       let savedId: string;
+      // Whether the save created a brand-new entry. Edit and amend modes
+      // navigate straight to EntryDetail; only fresh creates fire the
+      // post-save sheet (the celebration only makes sense for new drafts —
+      // amend's draft is already a clone, edit lands the user back on the
+      // same row they were already viewing).
+      let isNewCreate = false;
       if (isAmend && amendId) {
         if (!amendValid) return;
         // createAmendment clones the original entry verbatim — the amend form
@@ -297,12 +304,16 @@ export function EntryFormScreen() {
           techLevel,
         });
         savedId = created.id;
+        isNewCreate = true;
       }
 
       // Side-effects fire only after the mutation resolves successfully.
       isLeavingIntentionally.current = true;
-      // TODO(D2): swap this for the PostSaveSheet handoff.
-      navigation.replace('EntryDetail', { entryId: savedId });
+      if (isNewCreate) {
+        navigation.replace('PostSaveSheet', { entryId: savedId });
+      } else {
+        navigation.replace('EntryDetail', { entryId: savedId });
+      }
     } catch (err) {
       handleSaveError(err);
     }

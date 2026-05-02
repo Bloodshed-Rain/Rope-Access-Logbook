@@ -34,6 +34,8 @@ import { SupervisorSearchScreen } from '../screens/SupervisorSearchScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { SignRequestDetailScreen } from '../screens/SignRequestDetailScreen';
 import { PaywallScreen } from '../screens/PaywallScreen';
+import { PostSaveSheet } from '../screens/PostSaveSheet';
+import { SignatureOptionsSheet } from '../screens/SignatureOptionsSheet';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -56,6 +58,10 @@ export type RootStackParamList = {
   SignRequestDetail: { requestId: string };
   Paywall: undefined;
   Notifications: undefined;
+  PostSaveSheet: { entryId: string };
+  SignatureOptionsSheet: { entryId: string };
+  // Registered in D3 — declared here so D2's navigation calls type-check.
+  SendSignRequest: { entryId: string };
 };
 
 export type TabParamList = {
@@ -258,6 +264,16 @@ export function RootNavigator() {
             <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+            <Stack.Screen
+              name="PostSaveSheet"
+              component={PostSaveSheet}
+              options={{ presentation: 'transparentModal', animation: 'fade', headerShown: false }}
+            />
+            <Stack.Screen
+              name="SignatureOptionsSheet"
+              component={SignatureOptionsSheet}
+              options={{ presentation: 'transparentModal', animation: 'slide_from_bottom', headerShown: false }}
+            />
           </>
         )}
       </Stack.Navigator>
