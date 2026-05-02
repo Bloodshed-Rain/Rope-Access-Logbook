@@ -1,6 +1,10 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  NavigatorScreenParams,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useQuery } from '@tanstack/react-query';
@@ -40,7 +44,7 @@ export type ChipKey = 'all' | 'drafts' | 'needs_signature' | 'awaiting' | 'signe
 
 export type RootStackParamList = {
   Onboarding: undefined;
-  Main: undefined;
+  Main: NavigatorScreenParams<TabParamList> | undefined;
   EntryForm: { entryId?: string; amendEntryId?: string } | undefined;
   EntryDetail: { entryId: string };
   Signature: { entryId: string };

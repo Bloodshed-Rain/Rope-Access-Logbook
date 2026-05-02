@@ -229,7 +229,7 @@ export function TodayScreen() {
             big={`${incomingCount}`}
             caption="Tap to review"
             onPress={() =>
-              navigation.navigate('Main', { screen: 'Inbox' } as never)
+              navigation.navigate('Main', { screen: 'Inbox' })
             }
           />
         )}
@@ -241,10 +241,10 @@ export function TodayScreen() {
             big={`${needsSignatureCount}`}
             caption={needsSignatureCount === 1 ? 'entry ready to sign' : 'entries ready to sign'}
             onPress={() =>
-              navigation.navigate(
-                'Main',
-                { screen: 'Records', params: { filter: 'needs_signature' } } as never,
-              )
+              navigation.navigate('Main', {
+                screen: 'Records',
+                params: { filter: 'needs_signature' },
+              })
             }
           />
         )}

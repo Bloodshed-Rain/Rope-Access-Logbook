@@ -179,7 +179,9 @@ export function createProfileService(db: DbClient, uuid: UuidFn = generateId) {
       for (const [key, value] of Object.entries(input)) {
         if (value !== undefined) {
           fields.push(`${key} = ?`);
-          values.push(value);
+          // SQLite drivers (better-sqlite3, expo-sqlite) don't accept booleans
+          // directly. Coerce to 0/1 so columns stored as INTEGER bind correctly.
+          values.push(typeof value === 'boolean' ? (value ? 1 : 0) : value);
         }
       }
 
@@ -322,6 +324,33 @@ export function createProfileService(db: DbClient, uuid: UuidFn = generateId) {
           visible: true,
         });
       }
+    },
+
+    // Toggle directory visibility while supervisor capability stays on.
+    // Always upserts the cloud row so flipping visible=false actually hides
+    // the supervisor from search; relying on an absent upsert would leave
+    // the previous visible=true row stale.
+    async setSupervisorDirectoryVisible(
+      visible: boolean,
+      displayName: string,
+      cloud: CloudClient,
+    ): Promise<void> {
+      const profile = await this.getProfile();
+      if (!profile) throw new Error('No profile exists');
+      if (!profile.supervisor_capability_enabled || !profile.supervisor_cert_number) {
+        throw new Error('supervisor_capability_not_enabled');
+      }
+      const now = new Date().toISOString();
+      await db.run(
+        `UPDATE profile SET supervisor_directory_visible = ?, updated_at = ?
+           WHERE id = (SELECT id FROM profile LIMIT 1)`,
+        [visible ? 1 : 0, now],
+      );
+      await cloud.upsertSupervisorDirectory({
+        display_name: displayName,
+        sprat_cert_number: profile.supervisor_cert_number,
+        visible,
+      });
     },
 
     async disableSupervisorCapability(

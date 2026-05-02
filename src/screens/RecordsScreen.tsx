@@ -139,7 +139,7 @@ export function RecordsScreen() {
     useCallback(() => {
       if (route.params?.filter) {
         setChipKey(route.params.filter);
-        navigation.setParams({ filter: undefined } as never);
+        navigation.setParams({ filter: undefined });
       }
     }, [route.params?.filter, navigation]),
   );

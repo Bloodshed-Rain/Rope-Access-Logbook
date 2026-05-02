@@ -12,6 +12,20 @@
 
 const MONTH_FMT = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' });
 
+const FULL_DATE_FMT = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+// Single-date formatter: `YYYY-MM-DD` → "Mar 15, 2027". Inputs are parsed as
+// UTC so devices west of UTC don't render off-by-one — same convention as
+// `formatEntryDateRange`.
+export function formatDate(iso: string): string {
+  return FULL_DATE_FMT.format(parseISODate(iso));
+}
+
 function parseISODate(iso: string): Date {
   const [y, m, d] = iso.split('-').map((s) => parseInt(s, 10));
   return new Date(Date.UTC(y, (m || 1) - 1, d || 1));

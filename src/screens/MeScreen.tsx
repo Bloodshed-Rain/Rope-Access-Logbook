@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useQueryClient } from '@tanstack/react-query';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import Constants from 'expo-constants';
@@ -40,6 +39,7 @@ import { createExportService } from '../services/exportService';
 import { createEntriesService } from '../services/entriesService';
 import { createSigningService } from '../services/signingService';
 import { computeReadiness, ReadinessItem } from '../services/readinessSelector';
+import { formatDate } from '../utils/dateRange';
 import { sha256 } from '../utils/hash';
 import { APP_VERSION } from '../constants';
 import { CertScheme, Profile } from '../types';
@@ -161,7 +161,6 @@ function CertChip({ scheme, level, id, muted, onPress }: CertChipProps) {
 export function MeScreen() {
   const { colors, spacing, typography, radii, shadows, borders } = useTheme();
   const navigation = useNavigation<Nav>();
-  const qc = useQueryClient();
   const toast = useToast();
 
   const db = useMemo(() => getClient(), []);
@@ -225,6 +224,7 @@ export function MeScreen() {
 
   const handleSwapPrimary = () => {
     if (!secondary) return;
+    if (updateProfile.isPending) return;
     updateProfile.mutate(
       { primary_cert: secondary },
       {
@@ -447,7 +447,7 @@ export function MeScreen() {
                 Certification
               </Text>
               <Text style={[typography.title2, { color: colors.textPrimary }]}>
-                Expires {certExpiryIso}
+                Expires {formatDate(certExpiryIso)}
               </Text>
               <View
                 style={{
@@ -554,10 +554,10 @@ export function MeScreen() {
             'pending',
             readiness.entriesNeedingSignature.state === 'warn'
               ? () =>
-                  navigation.navigate(
-                    'Main',
-                    { screen: 'Records', params: { filter: 'needs_signature' } } as never,
-                  )
+                  navigation.navigate('Main', {
+                    screen: 'Records',
+                    params: { filter: 'needs_signature' },
+                  })
               : undefined,
           )}
           {renderCheck(readiness.backupRecency, 'backup')}
@@ -594,13 +594,6 @@ export function MeScreen() {
         onClose={() => setSettingsOpen(false)}
         profile={profile}
         sessionEmail={session?.email ?? null}
-        onChangePhotosInBackup={async (v) => {
-          await db.run(
-            'UPDATE profile SET photos_in_backup = ?, updated_at = ? WHERE id = ?',
-            [v ? 1 : 0, new Date().toISOString(), profile.id],
-          );
-          qc.invalidateQueries({ queryKey: ['profile'] });
-        }}
       />
     </Screen>
   );

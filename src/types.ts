@@ -201,6 +201,7 @@ export interface UpdateProfileInput {
   sprat_card_photo_path?: string | null;
   primary_cert?: CertScheme;
   default_employer?: string;
+  photos_in_backup?: boolean;
 }
 
 export interface JsonBackup {

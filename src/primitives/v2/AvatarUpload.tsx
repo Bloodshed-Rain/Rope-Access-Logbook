@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import { Camera } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -13,13 +13,23 @@ export interface AvatarUploadProps {
 export function AvatarUpload({ uri, onPress, size = 64, initials }: AvatarUploadProps) {
   const { colors, radii, typography, borders } = useTheme();
 
+  // If the underlying image fails to load (e.g. quarantined after a partial
+  // restore, or a stale path), fall back to the initials placeholder so the
+  // avatar slot never renders as an empty box.
+  const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    setBroken(false);
+  }, [uri]);
+
+  const showImage = !!uri && !broken;
   const badgeSize = Math.max(20, Math.round(size * 0.32));
 
   const inner = (
     <View style={{ width: size, height: size }}>
-      {uri ? (
+      {showImage ? (
         <Image
-          source={{ uri }}
+          source={{ uri: uri as string }}
+          onError={() => setBroken(true)}
           style={{
             width: size,
             height: size,
