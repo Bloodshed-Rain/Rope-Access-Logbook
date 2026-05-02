@@ -36,6 +36,7 @@ import { SignRequestDetailScreen } from '../screens/SignRequestDetailScreen';
 import { PaywallScreen } from '../screens/PaywallScreen';
 import { PostSaveSheet } from '../screens/PostSaveSheet';
 import { SignatureOptionsSheet } from '../screens/SignatureOptionsSheet';
+import { SendSignRequestScreen } from '../screens/SendSignRequestScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -60,7 +61,6 @@ export type RootStackParamList = {
   Notifications: undefined;
   PostSaveSheet: { entryId: string };
   SignatureOptionsSheet: { entryId: string };
-  // Registered in D3 — declared here so D2's navigation calls type-check.
   SendSignRequest: { entryId: string };
 };
 
@@ -279,6 +279,14 @@ export function RootNavigator() {
               name="SignatureOptionsSheet"
               component={SignatureOptionsSheet}
               options={{ presentation: 'transparentModal', animation: 'none', headerShown: false }}
+            />
+            {/* Full-screen modal — the screen renders its own header chrome,
+                so we use `presentation: 'modal'` (not transparentModal) and
+                turn the stack header off, matching EntryFormScreen. */}
+            <Stack.Screen
+              name="SendSignRequest"
+              component={SendSignRequestScreen}
+              options={{ presentation: 'modal', headerShown: false }}
             />
           </>
         )}
