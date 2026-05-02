@@ -1,8 +1,28 @@
+// src/screens/SupervisorSearchScreen.tsx
+// Light-theme directory search. SegmentedControl picks the search mode
+// (Cert # / Email / Name); the input below adapts placeholder and keyboard
+// per mode. Cert # / Name run a directory search and render rows with a
+// "Send request" CTA; Email skips the directory and sends an invite
+// straight to the supplied address.
+//
+// ProBadge / Pro gating was dropped in A4 — every authenticated user can
+// search the directory.
+
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TextStyle,
+  View,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Button, Input, Card, Chip, ListRow, Banner, SectionHeader } from '../primitives';
+import { Search as SearchIcon } from 'lucide-react-native';
+import { Screen, Button, Banner } from '../primitives';
+import { SegmentedControl } from '../primitives/v2';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSupervisorSearch } from '../hooks/useSupervisorSearch';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
@@ -10,45 +30,72 @@ import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { SupervisorSearchKind, SupervisorSearchResult } from '../types';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { useSubscriptionStatus } from '../hooks/useSubscription';
-import { Search } from 'lucide-react-native';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+// SegmentedControl talks in plain string `value`s. We map the v2 control
+// values onto the existing service kinds so nothing in the data layer has
+// to change.
+const MODE_OPTIONS: Array<{ value: SupervisorSearchKind; label: string }> = [
+  { value: 'sprat_id', label: 'Cert #' },
+  { value: 'email', label: 'Email' },
+  { value: 'name', label: 'Name' },
+];
+
+function placeholderFor(mode: SupervisorSearchKind): string {
+  if (mode === 'sprat_id') return 'SPRAT cert number';
+  if (mode === 'email') return 'Email address';
+  return 'First or last name';
+}
+
+function ctaLabelFor(mode: SupervisorSearchKind): string {
+  if (mode === 'email') return 'Send invite';
+  return 'Search directory';
+}
+
 export function SupervisorSearchScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, typography, radii, borders } = useTheme();
   const navigation = useNavigation<Nav>();
+
   const db = useMemo(() => getClient(), []);
   const cloud = useMemo(() => createSupabaseCloudClient(), []);
   const search = useSupervisorSearch(cloud);
   const conns = useSupervisorConnections({ db, cloud });
-  const { isPaid } = useSubscriptionStatus();
-  const [tab, setTab] = useState<SupervisorSearchKind>('email');
+
+  const [mode, setMode] = useState<SupervisorSearchKind>('sprat_id');
   const [query, setQuery] = useState('');
 
+  const trimmed = query.trim();
+  const ctaDisabled =
+    trimmed.length === 0 || (mode === 'name' && trimmed.length < 3);
+
   const runSearch = async () => {
-    if (!isPaid) {
-      navigation.navigate('Paywall');
-      return;
-    }
-    if (tab === 'email') {
-      if (!query.trim()) return;
+    if (mode === 'email') {
+      if (!trimmed) return;
       try {
-        await conns.inviteByEmail.mutateAsync(query.trim());
-        Alert.alert('Invite sent', `An invite was sent to ${query.trim()}.`);
+        await conns.inviteByEmail.mutateAsync(trimmed);
+        Alert.alert('Invite sent', `An invite was sent to ${trimmed}.`);
         navigation.goBack();
       } catch (e) {
         Alert.alert('Could not invite', (e as Error).message);
       }
-    } else {
-      await search.search(tab, query.trim());
+      return;
     }
+    if (!trimmed) return;
+    if (mode === 'name' && trimmed.length < 3) return;
+    await search.search(mode, trimmed);
   };
 
   const sendRequest = async (result: SupervisorSearchResult) => {
     try {
-      await conns.inviteByDirectoryResult.mutateAsync({ result, invitedEmail: '' });
-      Alert.alert('Request sent', `A connection request was sent to ${result.display_name}.`);
+      await conns.inviteByDirectoryResult.mutateAsync({
+        result,
+        invitedEmail: '',
+      });
+      Alert.alert(
+        'Request sent',
+        `A connection request was sent to ${result.display_name}.`,
+      );
       navigation.goBack();
     } catch (e) {
       const msg = (e as Error).message;
@@ -64,96 +111,189 @@ export function SupervisorSearchScreen() {
   };
 
   return (
-    <Screen topDivider>
-      <ScrollView contentContainerStyle={{ gap: spacing.base, paddingBottom: spacing.xxl, padding: spacing.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: spacing.xs }}>
-          <Text style={[typography.h1, { color: colors.textPrimary }]}>Directory Search</Text>
-        </View>
+    <Screen padded={false}>
+      {/* Header */}
+      <View
+        style={{
+          paddingHorizontal: spacing.base,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.sm,
+        }}
+      >
+        <Text style={[typography.title1, { color: colors.textPrimary }]}>
+          Add supervisor
+        </Text>
+      </View>
 
-        {!isPaid && (
-          <Banner variant="info" message="Remote Supervisor Signatures are a Pro feature." />
-        )}
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: spacing.base,
+          paddingBottom: spacing.xxl,
+          gap: spacing.base,
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <SegmentedControl
+          options={MODE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          value={mode}
+          onChange={(v) => {
+            setMode(v as SupervisorSearchKind);
+            setQuery('');
+          }}
+        />
 
-        <SectionHeader label="SEARCH BY" />
-        <Card accent="navy" style={{ gap: spacing.md }}>
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-            <Chip
-              label="Email"
-              selected={tab === 'email'}
-              onPress={() => {
-                setTab('email');
-                setQuery('');
+        {/* Search input */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.bgMuted,
+            borderRadius: radii.md,
+            paddingHorizontal: spacing.md,
+            minHeight: 44,
+          }}
+        >
+          <SearchIcon size={18} color={colors.textDisabled} />
+          <View style={{ flex: 1, marginLeft: spacing.sm }}>
+            <SearchInput
+              value={query}
+              onChangeText={(v) => {
+                setQuery(v);
+                // Live search for Name only (matches the previous screen's
+                // behavior); Cert # users hit the CTA explicitly.
+                if (mode === 'name' && v.trim().length >= 3) {
+                  search.search('name', v.trim());
+                }
               }}
-            />
-            <Chip
-              label="SPRAT ID"
-              selected={tab === 'sprat_id'}
-              onPress={() => {
-                setTab('sprat_id');
-                setQuery('');
-              }}
-            />
-            <Chip
-              label="Name"
-              selected={tab === 'name'}
-              onPress={() => {
-                setTab('name');
-                setQuery('');
-              }}
+              placeholder={placeholderFor(mode)}
+              placeholderTextColor={colors.textDisabled}
+              textColor={colors.textPrimary}
+              fontStyle={typography.body}
+              autoCapitalize={mode === 'sprat_id' ? 'characters' : 'none'}
+              keyboardType={mode === 'email' ? 'email-address' : 'default'}
             />
           </View>
+        </View>
 
-          <Input
-            label={
-              tab === 'email'
-                ? 'Supervisor email'
-                : tab === 'sprat_id'
-                  ? 'SPRAT cert number'
-                  : 'Name (3+ chars)'
-            }
-            value={query}
-            onChangeText={(v) => {
-              setQuery(v);
-              if (tab === 'name' && v.trim().length >= 3) search.search('name', v.trim());
-            }}
-            autoCapitalize={tab === 'sprat_id' ? 'characters' : 'none'}
-            keyboardType={tab === 'email' ? 'email-address' : 'default'}
-          />
-
-          <Button
-            title={tab === 'email' ? 'Send invite' : 'Search Directory'}
-            onPress={runSearch}
-            disabled={(!query.trim() && isPaid) || (tab === 'name' && query.trim().length < 3)}
-            haptic
-          />
-        </Card>
+        <Button
+          title={ctaLabelFor(mode)}
+          variant="primary"
+          onPress={runSearch}
+          disabled={ctaDisabled}
+          haptic
+        />
 
         {search.error && <Banner variant="warning" message={search.error} />}
 
-        {tab !== 'email' && search.results.length > 0 && (
-          <SectionHeader label="RESULTS" />
-        )}
-        {tab !== 'email' &&
-          search.results.map((r) => (
-            <Card key={r.user_id} accent="navy">
-              <ListRow
-                title={r.display_name}
-                subtitle={r.sprat_cert_number}
-                onPress={() => sendRequest(r)}
-                right={<Button title="Send request" onPress={() => sendRequest(r)} />}
-              />
-            </Card>
-          ))}
-
-        {tab !== 'email' && !search.isSearching && search.results.length === 0 && query.trim() && (
-          <View style={{ alignItems: 'center', marginTop: spacing.xl, padding: spacing.xl }}>
-            <Search color={colors.border} size={48} />
-            <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md }]}>
-              No supervisors found in the directory. Try the Email tab to send an invite directly.
+        {/* Results — only meaningful for non-email modes */}
+        {mode !== 'email' && search.results.length > 0 && (
+          <View style={{ gap: spacing.xs }}>
+            <Text style={[typography.label, { color: colors.textSecondary }]}>
+              Results
             </Text>
+            <View
+              style={{
+                borderRadius: radii.md,
+                backgroundColor: colors.bgSurface,
+                borderWidth: borders.hair,
+                borderColor: colors.border,
+                overflow: 'hidden',
+              }}
+            >
+              {search.results.map((r, idx) => (
+                <View
+                  key={r.user_id}
+                  style={{
+                    paddingHorizontal: spacing.base,
+                    paddingVertical: spacing.md,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    borderBottomWidth:
+                      idx === search.results.length - 1 ? 0 : borders.hair,
+                    borderBottomColor: colors.divider,
+                  }}
+                >
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text
+                      style={[typography.bodyMed, { color: colors.textPrimary }]}
+                      numberOfLines={1}
+                    >
+                      {r.display_name}
+                    </Text>
+                    <Text
+                      style={[typography.caption, { color: colors.textSecondary }]}
+                      numberOfLines={1}
+                    >
+                      {r.sprat_cert_number}
+                      {r.sprat_cert_number_is_masked ? '  ·  masked' : ''}
+                    </Text>
+                  </View>
+                  <Button
+                    title="Send request"
+                    variant="secondary"
+                    onPress={() => sendRequest(r)}
+                  />
+                </View>
+              ))}
+            </View>
           </View>
         )}
+
+        {/* Empty state when a search has run but came up dry */}
+        {mode !== 'email' &&
+          !search.isSearching &&
+          search.results.length === 0 &&
+          trimmed.length > 0 && (
+            <View
+              style={{
+                alignItems: 'center',
+                paddingVertical: spacing.xl,
+                gap: spacing.md,
+              }}
+            >
+              <SearchIcon size={36} color={colors.textDisabled} />
+              <Text
+                style={[
+                  typography.body,
+                  { color: colors.textSecondary, textAlign: 'center' },
+                ]}
+              >
+                No supervisors found in the directory. Try the Email tab to send
+                an invite directly.
+              </Text>
+            </View>
+          )}
       </ScrollView>
     </Screen>
+  );
+}
+
+// Inline themed text input — mirrors the pattern in RecordsScreen so the
+// search row can stay un-labeled without dragging in the labelled `Input`
+// primitive.
+function SearchInput(props: {
+  value: string;
+  onChangeText: (s: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+  textColor: string;
+  fontStyle: TextStyle;
+  autoCapitalize: 'characters' | 'none';
+  keyboardType: 'email-address' | 'default';
+}) {
+  return (
+    <TextInput
+      value={props.value}
+      onChangeText={props.onChangeText}
+      placeholder={props.placeholder}
+      placeholderTextColor={props.placeholderTextColor}
+      style={[props.fontStyle, { color: props.textColor, paddingVertical: 0 }]}
+      autoCapitalize={props.autoCapitalize}
+      autoCorrect={false}
+      keyboardType={props.keyboardType}
+      returnKeyType="search"
+      accessibilityLabel="Search supervisors"
+    />
   );
 }

@@ -3,7 +3,7 @@
 // EntryDetailScreen's header. Single source of truth for the
 // chip/pill mapping defined in spec §5 + §7.
 
-import { Entry } from '../types';
+import { Entry, SignRequestStatus } from '../types';
 import { entryRequiredFieldsFilled } from './entryComplete';
 
 export type EntryClassification =
@@ -32,4 +32,16 @@ export function pillFor(e: Entry, classification: EntryClassification): PillSpec
   if (classification === 'awaiting') return { variant: 'pending', label: 'Awaiting' };
   if (classification === 'needs_signature') return { variant: 'pending', label: 'Needs signature' };
   return { variant: 'pending', label: 'Draft' };
+}
+
+// Sign-request status → pill spec. Used by InboxScreen rows and
+// SignRequestDetailScreen header. Pending stays warn-orange; signed is
+// green; declined/withdrawn/expired collapse to gray (no separate "danger"
+// variant — these are expected terminal states for a request, not errors).
+export function pillForSignRequest(status: SignRequestStatus): PillSpec {
+  if (status === 'signed') return { variant: 'signed', label: 'Signed' };
+  if (status === 'pending') return { variant: 'pending', label: 'Pending' };
+  if (status === 'declined') return { variant: 'amended', label: 'Declined' };
+  if (status === 'withdrawn') return { variant: 'amended', label: 'Withdrawn' };
+  return { variant: 'amended', label: 'Expired' };
 }
