@@ -167,7 +167,7 @@ export function RootNavigator() {
     queryFn: () => createSigningService(getClient()).getAllSignatures(),
     enabled: !!profile,
   });
-  const { data: backupStatus } = useBackupStatus(db ?? getClient());
+  const { data: backupStatus } = useBackupStatus(db);
 
   const conflict = React.useMemo(() => {
     if (!session || !profile || !preview.data) return false;
@@ -178,7 +178,7 @@ export function RootNavigator() {
   }, [session, profile, localEntries, preview.data, backupStatus]);
 
   if (isLoading) return <LoadingSpinner fullScreen label="Loading profile" />;
-  if (profile && session !== null && sessionLoading) {
+  if (profile && session === null && sessionLoading) {
     return <LoadingSpinner fullScreen label="Checking cloud session" />;
   }
 

@@ -106,11 +106,13 @@ export function createSupabaseCloudClient(): CloudClient {
       return sessionToAppSession(data.session as never);
     },
     getCurrentUserId() {
-      // Non-async convenience — uses the synchronously-cached session in supabase-js v2.
-      // Note: supabase-js v2 removed the synchronous session() method from v1, so this
-      // probe will return null at runtime. Callers should prefer the async getSession().
-      const session = (sb.auth as unknown as { session?: () => { user?: { id: string } } }).session?.();
-      return session?.user?.id ?? null;
+      // supabase-js v2 removed the synchronous session() method that existed in v1.
+      // The only reliable way to read the cached session synchronously is via the
+      // internal _session property that supabase-js v2 keeps in memory after the
+      // first async getSession() call resolves.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cached = (sb.auth as any)._session as { user?: { id: string } } | null | undefined;
+      return cached?.user?.id ?? null;
     },
 
     async signInWithProvider(provider: AuthProvider) {
