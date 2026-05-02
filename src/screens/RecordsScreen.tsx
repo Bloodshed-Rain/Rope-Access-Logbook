@@ -23,7 +23,7 @@ import { FilterChips, Sheet, StatusPill, MultiSelectListRow } from '../primitive
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntries } from '../hooks/useEntries';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { entryRequiredFieldsFilled } from '../utils/entryComplete';
+import { classifyEntry, pillFor } from '../utils/entryStatusPill';
 import { formatEntryDateRange, toISODate, fromISODate } from '../utils/dateRange';
 import { TechSittingIllustration } from '../components/illustrations/TechSittingIllustration';
 import { WORK_TYPE_LABELS } from '../constants';
@@ -47,27 +47,8 @@ const CHIP_LABELS = CHIP_DEFS.map((c) => c.label);
 const KEY_BY_LABEL = Object.fromEntries(CHIP_DEFS.map((c) => [c.label, c.key])) as Record<string, ChipKey>;
 const LABEL_BY_KEY = Object.fromEntries(CHIP_DEFS.map((c) => [c.key, c.label])) as Record<ChipKey, string>;
 
-// Per-entry classification — exactly the chip definitions from spec §5.
-function classifyEntry(e: Entry): ChipKey {
-  if (e.status === 'signed' || e.status === 'amended') return 'signed';
-  // status === 'draft'
-  if (e.pending_sign_request_id) return 'awaiting';
-  if (entryRequiredFieldsFilled(e)) return 'needs_signature';
-  return 'drafts';
-}
-
-interface PillSpec {
-  variant: 'pending' | 'signed' | 'amended';
-  label: string;
-}
-
-function pillFor(e: Entry, classification: ChipKey): PillSpec {
-  if (e.status === 'amended') return { variant: 'amended', label: 'Amended' };
-  if (e.status === 'signed') return { variant: 'signed', label: 'Signed' };
-  if (classification === 'awaiting') return { variant: 'pending', label: 'Awaiting' };
-  if (classification === 'needs_signature') return { variant: 'pending', label: 'Needs signature' };
-  return { variant: 'pending', label: 'Draft' };
-}
+// classifyEntry / pillFor live in src/utils/entryStatusPill.ts so EntryDetail
+// shares the same source.
 
 interface AdvancedFilters {
   dateFrom: string | null;   // ISO YYYY-MM-DD
