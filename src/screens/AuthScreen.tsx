@@ -4,7 +4,7 @@
 // the screen title via RootNavigator, so we keep an in-screen title1 for
 // hierarchy (mirrors the SupervisorSearch pattern).
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,8 +23,8 @@ export function AuthScreen() {
   const [loading, setLoading] = useState<'apple' | 'google' | 'email' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const cloud = createSupabaseCloudClient();
-  const auth = createAuthService(cloud);
+  const cloud = useMemo(() => createSupabaseCloudClient(), []);
+  const auth = useMemo(() => createAuthService(cloud), [cloud]);
 
   async function signInWith(provider: 'apple' | 'google') {
     try {

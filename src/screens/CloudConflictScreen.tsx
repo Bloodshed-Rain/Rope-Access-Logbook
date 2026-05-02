@@ -5,7 +5,7 @@
 // behind confirm Alerts. Shows a full-screen scrim + spinner while either
 // mutation is in flight.
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Cloud, Smartphone } from 'lucide-react-native';
@@ -35,15 +35,18 @@ export function CloudConflictScreen({
 }: CloudConflictScreenProps) {
   const { colors, spacing, typography, radii, borders, shadows } = useTheme();
   const nav = useNavigation();
-  const cloud = createSupabaseCloudClient();
-  const fs = createExpoFsAbstraction();
-  const deps = { db, cloud, fs, appVersion: APP_VERSION };
-  const backupDeps = {
-    ...deps,
-    hash: sha256,
-    exportService: createExportService(db),
-    clock: () => new Date().toISOString(),
-  };
+  const cloud = useMemo(() => createSupabaseCloudClient(), []);
+  const fs = useMemo(() => createExpoFsAbstraction(), []);
+  const deps = useMemo(() => ({ db, cloud, fs, appVersion: APP_VERSION }), [db, cloud, fs]);
+  const backupDeps = useMemo(
+    () => ({
+      ...deps,
+      hash: sha256,
+      exportService: createExportService(db),
+      clock: () => new Date().toISOString(),
+    }),
+    [deps, db],
+  );
   const preview = useCloudStatePreview(deps, true);
   const restoreMut = useRestore(deps);
   const replaceMut = useReplaceCloud(deps);
@@ -51,12 +54,16 @@ export function CloudConflictScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Both flows rely on RootNavigator's `conflict` flag flipping false once the
+  // mutation completes (last_uploaded_backup_id matches cloud.backup_id), at
+  // which point the navigator re-renders with the Main branch. No manual
+  // navigate is needed — and the prior call to navigate('Logbook') referenced
+  // a route that was removed in C2.
   async function keepCloud() {
     try {
       setBusy(true);
       setError(null);
       await restoreMut.mutateAsync();
-      (nav as unknown as { navigate: (name: string) => void }).navigate('Logbook');
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -70,7 +77,6 @@ export function CloudConflictScreen({
       setError(null);
       await replaceMut.mutateAsync();
       await backupMut.mutateAsync();
-      (nav as unknown as { navigate: (name: string) => void }).navigate('Logbook');
     } catch (e) {
       setError((e as Error).message);
     } finally {

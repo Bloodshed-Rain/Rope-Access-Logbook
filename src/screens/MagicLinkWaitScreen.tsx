@@ -4,7 +4,7 @@
 // Stack header supplies the route title; we render an in-screen card-style
 // layout below it.
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { Mail } from 'lucide-react-native';
@@ -21,11 +21,19 @@ export function MagicLinkWaitScreen() {
   const nav = useNavigation();
   const email = route.params.email;
 
-  const cloud = createSupabaseCloudClient();
-  const auth = createAuthService(cloud);
+  const cloud = useMemo(() => createSupabaseCloudClient(), []);
+  const auth = useMemo(() => createAuthService(cloud), [cloud]);
 
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
+
+  // Revert "Link resent" → "Resend" after a few seconds so the button isn't
+  // permanently disabled if the user wants to try again from the same screen.
+  useEffect(() => {
+    if (resendStatus !== 'sent') return;
+    const id = setTimeout(() => setResendStatus('idle'), 4000);
+    return () => clearTimeout(id);
+  }, [resendStatus]);
 
   async function resend() {
     try {
