@@ -111,10 +111,8 @@ export function CloudSignInStep({ onBack, onSignedIn }: CloudSignInStepProps) {
         <View style={{ gap: spacing.md }}>
           {Platform.OS === 'ios' ? (
             <View
-              style={{
-                opacity: disabled ? 0.5 : 1,
-                pointerEvents: disabled ? 'none' : 'auto',
-              }}
+              pointerEvents={disabled ? 'none' : 'auto'}
+              style={{ opacity: disabled ? 0.5 : 1 }}
             >
               <AppleAuthentication.AppleAuthenticationButton
                 buttonType={

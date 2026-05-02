@@ -9,9 +9,12 @@
 // expectations.
 //
 // Profile creation is the final side-effect, fired only after all required
-// steps resolve:
+// steps resolve. Per spec §3 line 124, supervisors hit cloud_signin BEFORE
+// subscribe (you can't be in the directory without a Supabase account), so
+// the auth session is already established when finishOnboarding fires:
 //   - tech path:   subscribe → createProfile → done
-//   - supervisor:  cloud_signin → createProfile → enableSupervisorCapability → done
+//   - supervisor:  cloud_signin → subscribe → createProfile →
+//                  enableSupervisorCapability → done
 // Subscription status is re-synced post-create so the just-purchased trial is
 // reflected in `profile.subscription_status` (purchase() runs an UPDATE, which
 // is a no-op until a profile row exists).
@@ -64,9 +67,14 @@ export function OnboardingScreen() {
         case 'role_fork':
           return { ...s, step: 'cert' };
         case 'subscribe':
+          // Supervisor path: subscribe came after cloud_signin.
+          // Tech path: subscribe came after role_fork (if any L3) or cert.
+          if (s.role === 'supervisor') return { ...s, step: 'cloud_signin' };
           return { ...s, step: hasAnyL3(s) ? 'role_fork' : 'cert' };
         case 'cloud_signin':
-          return { ...s, step: 'subscribe' };
+          // Only supervisors reach cloud_signin, and the supervisor path
+          // requires role_fork to choose the role — so back always goes there.
+          return { ...s, step: 'role_fork' };
         default:
           return s;
       }
@@ -113,9 +121,9 @@ export function OnboardingScreen() {
     };
   }
 
-  // Final commit. Tech path runs after subscribe; supervisor path runs after
-  // cloud_signin (which guarantees an authed session, required for the
-  // directory upsert).
+  // Final commit. Both paths run after subscribe; supervisor path additionally
+  // ran cloud_signin before subscribe (so an authed session is already in
+  // place, which is required for the supervisor_directory upsert).
   const finishOnboarding = useCallback(async () => {
     if (completing) return;
     setCompleting(true);
@@ -123,15 +131,28 @@ export function OnboardingScreen() {
       const input = buildProfileInput(state);
       await createProfile.mutateAsync(input);
 
+      // enableSupervisorCapability has its own try/catch — if the directory
+      // upsert fails, the profile row is already created, so we keep the user
+      // moving and toast them to finish supervisor setup from the Me tab
+      // rather than rolling everything back.
       if (state.role === 'supervisor') {
-        const db = getClient();
-        const profileSvc = createProfileService(db);
-        await profileSvc.enableSupervisorCapability(
-          state.supervisorCertNumber.trim(),
-          input.full_name,
-          state.directoryVisible,
-          cloud,
-        );
+        try {
+          const db = getClient();
+          const profileSvc = createProfileService(db);
+          await profileSvc.enableSupervisorCapability(
+            state.supervisorCertNumber.trim(),
+            input.full_name,
+            state.directoryVisible,
+            cloud,
+          );
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn('[onboarding] enableSupervisorCapability failed', e);
+          toast.show({
+            message: 'Profile created — finish supervisor setup in Me.',
+            variant: 'warn',
+          });
+        }
       }
 
       // Re-sync RC status into the just-created profile row so trial state is
@@ -152,6 +173,20 @@ export function OnboardingScreen() {
       setCompleting(false);
     }
   }, [completing, state, createProfile, queryClient, toast, cloud]);
+
+  // Stable callbacks for child step components so their useEffects don't
+  // re-fire on every parent render. (The `completing` guard inside
+  // finishOnboarding still protects correctness; this is defense-in-depth.)
+  const handlePurchased = useCallback(() => {
+    // Both tech and supervisor paths complete on subscribe — the supervisor
+    // already signed in before subscribe per spec §3 line 124.
+    finishOnboarding();
+  }, [finishOnboarding]);
+
+  const handleSignedIn = useCallback(() => {
+    // Only supervisors reach cloud_signin; advance to subscribe.
+    setState((s) => ({ ...s, step: 'subscribe' }));
+  }, []);
 
   // Step renderer.
   switch (state.step) {
@@ -187,7 +222,11 @@ export function OnboardingScreen() {
           state={state}
           onChange={(patch) => setState((s) => ({ ...s, ...patch }))}
           onBack={goBack}
-          onNext={() => goTo('subscribe')}
+          onNext={() =>
+            // Supervisors must sign in before subscribing per spec §3 line 124
+            // — directory upsert needs a real Supabase account.
+            goTo(state.role === 'supervisor' ? 'cloud_signin' : 'subscribe')
+          }
         />
       );
 
@@ -195,10 +234,7 @@ export function OnboardingScreen() {
       return (
         <SubscribeStep
           onBack={goBack}
-          onPurchased={() => {
-            if (state.role === 'supervisor') goTo('cloud_signin');
-            else finishOnboarding();
-          }}
+          onPurchased={handlePurchased}
         />
       );
 
@@ -206,7 +242,7 @@ export function OnboardingScreen() {
       return (
         <CloudSignInStep
           onBack={goBack}
-          onSignedIn={() => finishOnboarding()}
+          onSignedIn={handleSignedIn}
         />
       );
 
