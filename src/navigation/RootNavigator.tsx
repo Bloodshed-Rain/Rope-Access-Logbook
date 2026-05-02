@@ -15,8 +15,9 @@ import { colors } from '../theme/tokens';
 import { LoadingSpinner } from '../primitives/LoadingSpinner';
 import { useToast } from '../primitives/Toast';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
-import { DashboardScreen } from '../screens/DashboardScreen';
+import { TodayScreen } from '../screens/TodayScreen';
 import { LogbookScreen } from '../screens/LogbookScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { EntryFormScreen } from '../screens/EntryFormScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
@@ -47,9 +48,10 @@ export type RootStackParamList = {
   SupervisorSearch: undefined;
   SignRequestDetail: { requestId: string };
   Paywall: undefined;
+  Notifications: undefined;
 };
 
-export type TabParamList = { Dashboard: undefined; Inbox: undefined; Profile: undefined; };
+export type TabParamList = { Today: undefined; Inbox: undefined; Profile: undefined; };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
@@ -99,8 +101,8 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
       }}
     >
       <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
+        name="Today"
+        component={TodayScreen}
         options={{ tabBarIcon: ({ color }) => <GaugeIcon color={color} size={24} /> }}
       />
       {showInbox ? (
@@ -250,6 +252,7 @@ export function RootNavigator() {
             <Stack.Screen name="SupervisorSearch" component={SupervisorSearchScreen} options={{ title: 'Add supervisor' }} />
             <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
           </>
         )}
       </Stack.Navigator>
