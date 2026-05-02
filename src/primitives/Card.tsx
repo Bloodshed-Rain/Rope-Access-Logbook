@@ -15,13 +15,13 @@ export function Card({ children, style, accent, bg = 'surface' }: CardProps) {
   const getAccentColor = () => {
     switch (accent) {
       case 'orange':
-        return colors.accentBase;
+        return colors.accentPrimary;
       case 'red':
         return colors.statusErr;
       case 'navy':
-        return colors.edgeBright;
+        return colors.borderStrong;
       case 'tan':
-        return colors.accentHot;
+        return colors.statusErr;
       default:
         return undefined;
     }
@@ -33,16 +33,16 @@ export function Card({ children, style, accent, bg = 'surface' }: CardProps) {
     <View
       style={[
         {
-          backgroundColor: bg === 'paper' ? colors.bgPanel : colors.bgRaised,
+          backgroundColor: bg === 'paper' ? colors.bgSurface : colors.bgSurface,
           padding: spacing.s4,
           borderTopWidth: borders.hair,
-          borderTopColor: colors.edgeHi,
+          borderTopColor: colors.border,
           borderRightWidth: borders.hair,
-          borderRightColor: colors.edgeBase,
+          borderRightColor: colors.border,
           borderBottomWidth: borders.hair,
-          borderBottomColor: colors.edgeBase,
+          borderBottomColor: colors.border,
           borderLeftWidth: borders.hair,
-          borderLeftColor: colors.edgeBase,
+          borderLeftColor: colors.border,
           overflow: 'hidden',
         },
         style,

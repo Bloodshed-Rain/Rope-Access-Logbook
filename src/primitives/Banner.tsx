@@ -15,10 +15,10 @@ export function Banner({ message, variant, actionLabel, onAction, onDismiss }: B
   const { colors, spacing, typography, radii, shadows } = useTheme();
 
   const colorMap = {
-    warning: colors.warning,
-    error: colors.error,
-    info: colors.info,
-    success: colors.success,
+    warning: colors.statusWarn,
+    error: colors.statusErr,
+    info: colors.statusInfo,
+    success: colors.statusOk,
   };
 
   const IconComponent =
@@ -33,7 +33,7 @@ export function Banner({ message, variant, actionLabel, onAction, onDismiss }: B
     <View
       style={[
         {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.bgSurface,
           borderRadius: radii.md,
           paddingVertical: spacing.md,
           paddingHorizontal: spacing.base,
@@ -41,7 +41,7 @@ export function Banner({ message, variant, actionLabel, onAction, onDismiss }: B
           alignItems: 'center',
           gap: spacing.sm,
           borderWidth: 1,
-          borderColor: colors.hairline,
+          borderColor: colors.border,
           overflow: 'hidden',
         },
         shadows.sm,
@@ -58,17 +58,17 @@ export function Banner({ message, variant, actionLabel, onAction, onDismiss }: B
         }}
       />
       <IconComponent color={accentColor} size={20} />
-      <Text style={[typography.bodySmall, { color: colors.textPrimary, flex: 1 }]}>{message}</Text>
+      <Text style={[typography.label, { color: colors.textPrimary, flex: 1 }]}>{message}</Text>
       
       {actionLabel && onAction && (
         <Pressable onPress={onAction} hitSlop={8}>
-          <Text style={[typography.stencilLg, { color: accentColor }]}>{actionLabel}</Text>
+          <Text style={[typography.bodyMed, { color: accentColor }]}>{actionLabel}</Text>
         </Pressable>
       )}
       
       {onDismiss && (
         <Pressable onPress={onDismiss} hitSlop={8}>
-          <X color={colors.slateLight} size={20} />
+          <X color={colors.textDisabled} size={20} />
         </Pressable>
       )}
     </View>

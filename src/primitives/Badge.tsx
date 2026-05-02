@@ -17,12 +17,12 @@ export function Badge({ status }: BadgeProps) {
   const { colors, borders } = useTheme();
 
   let bg: string = 'transparent';
-  let text: string = colors.inkSecondary;
-  let border: string = colors.edgeHi;
+  let text: string = colors.textSecondary;
+  let border: string = colors.border;
 
   if (status === 'draft') {
-    text = colors.inkSecondary;
-    border = colors.edgeHi;
+    text = colors.textSecondary;
+    border = colors.border;
   } else if (status === 'signed') {
     text = colors.statusOk;
     border = colors.statusOk;

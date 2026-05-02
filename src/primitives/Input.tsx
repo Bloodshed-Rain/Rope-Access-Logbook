@@ -16,39 +16,39 @@ export function Input({ label, error, hint, style, editable = true, ...props }: 
   const borderColor = error
     ? colors.statusErr
     : focused
-      ? colors.accentBase
-      : colors.edgeHi;
+      ? colors.accentPrimary
+      : colors.border;
 
   return (
     <View style={{ gap: spacing.s2 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Text style={[typography.stencilSm, { color: colors.inkTertiary }]}>{label}</Text>
-        {hint && <Text style={[typography.caption, { color: colors.inkTertiary }]}>{hint}</Text>}
+        <Text style={[typography.caption, { color: colors.textDisabled }]}>{label}</Text>
+        {hint && <Text style={[typography.caption, { color: colors.textDisabled }]}>{hint}</Text>}
       </View>
       <TextInput
         editable={editable}
         style={[
-          typography.mono,
+          typography.label,
           {
             // Inset bezel: top edge highlighted, sides + bottom darker
             borderTopWidth: borders.hair,
             borderTopColor: borderColor,
             borderRightWidth: borders.hair,
-            borderRightColor: colors.edgeBase,
+            borderRightColor: colors.border,
             borderBottomWidth: borders.hair,
-            borderBottomColor: colors.edgeBase,
+            borderBottomColor: colors.border,
             borderLeftWidth: borders.hair,
-            borderLeftColor: colors.edgeBase,
+            borderLeftColor: colors.border,
             borderRadius: radii.none,
             paddingHorizontal: spacing.s3,
             paddingVertical: spacing.s3,
             minHeight: touchTarget.min,
-            color: isDisabled ? colors.inkDisabled : colors.inkPrimary,
-            backgroundColor: colors.bgInset,
+            color: isDisabled ? colors.textDisabled : colors.textPrimary,
+            backgroundColor: colors.bgMuted,
           },
           style,
         ]}
-        placeholderTextColor={colors.inkTertiary}
+        placeholderTextColor={colors.textDisabled}
         onFocus={(e) => {
           setFocused(true);
           props.onFocus?.(e);

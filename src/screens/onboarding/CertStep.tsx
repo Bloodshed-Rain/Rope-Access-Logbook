@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Button, Input, Screen } from '../../primitives';
-import { SegmentedControl } from '../../primitives/v2';
+import { SegmentedControl } from '../../primitives';
 import { useTheme } from '../../theme/ThemeProvider';
 import { fromISODate, toISODate, formatDate } from '../../utils/dateRange';
 import { CertLevel, CertScheme } from '../../types';

@@ -128,7 +128,7 @@ export function SignatureScreen() {
   return (
     <Screen topDivider>
       <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={{ gap: spacing.base, paddingVertical: spacing.md, paddingHorizontal: spacing.base, paddingBottom: spacing.xxl }}>
-        <Text style={[typography.h1, { color: colors.textPrimary }]}>Local Signature</Text>
+        <Text style={[typography.title1, { color: colors.textPrimary }]}>Local Signature</Text>
 
         {!entryReady && (
           <Banner
@@ -144,7 +144,7 @@ export function SignatureScreen() {
           <View style={{ gap: spacing.xs }}>
             <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.date_from === entry.date_to ? entry.date_from : `${entry.date_from} → ${entry.date_to}`} — {entry.site}</Text>
             <Text style={[typography.body, { color: colors.textPrimary }]}>{entry.work_hours}h · {entry.employer}</Text>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>{entry.description}</Text>
+            <Text style={[typography.label, { color: colors.textSecondary }]}>{entry.description}</Text>
           </View>
         </Card>
 

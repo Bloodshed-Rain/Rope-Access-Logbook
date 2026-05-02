@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Pressable, Text, View, ViewStyle } from 'react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../theme/ThemeProvider';
 
 export interface StatCardProps {
   title?: string;

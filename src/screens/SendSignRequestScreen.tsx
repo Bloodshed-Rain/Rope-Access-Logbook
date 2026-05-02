@@ -18,7 +18,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Check, ChevronRight, X } from 'lucide-react-native';
 import { Screen, Button, Textarea, LoadingSpinner, useToast } from '../primitives';
-import { Sheet } from '../primitives/v2/Sheet';
+import { Sheet } from '../primitives/Sheet';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry } from '../hooks/useEntries';
 import { useAuthSession } from '../hooks/useAuthSession';

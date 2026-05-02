@@ -124,7 +124,7 @@ function ToastView({ toast, onDismiss }: { toast: ActiveToast; onDismiss: () => 
       ? colors.statusWarn
       : toast.variant === 'err'
       ? colors.statusErr
-      : colors.inkSecondary;
+      : colors.textSecondary;
 
   const Icon =
     toast.variant === 'ok'
@@ -158,9 +158,9 @@ function ToastView({ toast, onDismiss }: { toast: ActiveToast; onDismiss: () => 
           gap: spacing.sm,
           paddingVertical: spacing.sm,
           paddingHorizontal: spacing.base,
-          backgroundColor: colors.bgRaised,
+          backgroundColor: colors.bgSurface,
           borderWidth: 1,
-          borderColor: colors.edgeHi,
+          borderColor: colors.border,
           maxWidth: '90%',
         }}
       >
@@ -177,14 +177,14 @@ function ToastView({ toast, onDismiss }: { toast: ActiveToast; onDismiss: () => 
         <Icon color={accent} size={18} />
         <Text
           style={[
-            typography.bodySmall,
-            { color: colors.inkPrimary, flexShrink: 1 },
+            typography.label,
+            { color: colors.textPrimary, flexShrink: 1 },
           ]}
           numberOfLines={2}
         >
           {toast.message}
         </Text>
-        <X color={colors.inkTertiary} size={14} />
+        <X color={colors.textDisabled} size={14} />
       </Pressable>
     </Animated.View>
   );

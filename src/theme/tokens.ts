@@ -34,80 +34,8 @@ const palette = {
   certL3: '#15803D',
 } as const;
 
-// Legacy aliases below — every existing screen/primitive reads these. They map
-// to the new light-theme palette so dark-industrial code keeps compiling and
-// rendering during phases B–E. Aliases removed in Phase F2.
 export const colors = {
   ...palette,
-
-  bg:        palette.bgApp,
-  bg2:       palette.bgSurface,
-  bgBase:    palette.bgApp,
-  bgRaised:  palette.bgSurface,
-  bgPanel:   palette.bgSurface,
-  bgInset:   palette.bgMuted,
-
-  edgeBase:   palette.border,
-  edgeHi:     palette.border,
-  edgeBright: palette.borderStrong,
-
-  inkPrimary:   palette.textPrimary,
-  inkSecondary: palette.textSecondary,
-  inkTertiary:  palette.textDisabled,
-  inkDisabled:  palette.textDisabled,
-
-  accent:       palette.accentPrimary,
-  accentBase:   palette.accentPrimary,
-  accentHot:    palette.statusErr,
-  accentDeep:   palette.accentPressed,
-  accentStripe: palette.accentPrimary,
-  accentLight:  palette.accentTint,
-
-  success:      palette.statusOk,
-  warning:      palette.statusWarn,
-  warningLight: palette.statusWarnTint,
-  error:        palette.statusErr,
-  errorLight:   palette.statusErrTint,
-  info:         palette.statusInfo,
-  infoLight:    palette.statusInfoTint,
-
-  surface:         palette.bgSurface,
-  surfaceElevated: palette.bgSurface,
-  background:      palette.bgApp,
-  paper:           palette.bgSurface,
-
-  borderFocused: palette.accentPrimary,
-  hairline:      palette.border,
-
-  textTertiary: palette.textDisabled,
-
-  navy:      palette.bgSurface,
-  navyDeep:  palette.bgApp,
-  navyLight: palette.bgMuted,
-
-  ropeTan:      palette.accentPrimary,
-  ropeTanLight: palette.statusErr,
-
-  slate:         palette.textSecondary,
-  slateLight:    palette.textDisabled,
-  slateLighter:  palette.borderStrong,
-  slateLightest: palette.border,
-
-  ink:   palette.textPrimary,
-  ink70: palette.textSecondary,
-  ink50: palette.textDisabled,
-  ink30: palette.borderStrong,
-  ink15: palette.border,
-
-  blood:  palette.accentPrimary,
-  bloodD: palette.accentPressed,
-
-  statusSigned:       palette.statusOk,
-  statusSignedLight:  palette.statusOkTint,
-  statusDraft:        palette.statusWarn,
-  statusDraftLight:   palette.statusWarnTint,
-  statusAmended:      palette.textSecondary,
-  statusAmendedLight: palette.statusNeutralTint,
 
   overlay: 'rgba(0, 0, 0, 0.4)',
 } as const;
@@ -178,8 +106,6 @@ export const touchTarget = {
   preferred: 44,
 } as const;
 
-// B2 will register these font names in app.config.ts. Until then they fall
-// back to the system font.
 const FONT = {
   REGULAR:  'Inter_400Regular',
   MEDIUM:   'Inter_500Medium',
@@ -193,20 +119,6 @@ export const typography = {
   bodyMed: { fontFamily: FONT.MEDIUM,   fontSize: 16, lineHeight: 24, fontWeight: '500' },
   label:   { fontFamily: FONT.MEDIUM,   fontSize: 14, lineHeight: 20, fontWeight: '500' },
   caption: { fontFamily: FONT.REGULAR,  fontSize: 12, lineHeight: 16, fontWeight: '400' },
-
-  // Legacy keys — mapped to Inter so industrial screens remain readable until F2.
-  display:   { fontFamily: FONT.SEMIBOLD, fontSize: 28, lineHeight: 34, fontWeight: '600' },
-  h1:        { fontFamily: FONT.SEMIBOLD, fontSize: 24, lineHeight: 32, fontWeight: '600' },
-  h2:        { fontFamily: FONT.SEMIBOLD, fontSize: 20, lineHeight: 28, fontWeight: '600' },
-  h3:        { fontFamily: FONT.SEMIBOLD, fontSize: 18, lineHeight: 24, fontWeight: '600' },
-  bodyBold:  { fontFamily: FONT.MEDIUM,   fontSize: 16, lineHeight: 24, fontWeight: '500' },
-  bodySmall: { fontFamily: FONT.REGULAR,  fontSize: 14, lineHeight: 20, fontWeight: '400' },
-  numeric:   { fontFamily: FONT.SEMIBOLD, fontSize: 20, lineHeight: 28, fontWeight: '600' },
-  mono:      { fontFamily: FONT.MEDIUM,   fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  stencil:   { fontFamily: FONT.SEMIBOLD, fontSize: 16, lineHeight: 22, fontWeight: '600' },
-  stencilSm: { fontFamily: FONT.SEMIBOLD, fontSize: 12, lineHeight: 16, fontWeight: '600' },
-  stencilLg: { fontFamily: FONT.SEMIBOLD, fontSize: 24, lineHeight: 32, fontWeight: '600' },
-  micro:     { fontFamily: FONT.REGULAR,  fontSize: 11, lineHeight: 14, fontWeight: '400' },
 } as const;
 
 export const theme = {

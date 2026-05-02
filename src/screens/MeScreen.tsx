@@ -24,7 +24,7 @@ import {
   ChecklistRow,
   StatCard,
   SubscriptionStrip,
-} from '../primitives/v2';
+} from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile, useUpdateProfile, useUpdateLastBackupAt } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';

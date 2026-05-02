@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ChevronRight, SlidersHorizontal, Search as SearchIcon, Plus } from 'lucide-react-native';
 import { Screen, Button, Banner } from '../primitives';
-import { FilterChips, Sheet, StatusPill, MultiSelectListRow } from '../primitives/v2';
+import { FilterChips, Sheet, StatusPill, MultiSelectListRow } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntries } from '../hooks/useEntries';
 import { useReadOnly } from '../hooks/useSubscription';

@@ -23,14 +23,14 @@ export function LoadingSpinner({
     <View
       style={[
         styles.container,
-        { backgroundColor: fullScreen ? colors.bg : 'transparent', gap: spacing.s3 },
+        { backgroundColor: fullScreen ? colors.bgApp : 'transparent', gap: spacing.s3 },
         fullScreen && styles.fullScreen,
         style,
       ]}
     >
-      <ActivityIndicator size={size} color={color ?? colors.accent} />
+      <ActivityIndicator size={size} color={color ?? colors.accentPrimary} />
       {label ? (
-        <Text style={[typography.bodySmall, styles.label, { color: colors.textSecondary }]}>
+        <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
           {label}
         </Text>
       ) : null}

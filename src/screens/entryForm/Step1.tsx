@@ -6,7 +6,7 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Plus } from 'lucide-react-native';
 import { Button, Input } from '../../primitives';
-import { SegmentedControl, MultiSelectListRow } from '../../primitives/v2';
+import { SegmentedControl, MultiSelectListRow } from '../../primitives';
 import { useTheme } from '../../theme/ThemeProvider';
 import { fromISODate, toISODate } from '../../utils/dateRange';
 import { WhenChoice, WizardState, WizardStateUpdate } from './types';

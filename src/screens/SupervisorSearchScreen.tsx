@@ -22,7 +22,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Search as SearchIcon } from 'lucide-react-native';
 import { Screen, Button, Banner } from '../primitives';
-import { SegmentedControl } from '../primitives/v2';
+import { SegmentedControl } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSupervisorSearch } from '../hooks/useSupervisorSearch';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';

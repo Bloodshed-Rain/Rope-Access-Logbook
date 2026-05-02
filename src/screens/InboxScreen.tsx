@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Inbox, RefreshCw } from 'lucide-react-native';
 import { Screen, Button } from '../primitives';
-import { StatusPill } from '../primitives/v2';
+import { StatusPill } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
 import { useSignRequests } from '../hooks/useSignRequests';

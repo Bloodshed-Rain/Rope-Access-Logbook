@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { X } from 'lucide-react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../theme/ThemeProvider';
 
 export interface SheetProps {
   open: boolean;

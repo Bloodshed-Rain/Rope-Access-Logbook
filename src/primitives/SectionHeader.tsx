@@ -26,25 +26,25 @@ export function SectionHeader({ label, num, accent: _accent = 'orange', right }:
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.s2 }}>
-        <View style={{ width: 10, height: 1, backgroundColor: colors.accentBase }} />
+        <View style={{ width: 10, height: 1, backgroundColor: colors.accentPrimary }} />
         {num && (
           <Text
             style={{
               fontFamily: 'JetBrainsMono_700Bold',
               fontSize: 10,
               letterSpacing: 0.5,
-              color: colors.accentBase,
+              color: colors.accentPrimary,
             }}
           >
             {num}
           </Text>
         )}
-        <Text style={[typography.stencil, { color: colors.inkTertiary }]}>{label}</Text>
+        <Text style={[typography.title2, { color: colors.textDisabled }]}>{label}</Text>
       </View>
       {right && (
         <View>
           {typeof right === 'string' ? (
-            <Text style={[typography.caption, { color: colors.accentBase, letterSpacing: 1.0 }]}>
+            <Text style={[typography.caption, { color: colors.accentPrimary, letterSpacing: 1.0 }]}>
               {right}
             </Text>
           ) : (

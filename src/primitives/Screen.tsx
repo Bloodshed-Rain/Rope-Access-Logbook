@@ -16,7 +16,7 @@ export function Screen({ children, padded = true }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.safe, { backgroundColor: colors.bgBase, paddingTop: insets.top }]}>
+    <View style={[styles.safe, { backgroundColor: colors.bgApp, paddingTop: insets.top }]}>
       <View style={[styles.container, padded && { paddingHorizontal: spacing.s5 }]}>
         {children}
       </View>

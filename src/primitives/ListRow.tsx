@@ -16,7 +16,7 @@ export function ListRow({ title, subtitle, right, onPress }: ListRowProps) {
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        backgroundColor: pressed ? colors.ropeTanLight : 'transparent',
+        backgroundColor: pressed ? colors.statusErr : 'transparent',
         paddingVertical: spacing.base,
         paddingHorizontal: spacing.base,
         minHeight: touchTarget.preferred,
@@ -24,7 +24,7 @@ export function ListRow({ title, subtitle, right, onPress }: ListRowProps) {
         alignItems: 'center',
         gap: spacing.md,
         borderBottomWidth: 1,
-        borderBottomColor: colors.hairline,
+        borderBottomColor: colors.border,
         position: 'relative',
         overflow: 'hidden',
       })}
@@ -39,13 +39,13 @@ export function ListRow({ title, subtitle, right, onPress }: ListRowProps) {
                 top: 0,
                 bottom: 0,
                 width: 3,
-                backgroundColor: colors.accentStripe,
+                backgroundColor: colors.accentPrimary,
               }}
             />
           )}
           <View style={{ flex: 1, gap: spacing.xs }}>
             <Text style={[typography.body, { color: colors.textPrimary, fontWeight: '700' }]}>{title}</Text>
-            {subtitle && <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>{subtitle}</Text>}
+            {subtitle && <Text style={[typography.label, { color: colors.textSecondary }]}>{subtitle}</Text>}
           </View>
           {right && <View>{right}</View>}
         </>

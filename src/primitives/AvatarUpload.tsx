@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import { Camera } from 'lucide-react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../theme/ThemeProvider';
 
 export interface AvatarUploadProps {
   uri?: string | null;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../theme/ThemeProvider';
 
 export interface FilterChipsProps {
   chips: string[];

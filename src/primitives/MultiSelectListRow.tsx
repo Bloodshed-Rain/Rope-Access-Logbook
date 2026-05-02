@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../theme/ThemeProvider';
 
 export interface MultiSelectListRowProps {
   label: string;

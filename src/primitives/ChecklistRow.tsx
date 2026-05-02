@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { CheckCircle2, AlertCircle, Circle } from 'lucide-react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../theme/ThemeProvider';
 
 export type ChecklistRowState = 'ok' | 'warn' | 'err' | 'muted';
 

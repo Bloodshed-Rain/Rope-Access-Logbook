@@ -15,11 +15,11 @@ export function Chip({ label, selected, onPress }: ChipProps) {
     <Pressable
       onPress={onPress}
       style={{
-        backgroundColor: selected ? colors.accentBase : 'transparent',
+        backgroundColor: selected ? colors.accentPrimary : 'transparent',
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderWidth: borders.hair,
-        borderColor: selected ? colors.accentDeep : colors.edgeHi,
+        borderColor: selected ? colors.accentPressed : colors.border,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -30,7 +30,7 @@ export function Chip({ label, selected, onPress }: ChipProps) {
           fontSize: 9,
           letterSpacing: 1.4,
           textTransform: 'uppercase',
-          color: selected ? colors.bgBase : colors.inkSecondary,
+          color: selected ? colors.bgApp : colors.textSecondary,
         }}
       >
         {label}

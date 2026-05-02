@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Modal, Pressable, View } from 'react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../theme/ThemeProvider';
 
 export interface CenterModalProps {
   open: boolean;

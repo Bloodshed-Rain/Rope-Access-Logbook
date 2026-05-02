@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import { CheckCircle2 } from 'lucide-react-native';
 import { Screen, Button, Banner, LoadingSpinner, useToast } from '../primitives';
-import { StatusPill } from '../primitives/v2';
+import { StatusPill } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntry, useDeleteEntry, useAmendmentForEntry } from '../hooks/useEntries';
 import { useSignatureForEntry, useVerifyIntegrity } from '../hooks/useSignatures';
@@ -349,7 +349,7 @@ export function EntryDetailScreen() {
                   onError={() => setSignatureImageFailed(true)}
                 />
               )}
-              <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
+              <Text style={[typography.label, { color: colors.textSecondary }]}>
                 {`Signed by ${signature.supervisor_name} on ${formatDate(signature.signed_at)}`}
               </Text>
               {/* Integrity verdict footer — verified case. The error case

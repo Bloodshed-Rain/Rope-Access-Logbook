@@ -16,7 +16,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pen, Send, LucideProps } from 'lucide-react-native';
 import { Button } from '../primitives';
-import { Sheet } from '../primitives/v2/Sheet';
+import { Sheet } from '../primitives/Sheet';
 import { useTheme } from '../theme/ThemeProvider';
 import { RootStackParamList } from '../navigation/RootNavigator';
 

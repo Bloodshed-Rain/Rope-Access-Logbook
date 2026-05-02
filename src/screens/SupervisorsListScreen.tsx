@@ -15,7 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Screen, Button } from '../primitives';
-import { StatusPill } from '../primitives/v2';
+import { StatusPill } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useAuthSession } from '../hooks/useAuthSession';

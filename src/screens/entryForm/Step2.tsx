@@ -4,7 +4,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { Button, Input, Textarea } from '../../primitives';
-import { MultiSelectListRow } from '../../primitives/v2';
+import { MultiSelectListRow } from '../../primitives';
 import { useTheme } from '../../theme/ThemeProvider';
 import { WORK_TYPE_LABELS } from '../../constants';
 import { WorkType } from '../../types';

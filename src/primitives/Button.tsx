@@ -34,32 +34,32 @@ export function Button({
 
   const getBgColor = (pressed: boolean) => {
     if (disabled) {
-      if (isPrimary) return colors.inkDisabled;
-      if (isDanger) return colors.inkDisabled;
+      if (isPrimary) return colors.textDisabled;
+      if (isDanger) return colors.textDisabled;
       return 'transparent';
     }
-    if (isPrimary) return pressed ? colors.accentDeep : colors.accentBase;
+    if (isPrimary) return pressed ? colors.accentPressed : colors.accentPrimary;
     if (isDanger) return pressed ? '#b03a40' : colors.statusErr;
-    if (isSecondary) return pressed ? colors.bgPanel : 'transparent';
-    return pressed ? colors.bgPanel : 'transparent'; // ghost
+    if (isSecondary) return pressed ? colors.bgSurface : 'transparent';
+    return pressed ? colors.bgSurface : 'transparent'; // ghost
   };
 
   const getTextColor = (pressed: boolean) => {
     if (disabled) {
-      if (isPrimary || isDanger) return colors.bgBase;
-      return colors.inkDisabled;
+      if (isPrimary || isDanger) return colors.bgApp;
+      return colors.textDisabled;
     }
-    if (isPrimary || isDanger) return colors.bgBase;
-    if (isSecondary) return pressed ? colors.inkPrimary : colors.inkPrimary;
-    return colors.accentBase; // ghost
+    if (isPrimary || isDanger) return colors.bgApp;
+    if (isSecondary) return pressed ? colors.textPrimary : colors.textPrimary;
+    return colors.accentPrimary; // ghost
   };
 
   const getBorderColor = (pressed: boolean) => {
     if (isSecondary) {
-      if (disabled) return colors.inkDisabled;
-      return pressed ? colors.accentBase : colors.edgeHi;
+      if (disabled) return colors.textDisabled;
+      return pressed ? colors.accentPrimary : colors.border;
     }
-    if (isPrimary && !disabled) return colors.accentDeep;
+    if (isPrimary && !disabled) return colors.accentPressed;
     return 'transparent';
   };
 
@@ -91,7 +91,7 @@ export function Button({
           ...(isPrimary && !disabled
             ? {
                 borderTopWidth: borders.hair,
-                borderTopColor: colors.accentHot,
+                borderTopColor: colors.statusErr,
               }
             : {}),
           transform: [{ translateY: pressed && !disabled ? 1 : 0 }],

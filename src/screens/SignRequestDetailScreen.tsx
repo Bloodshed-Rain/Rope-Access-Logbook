@@ -23,7 +23,7 @@ import * as Device from 'expo-device';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { Screen, Button, Banner, Textarea } from '../primitives';
-import { StatusPill } from '../primitives/v2';
+import { StatusPill } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSignRequests } from '../hooks/useSignRequests';
 import { getLocalPhotoPathsFromCache } from '../services/signRequestsService';

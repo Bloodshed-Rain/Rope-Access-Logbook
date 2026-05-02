@@ -29,7 +29,7 @@ export function EmptyState({ title, subtitle, actionLabel, onAction, caption }: 
           width: 60,
           height: 60,
           borderWidth: borders.hair,
-          borderColor: colors.edgeHi,
+          borderColor: colors.border,
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: spacing.s2,
@@ -39,16 +39,16 @@ export function EmptyState({ title, subtitle, actionLabel, onAction, caption }: 
           style={{
             fontFamily: 'Michroma_400Regular',
             fontSize: 22,
-            color: colors.accentBase,
+            color: colors.accentPrimary,
           }}
         >
           —
         </Text>
       </View>
-      <Text style={[typography.h1, { color: colors.inkPrimary, textAlign: 'center' }]}>{title}</Text>
+      <Text style={[typography.title1, { color: colors.textPrimary, textAlign: 'center' }]}>{title}</Text>
       {subtitle && (
         <Text
-          style={[typography.body, { color: colors.inkSecondary, textAlign: 'center' }]}
+          style={[typography.body, { color: colors.textSecondary, textAlign: 'center' }]}
         >
           {subtitle}
         </Text>
@@ -57,7 +57,7 @@ export function EmptyState({ title, subtitle, actionLabel, onAction, caption }: 
         <View style={{ marginTop: spacing.base, alignItems: 'center' }}>
           <Button title={actionLabel} onPress={onAction} />
           {caption && (
-            <Text style={[typography.stencilSm, { color: colors.inkTertiary, marginTop: spacing.xs }]}>
+            <Text style={[typography.caption, { color: colors.textDisabled, marginTop: spacing.xs }]}>
               {caption}
             </Text>
           )}

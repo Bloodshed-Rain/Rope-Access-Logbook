@@ -20,9 +20,9 @@ export function ProgressBar({ progress, color, height = 8, trackColor }: Progres
         styles.track,
         {
           height,
-          backgroundColor: trackColor || colors.bgInset,
+          backgroundColor: trackColor || colors.bgMuted,
           borderWidth: borders.hair,
-          borderColor: colors.edgeBase,
+          borderColor: colors.border,
         },
       ]}
     >
@@ -31,7 +31,7 @@ export function ProgressBar({ progress, color, height = 8, trackColor }: Progres
           styles.fill,
           {
             width: `${clampedProgress * 100}%`,
-            backgroundColor: color || colors.accentBase,
+            backgroundColor: color || colors.accentPrimary,
           },
         ]}
       />

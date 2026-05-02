@@ -19,7 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Constants from 'expo-constants';
 import { Button, Input, useToast } from '../primitives';
-import { Sheet } from '../primitives/v2';
+import { Sheet } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { Profile } from '../types';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';

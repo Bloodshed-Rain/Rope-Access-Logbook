@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react-native';
 import { Screen, Button, Banner } from '../primitives';
-import { StatCard } from '../primitives/v2';
+import { StatCard } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';
