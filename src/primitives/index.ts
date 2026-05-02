@@ -15,17 +15,3 @@ export { SectionHeader } from './SectionHeader';
 export { LoadingSpinner } from './LoadingSpinner';
 export { ToastProvider, useToast } from './Toast';
 export type { ToastVariant, ToastOptions } from './Toast';
-
-// Industrial-aesthetic primitives (new in commit 3)
-export { Panel } from './Panel';
-export { Gauge } from './Gauge';
-export { PunchCardRow } from './PunchCardRow';
-export { BreakdownBar } from './BreakdownBar';
-export { RecertStrip } from './RecertStrip';
-export { StatStrip } from './StatStrip';
-export { SegmentedToggle } from './SegmentedToggle';
-export { SyncLED } from './SyncLED';
-export { FabButton } from './FabButton';
-export { SectionLabel } from './SectionLabel';
-// Rivet and NoiseTexture are intentionally not re-exported — consumers import
-// directly from their files.
