@@ -16,7 +16,7 @@ import { LoadingSpinner } from '../primitives/LoadingSpinner';
 import { useToast } from '../primitives/Toast';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { TodayScreen } from '../screens/TodayScreen';
-import { LogbookScreen } from '../screens/LogbookScreen';
+import { RecordsScreen } from '../screens/RecordsScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { EntryFormScreen } from '../screens/EntryFormScreen';
@@ -35,10 +35,11 @@ import { createSigningService } from '../services/signingService';
 import { getClient } from '../db/initialize';
 import { APP_VERSION } from '../constants';
 
+export type ChipKey = 'all' | 'drafts' | 'needs_signature' | 'awaiting' | 'signed';
+
 export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
-  LogbookList: undefined;
   EntryForm: { entryId?: string; amendEntryId?: string } | undefined;
   EntryDetail: { entryId: string };
   Signature: { entryId: string };
@@ -51,7 +52,12 @@ export type RootStackParamList = {
   Notifications: undefined;
 };
 
-export type TabParamList = { Today: undefined; Inbox: undefined; Profile: undefined; };
+export type TabParamList = {
+  Today: undefined;
+  Records: { filter?: ChipKey } | undefined;
+  Inbox: undefined;
+  Profile: undefined;
+};
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
@@ -104,6 +110,11 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
         name="Today"
         component={TodayScreen}
         options={{ tabBarIcon: ({ color }) => <GaugeIcon color={color} size={24} /> }}
+      />
+      <Tab.Screen
+        name="Records"
+        component={RecordsScreen}
+        options={{ tabBarIcon: ({ color }) => <BookOpen color={color} size={24} /> }}
       />
       {showInbox ? (
         <Tab.Screen
@@ -222,16 +233,11 @@ export function RootNavigator() {
           </Stack.Screen>
         ) : (
           <>
-            {/* The Main tabs host their own navy header inside LogbookScreen /
-                ProfileScreen, so the stack header stays off for that route. */}
+            {/* The Main tabs host their own headers inside each tab screen,
+                so the stack header stays off for the Main route. */}
             <Stack.Screen name="Main" options={{ headerShown: false }}>
               {() => <TabNavigator showInbox={!!profile?.supervisor_capability_enabled} />}
             </Stack.Screen>
-            <Stack.Screen
-              name="LogbookList"
-              component={LogbookScreen}
-              options={{ title: 'All entries' }}
-            />
             <Stack.Screen
               name="EntryForm"
               component={EntryFormScreen}

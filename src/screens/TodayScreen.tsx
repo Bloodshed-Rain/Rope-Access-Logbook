@@ -240,9 +240,12 @@ export function TodayScreen() {
             title="Needs signature"
             big={`${needsSignatureCount}`}
             caption={needsSignatureCount === 1 ? 'entry ready to sign' : 'entries ready to sign'}
-            // TODO: C2 wires the Records screen with a needs_signature filter
-            // chip; until then we route to the existing logbook list.
-            onPress={() => navigation.navigate('LogbookList')}
+            onPress={() =>
+              navigation.navigate(
+                'Main',
+                { screen: 'Records', params: { filter: 'needs_signature' } } as never,
+              )
+            }
           />
         )}
 
