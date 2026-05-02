@@ -8,14 +8,14 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useQuery } from '@tanstack/react-query';
-import { Gauge as GaugeIcon, BookOpen, User, Inbox } from 'lucide-react-native';
+import { Home, BookOpen, User, Inbox } from 'lucide-react-native';
 import { useProfile } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';
 import { useBackupStatus } from '../hooks/useBackupStatus';
 import { useCloudStatePreview } from '../hooks/useRestore';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useNotifications } from '../hooks/useNotifications';
-import { colors } from '../theme/tokens';
+import { colors, typography } from '../theme/tokens';
 import { LoadingSpinner } from '../primitives/LoadingSpinner';
 import { useToast } from '../primitives/Toast';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
@@ -80,39 +80,26 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: colors.accentBase,
-        tabBarInactiveTintColor: colors.inkTertiary,
+        tabBarActiveTintColor: colors.accentPrimary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: colors.bgRaised,
+          backgroundColor: colors.bgSurface,
           borderTopWidth: 1,
-          borderTopColor: colors.edgeHi,
+          borderTopColor: colors.divider,
           paddingTop: 8,
           paddingBottom: 8,
           height: 64,
         },
-        tabBarLabel: ({ focused, color, children }) => (
-          <View style={{ alignItems: 'center', marginTop: 2 }}>
-            <Text
-              style={{
-                fontFamily: 'Michroma_400Regular',
-                fontSize: 8,
-                letterSpacing: 1.4,
-                color,
-              }}
-            >
-              {String(children).toUpperCase()}
-            </Text>
-            {focused && (
-              <View
-                style={{
-                  width: 16,
-                  height: 1.5,
-                  backgroundColor: colors.accentBase,
-                  marginTop: 3,
-                }}
-              />
-            )}
-          </View>
+        tabBarLabel: ({ color, children }) => (
+          <Text
+            style={{
+              ...typography.caption,
+              color,
+              marginTop: 2,
+            }}
+          >
+            {children}
+          </Text>
         ),
         tabBarIconStyle: { marginBottom: 0 },
         headerShown: false,
@@ -121,24 +108,24 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
       <Tab.Screen
         name="Today"
         component={TodayScreen}
-        options={{ tabBarIcon: ({ color }) => <GaugeIcon color={color} size={24} /> }}
+        options={{ tabBarIcon: ({ color }) => <Home color={color} size={24} strokeWidth={1.5} /> }}
       />
       <Tab.Screen
         name="Records"
         component={RecordsScreen}
-        options={{ tabBarIcon: ({ color }) => <BookOpen color={color} size={24} /> }}
+        options={{ tabBarIcon: ({ color }) => <BookOpen color={color} size={24} strokeWidth={1.5} /> }}
       />
       {showInbox ? (
         <Tab.Screen
           name="Inbox"
           component={InboxScreen}
-          options={{ tabBarIcon: ({ color }) => <Inbox color={color} size={24} /> }}
+          options={{ tabBarIcon: ({ color }) => <Inbox color={color} size={24} strokeWidth={1.5} /> }}
         />
       ) : null}
       <Tab.Screen
         name="Me"
         component={MeScreen}
-        options={{ tabBarIcon: ({ color }) => <User color={color} size={24} /> }}
+        options={{ tabBarIcon: ({ color }) => <User color={color} size={24} strokeWidth={1.5} /> }}
       />
     </Tab.Navigator>
   );
@@ -195,20 +182,26 @@ export function RootNavigator() {
     return <LoadingSpinner fullScreen label="Checking cloud session" />;
   }
 
-  // Themed default header: dark chrome with bottom hairline divider.
-  // Individual screens can opt out via `headerShown: false`.
+  // Themed default header: white surface, Inter title, no shadow.
+  // The 1px bottom hairline is rendered via headerBackground (native-stack
+  // doesn't expose it directly; headerShadowVisible: false removes the iOS
+  // shadow line). Screens that need stronger separation between header and
+  // body should rely on `<Screen topDivider>`. Individual screens opt out
+  // via `headerShown: false`.
   const defaultScreenOptions = {
     headerShown: true,
-    headerStyle: { backgroundColor: colors.bgRaised },
-    headerTintColor: colors.inkPrimary,
+    headerStyle: { backgroundColor: colors.bgSurface },
+    headerTintColor: colors.textPrimary,
     headerTitleStyle: {
-      fontFamily: 'Michroma_400Regular',
-      fontSize: 11,
-      letterSpacing: 1.6,
+      fontFamily: typography.title2.fontFamily,
+      fontSize: typography.title2.fontSize,
+      fontWeight: typography.title2.fontWeight,
+      color: colors.textPrimary,
     },
+    headerShadowVisible: false,
     headerBackTitle: 'Back',
     headerBackground: () => (
-      <View style={{ flex: 1, backgroundColor: colors.bgRaised }}>
+      <View style={{ flex: 1, backgroundColor: colors.bgSurface }}>
         <View
           style={{
             position: 'absolute',
@@ -216,7 +209,7 @@ export function RootNavigator() {
             left: 0,
             right: 0,
             height: 1,
-            backgroundColor: colors.edgeHi,
+            backgroundColor: colors.divider,
           }}
         />
       </View>
