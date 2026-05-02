@@ -8,10 +8,15 @@ import { ScrollView, Text, View } from 'react-native';
 import { Screen } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useNotificationCenter } from '../hooks/useNotificationCenter';
+import { LoadingSpinner } from '../primitives';
 
 export function NotificationsScreen() {
   const { colors, spacing, typography } = useTheme();
-  const { items } = useNotificationCenter();
+  const { items, isLoading } = useNotificationCenter();
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen label="Loading notifications" />;
+  }
 
   if (items.length === 0) {
     return (

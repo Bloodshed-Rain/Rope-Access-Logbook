@@ -13,6 +13,8 @@ export function TechSittingIllustration() {
   const { colors, radii } = useTheme();
   return (
     <View
+      accessibilityElementsHidden
+      importantForAccessibility="no"
       style={{
         width: 120,
         height: 120,

@@ -21,7 +21,6 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';
 import { useSignRequests } from '../hooks/useSignRequests';
-import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
 import { useTodayHours } from '../hooks/useTodayHours';
 import { useNotificationCenter } from '../hooks/useNotificationCenter';
 import {
@@ -65,22 +64,14 @@ export function TodayScreen() {
   const { data: profile } = useProfile();
   const { data: entries = [] } = useEntries();
   const todayHours = useTodayHours();
-  const { items, unreadCount } = useNotificationCenter();
+  const { unreadCount } = useNotificationCenter();
   const { session } = useAuthSession(cloud);
   const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
-  // useSupervisorConnections is mounted so its sync runs; we don't use the
-  // returned data on this screen but want pull-to-refresh to invalidate it.
-  useSupervisorConnections({ db, cloud });
 
   const scheme = profile?.primary_cert ?? 'sprat';
   const { data: certData } = useCertProgress(scheme);
   const { data: recertData } = useRecert(scheme);
   const { data: stats } = useDashboardStats(new Date().getFullYear());
-
-  // Avoid the `items` variable being flagged as unused; the placeholder
-  // NotificationsScreen consumes the same hook directly. Keeping a reference
-  // here means the bell-badge math stays close to the items list it reflects.
-  void items;
 
   const supervisorMode = !!profile?.supervisor_capability_enabled;
   const incomingRequests = signReqs.query.data ?? [];
@@ -105,11 +96,13 @@ export function TodayScreen() {
     setRefreshing(true);
     try {
       await Promise.all([
-        qc.invalidateQueries({ queryKey: ['supervisor_connections'] }),
         qc.invalidateQueries({ queryKey: ['sign_requests'] }),
         qc.invalidateQueries({ queryKey: ['entries'] }),
         qc.invalidateQueries({ queryKey: ['notifications'] }),
       ]);
+      // Supervisor-connections sync runs from InboxScreen and from App.tsx's
+      // foreground listener — not invalidated here since Today doesn't render
+      // anything keyed off the connections list.
       // TODO: also kick off cloud-state preview when signed in. The hook
       // currently lives at RootNavigator scope; refactoring that out is
       // outside C1's scope.
@@ -157,7 +150,9 @@ export function TodayScreen() {
         <Text style={[typography.title1, { color: colors.textPrimary }]}>Today</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Notifications"
+          accessibilityLabel={
+            unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'
+          }
           onPress={() => navigation.navigate('Notifications')}
           hitSlop={12}
           style={{
@@ -233,7 +228,9 @@ export function TodayScreen() {
             title="Incoming sign requests"
             big={`${incomingCount}`}
             caption="Tap to review"
-            onPress={() => navigation.navigate('Main')}
+            onPress={() =>
+              navigation.navigate('Main', { screen: 'Inbox' } as never)
+            }
           />
         )}
 
