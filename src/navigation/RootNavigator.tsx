@@ -18,7 +18,8 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { TodayScreen } from '../screens/TodayScreen';
 import { RecordsScreen } from '../screens/RecordsScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
+import { MeScreen } from '../screens/MeScreen';
+import { SupervisorsListScreen } from '../screens/SupervisorsListScreen';
 import { EntryFormScreen } from '../screens/EntryFormScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { SignatureScreen } from '../screens/SignatureScreen';
@@ -47,6 +48,7 @@ export type RootStackParamList = {
   MagicLinkWait: { email: string };
   CloudConflict: undefined;
   SupervisorSearch: undefined;
+  SupervisorsList: undefined;
   SignRequestDetail: { requestId: string };
   Paywall: undefined;
   Notifications: undefined;
@@ -56,7 +58,7 @@ export type TabParamList = {
   Today: undefined;
   Records: { filter?: ChipKey } | undefined;
   Inbox: undefined;
-  Profile: undefined;
+  Me: undefined;
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -124,8 +126,8 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
         />
       ) : null}
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
+        name="Me"
+        component={MeScreen}
         options={{ tabBarIcon: ({ color }) => <User color={color} size={24} /> }}
       />
     </Tab.Navigator>
@@ -256,6 +258,7 @@ export function RootNavigator() {
             <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Sign in' }} />
             <Stack.Screen name="MagicLinkWait" component={MagicLinkWaitScreen} options={{ title: 'Check your email' }} />
             <Stack.Screen name="SupervisorSearch" component={SupervisorSearchScreen} options={{ title: 'Add supervisor' }} />
+            <Stack.Screen name="SupervisorsList" component={SupervisorsListScreen} options={{ title: 'Supervisors' }} />
             <Stack.Screen name="SignRequestDetail" component={SignRequestDetailScreen} options={{ title: 'Sign request' }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
