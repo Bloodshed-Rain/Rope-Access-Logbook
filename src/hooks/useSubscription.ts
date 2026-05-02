@@ -37,6 +37,17 @@ export function useSubscriptionStatus() {
   };
 }
 
+/**
+ * Convenience for write-CTA gating across screens. `true` only when the
+ * subscription has actually lapsed; `'unknown'` (RevenueCat not yet loaded
+ * on cold start) is intentionally NOT lapsed so we don't block legitimate
+ * users during boot. Trialing/active are full-access.
+ */
+export function useReadOnly(): boolean {
+  const { status } = useSubscriptionStatus();
+  return status === 'lapsed';
+}
+
 export function useSubscriptionPackages() {
   return useQuery<PurchasesPackage[]>({
     queryKey: ['subscriptionPackages'],

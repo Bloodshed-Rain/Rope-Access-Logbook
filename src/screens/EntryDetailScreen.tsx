@@ -18,6 +18,7 @@ import { useEntry, useDeleteEntry, useAmendmentForEntry } from '../hooks/useEntr
 import { useSignatureForEntry, useVerifyIntegrity } from '../hooks/useSignatures';
 import { useSignRequests } from '../hooks/useSignRequests';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
+import { useReadOnly } from '../hooks/useSubscription';
 import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
@@ -42,6 +43,20 @@ export function EntryDetailScreen() {
   const { data: amendment } = useAmendmentForEntry(entryId);
   const deleteEntry = useDeleteEntry();
   const toast = useToast();
+  const readOnly = useReadOnly();
+
+  // Lapsed users tapping Edit / Get signature / Amend get bounced to
+  // Paywall rather than entering the write surface. Delete stays available
+  // (it's destructive, not gated; the user can prune drafts even when
+  // lapsed). Withdraw stays available because it un-blocks the entry the
+  // user already attempted to send.
+  const gate = (run: () => void) => () => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
+    run();
+  };
 
   const db = useMemo(() => getClient(), []);
   const cloud = useMemo(() => createSupabaseCloudClient(), []);
@@ -190,6 +205,17 @@ export function EntryDetailScreen() {
             <StatusPill variant={pill.variant} label={pill.label} />
           </View>
         </View>
+
+        {/* Read-only banner — lapsed subscription. Sits above the body so
+            users see why Edit / Get signature / Amend bounce them out. */}
+        {readOnly && (
+          <Banner
+            variant="warning"
+            message="Subscription lapsed — renew to add new entries"
+            actionLabel="Renew"
+            onAction={() => navigation.navigate('Paywall')}
+          />
+        )}
 
         {/* Awaiting → withdraw banner. Pending sign-requests block other actions. */}
         {isAwaiting && myRequest && (
@@ -362,12 +388,14 @@ export function EntryDetailScreen() {
             <Button
               title="Edit"
               variant="secondary"
-              onPress={() => navigation.navigate('EntryForm', { entryId: entry.id })}
+              onPress={gate(() => navigation.navigate('EntryForm', { entryId: entry.id }))}
             />
             <Button
               title="Get signature"
               variant="primary"
-              onPress={() => navigation.navigate('SignatureOptionsSheet', { entryId: entry.id })}
+              onPress={gate(() =>
+                navigation.navigate('SignatureOptionsSheet', { entryId: entry.id }),
+              )}
             />
             <Button title="Delete" variant="ghost" onPress={handleDelete} />
           </View>
@@ -382,9 +410,9 @@ export function EntryDetailScreen() {
             <Button
               title="Amend this entry"
               variant="secondary"
-              onPress={() =>
-                navigation.navigate('EntryForm', { amendEntryId: entry.id })
-              }
+              onPress={gate(() =>
+                navigation.navigate('EntryForm', { amendEntryId: entry.id }),
+              )}
             />
           </View>
         )}

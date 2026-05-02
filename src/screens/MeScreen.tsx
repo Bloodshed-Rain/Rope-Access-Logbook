@@ -30,7 +30,7 @@ import { useProfile, useUpdateProfile, useUpdateLastBackupAt } from '../hooks/us
 import { useEntries } from '../hooks/useEntries';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useBackup } from '../hooks/useBackup';
-import { useSubscriptionStatus } from '../hooks/useSubscription';
+import { useSubscriptionStatus, useReadOnly } from '../hooks/useSubscription';
 import { useCertProgress, useRecert, useDashboardStats } from '../hooks/useCertProgress';
 import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
@@ -173,6 +173,7 @@ export function MeScreen() {
   const updateProfile = useUpdateProfile();
   const updateLastBackup = useUpdateLastBackupAt();
   const subStatus = useSubscriptionStatus();
+  const readOnly = useReadOnly();
 
   const scheme = profile?.primary_cert ?? 'sprat';
   const { data: certData } = useCertProgress(scheme);
@@ -277,6 +278,14 @@ export function MeScreen() {
   };
 
   const handleBackupNow = () => {
+    // Lapsed users bouncing to Paywall instead of triggering a manual
+    // backup. The auto-trigger backups (post-sign / AppState background)
+    // stay unchanged — they're best-effort + silently noop on offline,
+    // so a lapsed-state noop is consistent with that posture.
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     backup.mutate(undefined, {
       onSuccess: (res) => {
         if (res.kind === 'uploaded') {

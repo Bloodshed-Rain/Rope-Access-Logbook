@@ -18,10 +18,11 @@ import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ChevronRight, SlidersHorizontal, Search as SearchIcon, Plus } from 'lucide-react-native';
-import { Screen, Button } from '../primitives';
+import { Screen, Button, Banner } from '../primitives';
 import { FilterChips, Sheet, StatusPill, MultiSelectListRow } from '../primitives/v2';
 import { useTheme } from '../theme/ThemeProvider';
 import { useEntries } from '../hooks/useEntries';
+import { useReadOnly } from '../hooks/useSubscription';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { classifyEntry, pillFor } from '../utils/entryStatusPill';
 import { formatEntryDateRange, toISODate, fromISODate } from '../utils/dateRange';
@@ -87,6 +88,18 @@ export function RecordsScreen() {
   const route = useRoute<RecordsRoute>();
 
   const { data: entries = [], isLoading } = useEntries();
+  const readOnly = useReadOnly();
+
+  // Lapsed users tapping the "+ Add work" / FAB / first-entry CTA get
+  // bounced to Paywall. Records itself stays fully readable in lapse mode
+  // (browsing existing logs is not a write action).
+  const handleAddWork = () => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
+    navigation.navigate('EntryForm', {});
+  };
 
   const [chipKey, setChipKey] = useState<ChipKey>(route.params?.filter ?? 'all');
   const [query, setQuery] = useState('');
@@ -368,6 +381,19 @@ export function RecordsScreen() {
         />
       </View>
 
+      {/* Read-only banner — lapsed subscription. Sits above the body so
+          it survives both the empty and section-list states. */}
+      {readOnly && (
+        <View style={{ paddingHorizontal: spacing.base, paddingBottom: spacing.sm }}>
+          <Banner
+            variant="warning"
+            message="Subscription lapsed — renew to add new entries"
+            actionLabel="Renew"
+            onAction={() => navigation.navigate('Paywall')}
+          />
+        </View>
+      )}
+
       {/* Body */}
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -392,11 +418,7 @@ export function RecordsScreen() {
           >
             No records yet
           </Text>
-          <Button
-            title="+ Log your first entry"
-            variant="primary"
-            onPress={() => navigation.navigate('EntryForm', {})}
-          />
+          <Button title="+ Log your first entry" variant="primary" onPress={handleAddWork} />
         </View>
       ) : showFilteredEmpty ? (
         <View
@@ -433,7 +455,7 @@ export function RecordsScreen() {
       {/* Floating + button: only when at least one entry exists */}
       {totalEntryCount > 0 && (
         <Pressable
-          onPress={() => navigation.navigate('EntryForm', {})}
+          onPress={handleAddWork}
           accessibilityRole="button"
           accessibilityLabel="New entry"
           style={({ pressed }) => ({

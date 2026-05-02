@@ -39,6 +39,7 @@ import {
   useUpdateEntry,
   useCreateAmendment,
 } from '../hooks/useEntries';
+import { useReadOnly } from '../hooks/useSubscription';
 import { toISODate } from '../utils/dateRange';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { Entry } from '../types';
@@ -140,6 +141,7 @@ export function EntryFormScreen() {
   const createEntry = useCreateEntry();
   const updateEntry = useUpdateEntry();
   const createAmendment = useCreateAmendment();
+  const readOnly = useReadOnly();
 
   const [initial, setInitial] = useState<WizardState>(() =>
     buildInitialState(profile?.default_employer ?? '', undefined),
@@ -234,6 +236,15 @@ export function EntryFormScreen() {
 
   const handleSave = async () => {
     if (!profile) return;
+
+    // Lapsed subscription — bounce to Paywall instead of completing the
+    // create / update / amend mutation. The wizard state stays intact so
+    // the user can come back after renewing.
+    if (readOnly) {
+      isLeavingIntentionally.current = true;
+      navigation.navigate('Paywall');
+      return;
+    }
 
     const techLevel = profile.level ?? 'I';
 

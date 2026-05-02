@@ -24,6 +24,7 @@ import { useEntry } from '../hooks/useEntries';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
 import { useSignRequests } from '../hooks/useSignRequests';
+import { useReadOnly } from '../hooks/useSubscription';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { getClient } from '../db/initialize';
@@ -65,6 +66,7 @@ export function SendSignRequestScreen() {
   const { data: entry, isLoading: entryLoading } = useEntry(entryId);
   const conns = useSupervisorConnections({ db, cloud });
   const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
+  const readOnly = useReadOnly();
 
   const accepted = useMemo<AcceptedConnection[]>(
     () => (conns.query.data ?? []).filter(isAccepted(session?.user_id)),
@@ -118,6 +120,13 @@ export function SendSignRequestScreen() {
 
   const handleSend = async () => {
     if (!picked) return;
+    // Lapsed users get bounced to Paywall instead of inserting a request
+    // row. The picker + message stay so they can resume after renewing.
+    if (readOnly) {
+      isLeavingIntentionally.current = true;
+      navigation.navigate('Paywall');
+      return;
+    }
     try {
       await signReqs.send.mutateAsync({
         entry_id: entryId,

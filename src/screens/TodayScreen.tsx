@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react-native';
-import { Screen, Button } from '../primitives';
+import { Screen, Button, Banner } from '../primitives';
 import { StatCard } from '../primitives/v2';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
@@ -23,6 +23,7 @@ import { useEntries } from '../hooks/useEntries';
 import { useSignRequests } from '../hooks/useSignRequests';
 import { useTodayHours } from '../hooks/useTodayHours';
 import { useNotificationCenter } from '../hooks/useNotificationCenter';
+import { useReadOnly } from '../hooks/useSubscription';
 import {
   useCertProgress,
   useRecert,
@@ -67,6 +68,18 @@ export function TodayScreen() {
   const { unreadCount } = useNotificationCenter();
   const { session } = useAuthSession(cloud);
   const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
+  const readOnly = useReadOnly();
+
+  // Lapsed users tapping a write CTA get routed to Paywall instead of the
+  // write surface. The button stays visually active so the redirect reads
+  // as "this needs a subscription" rather than "this control is broken".
+  const handleAddWork = () => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
+    navigation.navigate('EntryForm', {});
+  };
 
   const scheme = profile?.primary_cert ?? 'sprat';
   const { data: certData } = useCertProgress(scheme);
@@ -215,12 +228,20 @@ export function TodayScreen() {
           illustration={<TechSittingIllustration />}
         />
 
-        {/* + Add work CTA */}
-        <Button
-          title="+ Add work"
-          variant="primary"
-          onPress={() => navigation.navigate('EntryForm', {})}
-        />
+        {/* Read-only banner — lapsed subscription. The Me-tab's
+            SubscriptionStrip carries the same message in more detail; this
+            banner is the inline reminder on screens with write CTAs. */}
+        {readOnly && (
+          <Banner
+            variant="warning"
+            message="Subscription lapsed — renew to add new entries"
+            actionLabel="Renew"
+            onAction={() => navigation.navigate('Paywall')}
+          />
+        )}
+
+        {/* + Add work CTA — gated. */}
+        <Button title="+ Add work" variant="primary" onPress={handleAddWork} />
 
         {/* Supervisor incoming requests */}
         {supervisorMode && incomingCount > 0 && (

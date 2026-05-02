@@ -13,6 +13,7 @@ import { useEntry } from '../hooks/useEntries';
 import { useSignEntry } from '../hooks/useSignatures';
 import { useBackupReminder } from '../hooks/useBackupReminder';
 import { useBackup } from '../hooks/useBackup';
+import { useReadOnly } from '../hooks/useSubscription';
 import { saveSignaturePng } from '../utils/fileStorage';
 import { generateId } from '../utils/uuid';
 import { RootStackParamList } from '../navigation/RootNavigator';
@@ -47,6 +48,7 @@ export function SignatureScreen() {
   const signEntry = useSignEntry({ afterSign: () => backup.mutate() });
   const { showPostSigningNudge } = useBackupReminder();
   const sigRef = useRef<any>(null);
+  const readOnly = useReadOnly();
 
   const [supervisorName, setSupervisorName] = useState('');
   const [certNumber, setCertNumber] = useState('');
@@ -67,6 +69,13 @@ export function SignatureScreen() {
 
   const handleSign = async () => {
     if (!signatureData) return;
+    // Lapsed subscription — bounce to Paywall before writing the
+    // signature row. The drawn signature is held in local state so the
+    // user can come back and submit after renewing.
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     setSigning(true);
 
     try {

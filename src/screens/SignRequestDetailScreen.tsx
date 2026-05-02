@@ -29,6 +29,7 @@ import { useSignRequests } from '../hooks/useSignRequests';
 import { getLocalPhotoPathsFromCache } from '../services/signRequestsService';
 import { useProfile } from '../hooks/useProfile';
 import { useAuthSession } from '../hooks/useAuthSession';
+import { useReadOnly } from '../hooks/useSubscription';
 import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
@@ -51,6 +52,7 @@ export function SignRequestDetailScreen() {
   const fs = useMemo(() => createExpoFsAbstraction(), []);
   const { session } = useAuthSession(cloud);
   const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
+  const readOnly = useReadOnly();
 
   const [showCanvas, setShowCanvas] = useState(false);
   const [signing, setSigning] = useState(false);
@@ -116,6 +118,14 @@ export function SignRequestDetailScreen() {
   const requestMessage = typeof rawMessage === 'string' ? rawMessage.trim() : '';
 
   const handleSign = async (png_base64: string) => {
+    // Lapsed supervisor — bounce to Paywall before writing the cloud
+    // sign-request row. The drawn signature is dropped (would otherwise
+    // need to round-trip through the canvas state); per spec, sign actions
+    // are simply disabled in lapsed state.
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     setSigning(true);
     try {
       let lat: number | undefined;
@@ -151,6 +161,10 @@ export function SignRequestDetailScreen() {
   };
 
   const handleDeclineSubmit = async () => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     try {
       await signReqs.decline.mutateAsync({
         id: req.id,
@@ -163,6 +177,10 @@ export function SignRequestDetailScreen() {
   };
 
   const promptDecline = () => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     Alert.alert(
       'Decline this request?',
       'The tech will be notified that you declined.',
@@ -175,6 +193,14 @@ export function SignRequestDetailScreen() {
         },
       ],
     );
+  };
+
+  const handleStartSign = () => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
+    setShowCanvas(true);
   };
 
   return (
@@ -504,7 +530,7 @@ export function SignRequestDetailScreen() {
             <Button
               title="Sign"
               variant="primary"
-              onPress={() => setShowCanvas(true)}
+              onPress={handleStartSign}
               haptic
             />
             <Button
