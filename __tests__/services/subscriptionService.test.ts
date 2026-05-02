@@ -11,6 +11,8 @@ jest.mock('react-native-purchases', () => ({
     purchasePackage: jest.fn(),
     restorePurchases: jest.fn(),
     getOfferings: jest.fn(),
+    logIn: jest.fn(),
+    logOut: jest.fn(),
   },
 }));
 import Purchases from 'react-native-purchases';
@@ -202,6 +204,81 @@ describe('subscriptionService', () => {
       const svc = createSubscriptionService(db);
       const renewal = await svc.getRenewalDate();
       expect(renewal).toBeNull();
+    });
+  });
+
+  describe('identify() — Supabase auth → RevenueCat bridge', () => {
+    it('calls Purchases.logIn with the given user id and returns derived status', async () => {
+      const activeInfo = makeCustomerInfo(
+        { pro: { periodType: 'NORMAL', expirationDate: '2026-12-01T00:00:00Z' } },
+        { pro: { periodType: 'NORMAL', expirationDate: '2026-12-01T00:00:00Z' } },
+      );
+      mockPurchases.logIn.mockResolvedValueOnce({ customerInfo: activeInfo, created: false } as any);
+      const svc = createSubscriptionService(db);
+      const status = await svc.identify('supabase-user-abc');
+      expect(mockPurchases.logIn).toHaveBeenCalledWith('supabase-user-abc');
+      expect(status).toBe('active');
+    });
+
+    it('mirrors the resolved status into profile.subscription_status after logIn', async () => {
+      const trialInfo = makeCustomerInfo(
+        { pro: { periodType: 'TRIAL', expirationDate: '2026-06-01T00:00:00Z' } },
+        { pro: { periodType: 'TRIAL', expirationDate: '2026-06-01T00:00:00Z' } },
+      );
+      mockPurchases.logIn.mockResolvedValueOnce({ customerInfo: trialInfo, created: true } as any);
+      const svc = createSubscriptionService(db);
+      await svc.identify('supabase-user-new');
+      const row = await db.get<{ subscription_status: string }>(
+        'SELECT subscription_status FROM profile LIMIT 1',
+      );
+      expect(row?.subscription_status).toBe('trialing');
+    });
+
+    it('falls back to offline status resolution when logIn throws', async () => {
+      // DB already holds 'lapsed' from a prior session. logIn fails (network),
+      // but the user-visible status should still resolve from the persisted
+      // value rather than throwing — auth state changes must never break.
+      await db.run("UPDATE profile SET subscription_status = 'lapsed' WHERE 1=1");
+      mockPurchases.logIn.mockRejectedValueOnce(new Error('network error'));
+      mockPurchases.getCustomerInfo.mockRejectedValueOnce(new Error('network error'));
+      const svc = createSubscriptionService(db);
+      const status = await svc.identify('supabase-user-abc');
+      expect(status).toBe('lapsed');
+    });
+  });
+
+  describe('signOut() — Supabase sign-out → RevenueCat bridge', () => {
+    it('calls Purchases.logOut and returns derived status (typically unknown)', async () => {
+      const anonInfo = makeCustomerInfo({}, {});
+      mockPurchases.logOut.mockResolvedValueOnce(anonInfo as any);
+      const svc = createSubscriptionService(db);
+      const status = await svc.signOut();
+      expect(mockPurchases.logOut).toHaveBeenCalled();
+      expect(status).toBe('unknown');
+    });
+
+    it('mirrors the post-logOut status into profile.subscription_status', async () => {
+      // Seed the DB with a stale 'active' so we can confirm logOut clears it.
+      await db.run("UPDATE profile SET subscription_status = 'active' WHERE 1=1");
+      const anonInfo = makeCustomerInfo({}, {});
+      mockPurchases.logOut.mockResolvedValueOnce(anonInfo as any);
+      const svc = createSubscriptionService(db);
+      await svc.signOut();
+      const row = await db.get<{ subscription_status: string }>(
+        'SELECT subscription_status FROM profile LIMIT 1',
+      );
+      expect(row?.subscription_status).toBe('unknown');
+    });
+
+    it('falls back to current resolved status when logOut throws', async () => {
+      // Common cause: RC SDK throws when logOut is called while already
+      // anonymous. The handler must not propagate the error — auth state
+      // changes are best-effort with respect to RC.
+      mockPurchases.logOut.mockRejectedValueOnce(new Error('already anonymous'));
+      mockPurchases.getCustomerInfo.mockResolvedValueOnce(makeCustomerInfo({}, {}));
+      const svc = createSubscriptionService(db);
+      const status = await svc.signOut();
+      expect(status).toBe('unknown');
     });
   });
 

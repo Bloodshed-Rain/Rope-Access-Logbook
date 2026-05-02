@@ -48,12 +48,36 @@ export default function App() {
   useEffect(() => {
     if (!dbReady) return;
     const db = getClient();
-    
-    // Initialize RevenueCat
-    createSubscriptionService(db).init();
+
+    // Initialize RevenueCat with an anonymous user. Identity is bridged
+    // below once Supabase auth state resolves.
+    const subSvc = createSubscriptionService(db);
+    subSvc.init();
 
     const cloud = createSupabaseCloudClient();
     const fs = createExpoFsAbstraction();
+
+    // Identity bridge: any change in Supabase session → matching call into
+    // RevenueCat. logIn aliases the current anonymous RC user to the
+    // Supabase user_id so purchases follow the user across reinstalls and
+    // devices; logOut reverts to anonymous so the next signed-in user
+    // starts clean. We invalidate the React Query subscription cache after
+    // each transition so any open screen re-reads the resolved status.
+    async function bridgeAuthToRC(userId: string | null) {
+      try {
+        if (userId) await subSvc.identify(userId);
+        else await subSvc.signOut();
+      } catch {
+        /* identify/signOut already swallow internally; this is belt-and-braces */
+      }
+      queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] });
+    }
+    cloud.getSession()
+      .then((s) => bridgeAuthToRC(s?.user_id ?? null))
+      .catch(() => { /* offline cold-boot — leave RC anonymous */ });
+    const unsubAuth = cloud.onAuthStateChange((s) => {
+      bridgeAuthToRC(s?.user_id ?? null);
+    });
     const svc = createCloudBackupService({
       db,
       cloud,
@@ -147,7 +171,10 @@ export default function App() {
     // boot, so without this the foreground reminders only land on a true
     // background→foreground transition.
     recordForegroundReminders();
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      unsubAuth();
+    };
   }, [dbReady]);
 
   useEffect(() => {

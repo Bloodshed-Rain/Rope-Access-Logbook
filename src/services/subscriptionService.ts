@@ -17,6 +17,18 @@ export interface SubscriptionService {
   getPackages(): Promise<PurchasesPackage[]>;
   purchase(pkg: PurchasesPackage): Promise<SubscriptionStatus>;
   restore(): Promise<SubscriptionStatus>;
+  /**
+   * Bridge Supabase identity → RevenueCat. Call after sign-in (cold-boot
+   * session restore, magic-link callback, OAuth callback) so any existing
+   * entitlement on the user's RC profile is granted on this device.
+   */
+  identify(userId: string): Promise<SubscriptionStatus>;
+  /**
+   * Bridge Supabase sign-out → RevenueCat. Reverts to an anonymous RC user
+   * so the next signed-in user starts clean instead of inheriting the
+   * previous user's entitlement.
+   */
+  signOut(): Promise<SubscriptionStatus>;
 }
 
 const VALID_STATUSES = new Set<string>(['unknown', 'trialing', 'active', 'lapsed']);
@@ -145,6 +157,33 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
       } catch (e) {
         console.error('Restore failed', e);
         throw e;
+      }
+    },
+
+    async identify(userId: string) {
+      try {
+        const { customerInfo } = await Purchases.logIn(userId);
+        const status = deriveStatus(customerInfo);
+        await syncStatusToDb(status);
+        return status;
+      } catch (e) {
+        console.warn('RevenueCat logIn failed; subscription identity not bridged', e);
+        return resolveStatus();
+      }
+    },
+
+    async signOut() {
+      try {
+        const customerInfo = await Purchases.logOut();
+        const status = deriveStatus(customerInfo);
+        await syncStatusToDb(status);
+        return status;
+      } catch (e) {
+        // Most common cause: caller invoked signOut() while RC was already
+        // anonymous (no-op error from the SDK). Resolve to current status
+        // rather than failing the auth-state-change handler.
+        console.warn('RevenueCat logOut failed', e);
+        return resolveStatus();
       }
     },
   };
