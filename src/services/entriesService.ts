@@ -147,6 +147,14 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
       if (!original) throw new Error('Entry not found');
       if (original.status !== 'signed') throw new Error('Can only amend signed entries');
 
+      // Each signed entry has at most one amendment. The data model can't
+      // represent a fork, and the UI assumes a single linear chain.
+      const existing = await db.get<{ id: string }>(
+        'SELECT id FROM entries WHERE amends_entry_id = ?',
+        [originalEntryId],
+      );
+      if (existing) throw new Error('Entry already has an amendment');
+
       return this.createEntry(
         {
           date_from: original.date_from,
@@ -170,8 +178,16 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
     },
 
     async getTotalWorkHours(year: number): Promise<number> {
+      // An entry that has been superseded by a signed amendment is excluded so
+      // its hours aren't double-counted alongside the amendment.
       const result = await db.get<{ total: number | null }>(
-        "SELECT SUM(work_hours) as total FROM entries WHERE status = 'signed' AND date LIKE ?",
+        `SELECT SUM(work_hours) as total
+           FROM entries e
+          WHERE status = 'signed' AND date LIKE ?
+            AND NOT EXISTS (
+              SELECT 1 FROM entries a
+               WHERE a.amends_entry_id = e.id AND a.status = 'signed'
+            )`,
         [`${year}%`],
       );
       return result?.total ?? 0;
@@ -189,8 +205,17 @@ export function createEntriesService(db: DbClient, uuid: UuidFn = generateId) {
     },
 
     async getLifetimeHoursByLevel(): Promise<Record<SpratLevel, number>> {
+      // Same supersedence rule as getTotalWorkHours: skip originals that have
+      // a signed amendment so their hours don't double-count.
       const rows = await db.getAll<{ tech_level_snapshot: SpratLevel; total: number }>(
-        "SELECT tech_level_snapshot, SUM(work_hours) as total FROM entries WHERE status = 'signed' GROUP BY tech_level_snapshot",
+        `SELECT tech_level_snapshot, SUM(work_hours) as total
+           FROM entries e
+          WHERE status = 'signed'
+            AND NOT EXISTS (
+              SELECT 1 FROM entries a
+               WHERE a.amends_entry_id = e.id AND a.status = 'signed'
+            )
+          GROUP BY tech_level_snapshot`,
       );
       const result: Record<SpratLevel, number> = { I: 0, II: 0, III: 0 };
       for (const row of rows) {

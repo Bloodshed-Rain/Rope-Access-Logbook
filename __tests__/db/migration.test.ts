@@ -251,4 +251,27 @@ describe('runSchemaMigrations', () => {
     );
     expect(row?.subscription_status).toBe('unknown');
   });
+
+  test('runSchemaMigrations recovers from a partial subscription_tier rename (both columns present)', async () => {
+    // Simulates a device that ran an older pre-transaction build of this code
+    // and crashed between ADD COLUMN and DROP COLUMN, leaving both columns.
+    const db = createLegacyTestClient();
+    await db.exec(`ALTER TABLE profile ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'free'`);
+    await db.exec(`ALTER TABLE profile ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'unknown'`);
+    await db.run(
+      `INSERT INTO profile (id, full_name, sprat_id, level, cert_expires_on, default_employer, created_at, updated_at, subscription_tier, subscription_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['p3', 'Test3', 'S3', 'II', '2027-01-01', '', '2026-01-01', '2026-01-01', 'pro', 'active'],
+    );
+    await runSchemaMigrations(db);
+    const cols = await db.getAll<{ name: string }>(`PRAGMA table_info(profile)`);
+    const names = cols.map((c) => c.name);
+    expect(names).not.toContain('subscription_tier');
+    expect(names).toContain('subscription_status');
+    const row = await db.get<{ subscription_status: string }>(
+      `SELECT subscription_status FROM profile WHERE id = ?`,
+      ['p3'],
+    );
+    expect(row?.subscription_status).toBe('active');
+  });
 });

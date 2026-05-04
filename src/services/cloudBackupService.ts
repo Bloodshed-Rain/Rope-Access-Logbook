@@ -195,3 +195,27 @@ export function createCloudBackupService(deps: CloudBackupDeps) {
     },
   };
 }
+
+// Module-level shared instance. The backup service holds throttle, mutex, and
+// signature-count counters as closure-local state — three React components or
+// AppState handlers each calling `createCloudBackupService(deps)` would each
+// own a private copy and the throttle/mutex would never engage. Sharing one
+// instance across all triggers (post-sign in SignatureScreen, manual button
+// in ProfileCloudSection, AppState→background in App.tsx) is what makes the
+// throttle and mutex actually do their job.
+//
+// Tests should keep using `createCloudBackupService` directly so each test
+// gets a fresh instance.
+let sharedInstance: ReturnType<typeof createCloudBackupService> | null = null;
+
+export function getCloudBackupService(deps: CloudBackupDeps): ReturnType<typeof createCloudBackupService> {
+  if (!sharedInstance) {
+    sharedInstance = createCloudBackupService(deps);
+  }
+  return sharedInstance;
+}
+
+// Test-only: reset the cached instance between tests.
+export function _resetCloudBackupServiceForTests(): void {
+  sharedInstance = null;
+}

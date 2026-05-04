@@ -75,3 +75,32 @@ test('applyIncomingSignature quarantines missing PNG but still creates signature
     'SELECT signature_png_path FROM signatures WHERE entry_id = ?', ['e1']);
   expect(sig?.signature_png_path).toBe('');
 });
+
+test('applyIncomingSignature rolls back the entry update if the signature INSERT fails', async () => {
+  const { service, cloud, db } = await setup();
+  await cloud.uploadObject('sign-requests/r1/sig.png', new Uint8Array([137]));
+  // Pre-insert an unrelated entry + signature row whose id matches the one
+  // uuid() will generate as sigId for our applyIncomingSignature call —
+  // uuid-1 is consumed by the PNG filename, uuid-2 is the sig row id.
+  // The PK collision forces the INSERT to throw and exercise the rollback path.
+  await db.run(
+    `INSERT INTO entries (id, date, date_from, date_to, employer, site, client, description, work_hours, tech_level_snapshot, work_types, photo_paths, status, created_at, updated_at)
+     VALUES ('e-other','2026-02-01','2026-02-01','2026-02-01','X','X','X','X', 1, 'I', '[]', '[]', 'signed', '2026-02-01', '2026-02-01')`,
+  );
+  await db.run(
+    `INSERT INTO signatures (id, entry_id, supervisor_name, supervisor_cert_number, signature_png_path, signed_at, device_id, entry_hash, hash_version, created_at)
+     VALUES ('uuid-2', 'e-other', 'Existing', 'L3-X', '', '2026-03-01', 'd', 'h', 3, '2026-03-01')`,
+  );
+  const row = signedRequest();
+  await expect(service.applyIncomingSignature(row)).rejects.toThrow();
+  // Entry must remain a draft with its lock intact — otherwise verifyIntegrity
+  // would later compute a hash against a draft row mismatched with the stored
+  // signed-row hash, surfacing the entry as tampered.
+  const entryNow = await db.get<{ status: string; pending_sign_request_id: string | null }>(
+    'SELECT status, pending_sign_request_id FROM entries WHERE id = ?', ['e1']);
+  expect(entryNow?.status).toBe('draft');
+  expect(entryNow?.pending_sign_request_id).toBe('r1');
+  // Only the pre-existing signature row remains — no orphan from our failed call.
+  const allSigs = await db.getAll<{ id: string }>('SELECT id FROM signatures');
+  expect(allSigs.map(s => s.id)).toEqual(['uuid-2']);
+});
