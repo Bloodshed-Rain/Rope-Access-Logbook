@@ -12,7 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { LoadingSpinner, ToastProvider } from './src/primitives';
+import { LoadingSpinner, ToastProvider, KeyboardDoneAccessory } from './src/primitives';
 import { initializeDatabase, getClient } from './src/db/initialize';
 import { colors } from './src/theme/tokens';
 import { createSupabaseCloudClient } from './src/cloud/supabaseClient';
@@ -218,6 +218,10 @@ export default function App() {
         <ThemeProvider>
           <ToastProvider>
             <RootNavigator />
+            {/* iOS-only Done bar above the keyboard. No-op on Android.
+                Mounted once at root so Input/Textarea anywhere can opt in
+                via inputAccessoryViewID (defaulted by the primitives). */}
+            <KeyboardDoneAccessory />
           </ToastProvider>
         </ThemeProvider>
       </QueryClientProvider>

@@ -42,10 +42,38 @@ import {
 import { useReadOnly } from '../hooks/useSubscription';
 import { toISODate } from '../utils/dateRange';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { Entry } from '../types';
+import { Entry, WorkType } from '../types';
+import { WORK_TYPE_LABELS } from '../constants';
 import { Step1 } from './entryForm/Step1';
 import { Step2 } from './entryForm/Step2';
 import { WhenChoice, WizardState, WizardStep } from './entryForm/types';
+
+// Builds a human-readable description from the work-type checkboxes so the
+// "Notes (optional)" Step 2 field can stay truly optional. signingService
+// requires `entry.description` to be non-empty; before this helper, leaving
+// Notes blank silently saved an empty description and signing then refused
+// the entry with "Add description before signing." When the user types into
+// Notes, that wins; when they don't, we synthesize from selections.
+function deriveDescription(workTypes: WorkType[], otherWorkDescription: string): string {
+  const otherTrimmed = otherWorkDescription.trim();
+  const labels = workTypes
+    .filter((t) => t !== 'other')
+    .map((t) => WORK_TYPE_LABELS[t]);
+  const includesOther = workTypes.includes('other');
+  if (includesOther && otherTrimmed) {
+    return labels.length > 0 ? `${labels.join(', ')}; ${otherTrimmed}` : otherTrimmed;
+  }
+  if (includesOther) {
+    return labels.length > 0 ? `${labels.join(', ')}; other work` : 'Other work';
+  }
+  return labels.join(', ');
+}
+
+function resolveDescription(state: WizardState): string {
+  const typed = state.notes.trim();
+  if (typed) return typed;
+  return deriveDescription(state.workTypes, state.otherWorkDescription);
+}
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type FormRoute = RouteProp<RootStackParamList, 'EntryForm'>;
@@ -283,7 +311,7 @@ export function EntryFormScreen() {
             site: state.site.trim(),
             // client is NOT NULL in the schema; trim only.
             client: state.client.trim(),
-            description: state.notes,
+            description: resolveDescription(state),
             work_hours: hoursNum,
             work_types: state.workTypes,
             // Coerce empty strings to null for nullable string columns so we
@@ -307,7 +335,7 @@ export function EntryFormScreen() {
             date_to: state.dateTo,
             employer: state.employer.trim(),
             site: state.site.trim(),
-            description: state.notes,
+            description: resolveDescription(state),
             work_hours: hoursNum,
             work_types: state.workTypes,
             other_work_description: otherText,

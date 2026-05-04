@@ -36,6 +36,8 @@ export interface Profile {
   level: SpratLevel | null;
   cert_expires_on: string | null;
   sprat_card_photo_path: string | null;
+  // Profile photo (separate from cert-card scans). Local file path.
+  avatar_path: string | null;
   // IRATA block — new flat columns, all nullable.
   holds_irata: boolean;
   irata_id: string | null;
@@ -199,6 +201,7 @@ export interface UpdateProfileInput {
   level?: SpratLevel;
   cert_expires_on?: string;
   sprat_card_photo_path?: string | null;
+  avatar_path?: string | null;
   primary_cert?: CertScheme;
   default_employer?: string;
   photos_in_backup?: boolean;

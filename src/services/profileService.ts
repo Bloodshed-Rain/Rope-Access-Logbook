@@ -23,6 +23,7 @@ interface ProfileRow {
   level: 'I' | 'II' | 'III' | null;
   cert_expires_on: string | null;
   sprat_card_photo_path: string | null;
+  avatar_path: string | null;
   holds_irata: number;
   irata_id: string | null;
   irata_level: 'I' | 'II' | 'III' | null;
@@ -52,6 +53,7 @@ function rowToProfile(row: ProfileRow | null | undefined): Profile | null {
     level: row.level,
     cert_expires_on: row.cert_expires_on,
     sprat_card_photo_path: row.sprat_card_photo_path,
+    avatar_path: row.avatar_path,
     holds_irata: !!row.holds_irata,
     irata_id: row.irata_id,
     irata_level: row.irata_level,

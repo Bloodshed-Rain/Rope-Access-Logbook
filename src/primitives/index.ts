@@ -27,3 +27,4 @@ export * from './MultiSelectListRow';
 export * from './StatCard';
 export * from './AvatarUpload';
 export * from './SubscriptionStrip';
+export { KeyboardDoneAccessory, KEYBOARD_DONE_ID } from './KeyboardDoneAccessory';
