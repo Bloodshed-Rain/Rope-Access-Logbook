@@ -2,7 +2,7 @@ import { ExpoConfig } from 'expo/config';
 
 export default (): ExpoConfig => ({
   name: 'Rope Access Logbook',
-  slug: 'rope-access-logbook',
+  slug: 'ralb',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -11,7 +11,7 @@ export default (): ExpoConfig => ({
   scheme: 'logbook',
   runtimeVersion: { policy: 'fingerprint' },
   updates: {
-    url: 'https://u.expo.dev/20f2ef58-1e1a-4401-a37e-85024a42b91a',
+    url: 'https://u.expo.dev/86367272-4f69-486f-9baf-27583a16ea70',
   },
   ios: {
     supportsTablet: true,
@@ -46,7 +46,7 @@ export default (): ExpoConfig => ({
     revenueCatAppleKey: process.env.REVENUECAT_APPLE_KEY,
     revenueCatGoogleKey: process.env.REVENUECAT_GOOGLE_KEY,
     eas: {
-      projectId: '20f2ef58-1e1a-4401-a37e-85024a42b91a',
+      projectId: '86367272-4f69-486f-9baf-27583a16ea70',
     },
   },
 });
