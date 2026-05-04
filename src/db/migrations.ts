@@ -174,6 +174,13 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
     );
   }
 
+  // Profile avatar — separate from sprat_card_photo_path (cert-card scan).
+  // Local file path; nullable so existing users keep their initials avatar.
+  // Wires up the EditAvatar flow surfaced from MeScreen / SettingsSheet.
+  if (!(await hasColumn(db, 'profile', 'avatar_path'))) {
+    await db.exec('ALTER TABLE profile ADD COLUMN avatar_path TEXT');
+  }
+
   // Cache tables — idempotent create
   await db.exec(`
     CREATE TABLE IF NOT EXISTS supervisor_connections_cache (

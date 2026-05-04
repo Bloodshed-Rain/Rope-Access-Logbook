@@ -5,6 +5,7 @@ const LOGBOOK_DIR = `${FileSystem.documentDirectory}logbook/`;
 const PHOTOS_DIR = `${LOGBOOK_DIR}photos/`;
 const SIGNATURES_DIR = `${LOGBOOK_DIR}signatures/`;
 const CARDS_DIR = `${LOGBOOK_DIR}cards/`;
+const AVATARS_DIR = `${LOGBOOK_DIR}avatars/`;
 const SIGNREQUEST_PHOTOS_DIR = `${LOGBOOK_DIR}signrequest_photos/`;
 
 export function signRequestPhotoPath(requestId: string, basename: string): string {
@@ -39,6 +40,17 @@ export async function saveCardPhoto(sourceUri: string): Promise<string> {
   await ensureDir(CARDS_DIR);
   const ext = sourceUri.split('.').pop() || 'jpg';
   const destPath = `${CARDS_DIR}sprat_card.${ext}`;
+  await FileSystem.copyAsync({ from: sourceUri, to: destPath });
+  return destPath;
+}
+
+// Mirrors saveCardPhoto: copies the picked / shot image into the logbook
+// avatars dir under a deterministic name. Suffixed with a timestamp so the
+// same file path doesn't get cached by <Image> after the user re-picks.
+export async function saveAvatarPhoto(sourceUri: string): Promise<string> {
+  await ensureDir(AVATARS_DIR);
+  const ext = sourceUri.split('.').pop() || 'jpg';
+  const destPath = `${AVATARS_DIR}avatar_${Date.now()}.${ext}`;
   await FileSystem.copyAsync({ from: sourceUri, to: destPath });
   return destPath;
 }

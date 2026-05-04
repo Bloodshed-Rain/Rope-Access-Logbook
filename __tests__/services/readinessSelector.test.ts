@@ -9,6 +9,7 @@ const completeProfile: Profile = {
   level: 'II',
   cert_expires_on: '2027-06-15',
   sprat_card_photo_path: null,
+  avatar_path: null,
   holds_irata: false,
   irata_id: null,
   irata_level: null,

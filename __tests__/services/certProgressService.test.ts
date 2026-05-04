@@ -11,6 +11,7 @@ function profileFactory(overrides: Partial<Profile> = {}): Profile {
     level: 'I',
     cert_expires_on: '2027-01-01',
     sprat_card_photo_path: null,
+    avatar_path: null,
     holds_irata: false,
     irata_id: null,
     irata_level: null,

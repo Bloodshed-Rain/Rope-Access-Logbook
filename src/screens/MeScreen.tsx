@@ -212,15 +212,15 @@ export function MeScreen() {
   const primary = profile.primary_cert;
   const secondary = secondaryScheme(profile);
 
-  // TODO: dedicated profile.avatar_path. For now, fall back to the SPRAT card
-  // photo if the user holds SPRAT, otherwise render initials.
+  // Prefer the user-set avatar; fall back to their SPRAT card photo if
+  // available so the identity card has a face on it before they explicitly
+  // pick one. EditAvatarScreen writes profile.avatar_path.
   const avatarUri =
-    profile.holds_sprat && profile.sprat_card_photo_path
-      ? profile.sprat_card_photo_path
-      : null;
+    profile.avatar_path
+      ?? (profile.holds_sprat ? profile.sprat_card_photo_path : null);
 
   const handleEditIdentity = () => {
-    Alert.alert('Edit profile', 'Editing identity coming soon.');
+    navigation.navigate('EditName');
   };
 
   const handleSwapPrimary = () => {
@@ -438,9 +438,7 @@ export function MeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Certification details"
-            onPress={() =>
-              Alert.alert('Certification', 'Cert details edit coming soon.')
-            }
+            onPress={() => navigation.navigate('EditCerts')}
             style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           >
             <View

@@ -28,7 +28,7 @@ function makeSnapshot(overrides: Partial<CloudSnapshot> = {}): CloudSnapshot {
     profile: {
       id: 'p-1', full_name: 'T', holds_sprat: true, sprat_id: 'S', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
       cert_expires_on: '2027-01-01', default_employer: 'E',
-      sprat_card_photo_path: null, last_backup_at: null,
+      sprat_card_photo_path: null, avatar_path: null, last_backup_at: null,
       photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
       supervisor_capability_enabled: false,
       supervisor_cert_number: null,
@@ -99,7 +99,7 @@ describe('restoreService.restore', () => {
       profile: {
         id: 'p-1', full_name: 'Tech', holds_sprat: true, sprat_id: 'S1', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
         cert_expires_on: '2027-01-01', default_employer: 'Emp',
-        sprat_card_photo_path: null, last_backup_at: null,
+        sprat_card_photo_path: null, avatar_path: null, last_backup_at: null,
         photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
         supervisor_capability_enabled: false,
         supervisor_cert_number: null,
@@ -168,7 +168,7 @@ describe('restoreService.restore', () => {
       profile: {
         id: 'p-1', full_name: 'T', holds_sprat: true, sprat_id: 'S', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
         cert_expires_on: '2027-01-01', default_employer: 'E',
-        sprat_card_photo_path: null, last_backup_at: null,
+        sprat_card_photo_path: null, avatar_path: null, last_backup_at: null,
         photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
         supervisor_capability_enabled: false,
         supervisor_cert_number: null,
@@ -215,7 +215,7 @@ describe('restoreService.restore', () => {
       profile: {
         id: 'p-1', full_name: 'T', holds_sprat: true, sprat_id: 'S', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
         cert_expires_on: '2027-01-01', default_employer: 'E',
-        sprat_card_photo_path: null, last_backup_at: null,
+        sprat_card_photo_path: null, avatar_path: null, last_backup_at: null,
         photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
         supervisor_capability_enabled: false,
         supervisor_cert_number: null,
@@ -263,7 +263,7 @@ describe('restoreService.restore', () => {
       profile: {
         id: 'p-1', full_name: 'T', holds_sprat: true, sprat_id: 'S', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
         cert_expires_on: '2027-01-01', default_employer: 'E',
-        sprat_card_photo_path: null, last_backup_at: null,
+        sprat_card_photo_path: null, avatar_path: null, last_backup_at: null,
         photos_in_backup: true, last_cloud_backup_at: null, last_uploaded_backup_id: null,
         supervisor_capability_enabled: false,
         supervisor_cert_number: null,
@@ -314,7 +314,7 @@ describe('restoreService.restore', () => {
       profile: {
         id: 'p-1', full_name: 'T', holds_sprat: true, sprat_id: 'S', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
         cert_expires_on: '2027-01-01', default_employer: 'E',
-        sprat_card_photo_path: null, last_backup_at: null,
+        sprat_card_photo_path: null, avatar_path: null, last_backup_at: null,
         photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
         supervisor_capability_enabled: false,
         supervisor_cert_number: null,
@@ -347,7 +347,7 @@ describe('restoreService — v1 snapshot back-compat', () => {
       profile: {
         id: 'p-1', full_name: 'T', holds_sprat: true, sprat_id: 'S', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
         cert_expires_on: '2027-01-01', default_employer: 'E',
-        sprat_card_photo_path: null, last_backup_at: null,
+        sprat_card_photo_path: null, avatar_path: null, last_backup_at: null,
         photos_in_backup: false, last_cloud_backup_at: null, last_uploaded_backup_id: null,
         supervisor_capability_enabled: false,
         supervisor_cert_number: null,

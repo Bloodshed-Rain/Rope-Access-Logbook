@@ -181,8 +181,16 @@ export function SettingsSheet({
     return list.filter((r) => r.supervisor_user_id === uid && r.status === 'pending').length;
   }, [signRequests.query.data, session?.user_id]);
 
-  const editStub = (field: string) => () =>
-    Alert.alert('Edit profile', `Editing ${field} coming soon.`);
+  // Closes the sheet first so the stack-pushed edit screen has full focus
+  // and the user isn't returned to a half-open sheet behind a screen.
+  const goEdit = (route: 'EditName' | 'EditAvatar' | 'EditCerts') => () => {
+    onClose();
+    navigation.navigate(route);
+  };
+  const goLegal = (route: 'PrivacyPolicy' | 'TermsOfService') => () => {
+    onClose();
+    navigation.navigate(route);
+  };
 
   const goSupervisorsList = () => {
     onClose();
@@ -368,11 +376,11 @@ export function SettingsSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title="Settings">
-      {/* Profile edits — stubs for C3 */}
+      {/* Profile edits */}
       <Section label="Profile">
-        <SettingsRow title="Edit name" onPress={editStub('name')} showChevron />
-        <SettingsRow title="Edit avatar" onPress={editStub('avatar')} showChevron />
-        <SettingsRow title="Edit cert details" onPress={editStub('certifications')} showChevron />
+        <SettingsRow title="Edit name" onPress={goEdit('EditName')} showChevron />
+        <SettingsRow title="Edit avatar" onPress={goEdit('EditAvatar')} showChevron />
+        <SettingsRow title="Edit cert details" onPress={goEdit('EditCerts')} showChevron />
       </Section>
 
       {/* Supervisors — capability toggle + sub-fields + push to list, L3 only */}
@@ -596,16 +604,12 @@ export function SettingsSheet({
         <SettingsRow title={`Version ${version}`} />
         <SettingsRow
           title="Privacy policy"
-          onPress={() =>
-            Alert.alert('Privacy policy', 'Coming soon.')
-          }
+          onPress={goLegal('PrivacyPolicy')}
           showChevron
         />
         <SettingsRow
           title="Terms of service"
-          onPress={() =>
-            Alert.alert('Terms of service', 'Coming soon.')
-          }
+          onPress={goLegal('TermsOfService')}
           showChevron
         />
       </Section>

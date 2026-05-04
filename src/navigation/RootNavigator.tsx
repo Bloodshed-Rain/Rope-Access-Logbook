@@ -37,6 +37,11 @@ import { PaywallScreen } from '../screens/PaywallScreen';
 import { PostSaveSheet } from '../screens/PostSaveSheet';
 import { SignatureOptionsSheet } from '../screens/SignatureOptionsSheet';
 import { SendSignRequestScreen } from '../screens/SendSignRequestScreen';
+import { EditNameScreen } from '../screens/EditNameScreen';
+import { EditCertsScreen } from '../screens/EditCertsScreen';
+import { EditAvatarScreen } from '../screens/EditAvatarScreen';
+import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { TermsOfServiceScreen } from '../screens/TermsOfServiceScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -62,6 +67,11 @@ export type RootStackParamList = {
   PostSaveSheet: { entryId: string };
   SignatureOptionsSheet: { entryId: string };
   SendSignRequest: { entryId: string };
+  EditName: undefined;
+  EditCerts: undefined;
+  EditAvatar: undefined;
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
 };
 
 export type TabParamList = {
@@ -281,6 +291,12 @@ export function RootNavigator() {
               component={SendSignRequestScreen}
               options={{ presentation: 'modal', headerShown: false }}
             />
+            {/* Profile edits — reachable from Settings sheet + MeScreen cards. */}
+            <Stack.Screen name="EditName" component={EditNameScreen} options={{ title: 'Edit name' }} />
+            <Stack.Screen name="EditCerts" component={EditCertsScreen} options={{ title: 'Edit certifications' }} />
+            <Stack.Screen name="EditAvatar" component={EditAvatarScreen} options={{ title: 'Edit avatar' }} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ title: 'Privacy policy' }} />
+            <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ title: 'Terms of service' }} />
           </>
         )}
       </Stack.Navigator>

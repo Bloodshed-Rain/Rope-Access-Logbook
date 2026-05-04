@@ -9,6 +9,7 @@ export const SCHEMA_SQL = `
     level TEXT CHECK (level IS NULL OR level IN ('I', 'II', 'III')),
     cert_expires_on TEXT,
     sprat_card_photo_path TEXT,
+    avatar_path TEXT,
     -- IRATA block
     holds_irata INTEGER NOT NULL DEFAULT 0,
     irata_id TEXT,
