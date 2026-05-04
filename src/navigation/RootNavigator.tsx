@@ -19,7 +19,7 @@ import { colors, typography } from '../theme/tokens';
 import { LoadingSpinner } from '../primitives/LoadingSpinner';
 import { useToast } from '../primitives/Toast';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
-import { TodayScreen } from '../screens/TodayScreen';
+import { DashboardScreen } from '../screens/DashboardScreen';
 import { RecordsScreen } from '../screens/RecordsScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { MeScreen } from '../screens/MeScreen';
@@ -65,7 +65,7 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Today: undefined;
+  Dashboard: undefined;
   Records: { filter?: ChipKey } | undefined;
   Inbox: undefined;
   Me: undefined;
@@ -106,8 +106,8 @@ function TabNavigator({ showInbox }: { showInbox: boolean }) {
       }}
     >
       <Tab.Screen
-        name="Today"
-        component={TodayScreen}
+        name="Dashboard"
+        component={DashboardScreen}
         options={{ tabBarIcon: ({ color }) => <Home color={color} size={24} strokeWidth={1.5} /> }}
       />
       <Tab.Screen

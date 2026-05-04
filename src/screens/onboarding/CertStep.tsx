@@ -165,9 +165,14 @@ export function CertStep({ state, onChange, onBack, onNext }: CertStepProps) {
         <Input
           label={`${schemeLabel} cert number`}
           value={slice.id}
-          onChangeText={(t) => updateCert(scheme, { id: t })}
-          placeholder={scheme === 'sprat' ? '12345' : 'XXXX/XX'}
-          autoCapitalize="characters"
+          // Both SPRAT and IRATA cert numbers are 5-digit numerics in the
+          // formats this app supports. Strip non-digits + clamp on every
+          // change so paste/typing past the limit silently truncates rather
+          // than failing later.
+          onChangeText={(t) => updateCert(scheme, { id: t.replace(/\D/g, '').slice(0, 5) })}
+          placeholder="12345"
+          keyboardType="number-pad"
+          maxLength={5}
           autoCorrect={false}
         />
 

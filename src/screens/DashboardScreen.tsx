@@ -1,7 +1,10 @@
-// src/screens/TodayScreen.tsx
+// src/screens/DashboardScreen.tsx
 // Light-theme home screen. Greeting + hours-today hero + supervisor
 // incoming-requests card (when capability on) + needs-signature card +
 // cert-progress card. Top-right bell opens NotificationsScreen.
+//
+// Previously named "Today" — same conceptual content but renamed to
+// "Dashboard" for clearer framing of the at-a-glance overview role.
 
 import React, { useMemo, useState, useCallback } from 'react';
 import {
@@ -53,7 +56,7 @@ function recertCaption(daysToExpiry: number, state: string): string {
   return `Re-cert in ${daysToExpiry}d`;
 }
 
-export function TodayScreen() {
+export function DashboardScreen() {
   const { colors, spacing, typography, radii } = useTheme();
   const navigation = useNavigation<Nav>();
   const qc = useQueryClient();
@@ -160,7 +163,7 @@ export function TodayScreen() {
           paddingBottom: spacing.sm,
         }}
       >
-        <Text style={[typography.title1, { color: colors.textPrimary }]}>Today</Text>
+        <Text style={[typography.title1, { color: colors.textPrimary }]}>Dashboard</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={

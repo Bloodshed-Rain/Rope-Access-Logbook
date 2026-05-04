@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TextInputProps } from 'react-native';
+import { Platform, View, Text, TextInput, TextInputProps } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import { KEYBOARD_DONE_ID } from './KeyboardDoneAccessory';
 
 interface InputProps extends TextInputProps {
   label: string;
@@ -27,6 +28,15 @@ export function Input({ label, error, hint, style, editable = true, ...props }: 
       </View>
       <TextInput
         editable={editable}
+        // iOS: pull a "Done" bar above the keyboard so users can dismiss
+        // numeric / multi-line keyboards without tapping outside the field.
+        // The accessory view is mounted once at App root. Caller-supplied
+        // inputAccessoryViewID overrides this default.
+        inputAccessoryViewID={
+          Platform.OS === 'ios'
+            ? props.inputAccessoryViewID ?? KEYBOARD_DONE_ID
+            : undefined
+        }
         style={[
           typography.label,
           {
