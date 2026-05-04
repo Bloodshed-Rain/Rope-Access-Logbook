@@ -50,6 +50,20 @@ function greeting(d: Date = new Date()): string {
   return 'Good evening';
 }
 
+// Lifetime hours can grow into the thousands over a career; the headline
+// number on the Dashboard renders with thousands separators + 'h' suffix
+// so an evaluator can read e.g. `2,148h` without squinting at the digits.
+// Whole-hour values drop the decimal (1248h vs 1248.0h); fractional hours
+// keep one decimal so partial shifts aren't rounded away.
+function formatBigHours(hours: number): string {
+  const rounded = Math.round(hours * 10) / 10;
+  const isWhole = rounded === Math.floor(rounded);
+  const formatted = isWhole
+    ? Math.floor(rounded).toLocaleString('en-US')
+    : rounded.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `${formatted}h`;
+}
+
 function recertCaption(daysToExpiry: number, state: string): string {
   if (state === 'expired') return `Re-cert expired ${Math.abs(daysToExpiry)}d ago`;
   if (state === 'expires-today') return 'Re-cert expires today';
@@ -222,6 +236,62 @@ export function DashboardScreen() {
           >
             {firstName}
           </Text>
+        </View>
+
+        {/* Total-hours hero — the headline number for re-cert auditors. Sized
+            deliberately larger than any other typography on the screen so an
+            evaluator scanning the device sees the lifetime total at a glance.
+            Falls back to '—' while the dashboard-stats query is loading. */}
+        <View
+          style={{
+            backgroundColor: colors.bgSurface,
+            borderRadius: radii.md,
+            paddingVertical: spacing.lg,
+            paddingHorizontal: spacing.base,
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={[
+              typography.label,
+              {
+                color: colors.textSecondary,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+              },
+            ]}
+          >
+            Total hours
+          </Text>
+          <Text
+            style={{
+              color: colors.accentPrimary,
+              fontSize: 72,
+              lineHeight: 80,
+              fontWeight: '700',
+              marginTop: spacing.sm,
+              marginBottom: spacing.xs,
+              fontVariant: ['tabular-nums'],
+            }}
+            accessibilityRole="text"
+            accessibilityLabel={
+              stats
+                ? `${stats.lifetimeHours.toFixed(1)} total hours`
+                : 'Total hours loading'
+            }
+          >
+            {stats ? formatBigHours(stats.lifetimeHours) : '—'}
+          </Text>
+          {stats && (
+            <Text
+              style={[
+                typography.body,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {stats.thisYearHours.toFixed(1)}h this year
+            </Text>
+          )}
         </View>
 
         {/* Hero: hours today */}

@@ -254,6 +254,22 @@ describe('certProgressService', () => {
       expect(stats.totalJobs).toBe(3); // signed/amended only
       expect(stats.totalSites).toBe(2); // Site A + Site B
     });
+
+    it('excludes originals superseded by a signed amendment (no double-count)', async () => {
+      const db = await createTestClient();
+      const svc = createCertProgressService(db);
+      // Original signed entry: 8h on 2026-06-01.
+      await insertEntry(db, { id: 'orig', date: '2026-06-01', hours: 8, sprat: 'I', site: 'Site A' });
+      // Signed amendment correcting the original to 6h. Both rows live in
+      // the logbook permanently but the corrected total is 6 — not 14.
+      await insertEntry(db, { id: 'amend', date: '2026-06-01', hours: 6, sprat: 'I', site: 'Site A' });
+      await db.run(`UPDATE entries SET amends_entry_id = 'orig' WHERE id = 'amend'`);
+      const stats = await svc.getDashboardStats(2026);
+      expect(stats.lifetimeHours).toBe(6);
+      expect(stats.thisYearHours).toBe(6);
+      expect(stats.totalJobs).toBe(1); // amendment counts; original superseded
+      expect(stats.totalSites).toBe(1);
+    });
   });
 
   describe('getWorkBreakdown', () => {

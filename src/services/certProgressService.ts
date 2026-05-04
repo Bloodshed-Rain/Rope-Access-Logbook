@@ -93,8 +93,14 @@ export function createCertProgressService(db: DbClient, todayFn: () => Date = ()
   // entries don't count toward progression.
   async function getHoursAtLevel(scheme: CertScheme, level: CertLevel): Promise<number> {
     const col = scheme === 'sprat' ? 'tech_level_snapshot' : 'irata_level_snapshot';
+    // Skip originals superseded by a signed amendment so the level total
+    // doesn't count both the original and its correction.
     const row = await db.get<{ total: number | null }>(
-      `SELECT SUM(work_hours) as total FROM entries WHERE ${col} = ? AND status IN ('signed', 'amended')`,
+      `SELECT SUM(work_hours) as total FROM entries e
+        WHERE ${col} = ? AND status IN ('signed', 'amended')
+          AND NOT EXISTS (
+            SELECT 1 FROM entries a WHERE a.amends_entry_id = e.id AND a.status = 'signed'
+          )`,
       [level],
     );
     return row?.total ?? 0;
@@ -114,7 +120,11 @@ export function createCertProgressService(db: DbClient, todayFn: () => Date = ()
     // 30-day history gate: if oldest entry at current level is too recent, the
     // moving-average projection would whip from a tiny sample.
     const oldest = await db.get<{ d: string | null }>(
-      `SELECT MIN(date_from) as d FROM entries WHERE ${col} = ? AND status IN ('signed', 'amended')`,
+      `SELECT MIN(date_from) as d FROM entries e
+        WHERE ${col} = ? AND status IN ('signed', 'amended')
+          AND NOT EXISTS (
+            SELECT 1 FROM entries a WHERE a.amends_entry_id = e.id AND a.status = 'signed'
+          )`,
       [currentLevel],
     );
     if (!oldest?.d) return { kind: 'insufficient-data' };
@@ -124,8 +134,11 @@ export function createCertProgressService(db: DbClient, todayFn: () => Date = ()
     // 90-day moving average of hours at the current level.
     const ninetyDaysAgo = new Date(today.getTime() - PROJECTION_WINDOW_DAYS * DAY_MS);
     const recent = await db.get<{ total: number | null }>(
-      `SELECT SUM(work_hours) as total FROM entries
-       WHERE ${col} = ? AND status IN ('signed', 'amended') AND date_from >= ?`,
+      `SELECT SUM(work_hours) as total FROM entries e
+       WHERE ${col} = ? AND status IN ('signed', 'amended') AND date_from >= ?
+         AND NOT EXISTS (
+           SELECT 1 FROM entries a WHERE a.amends_entry_id = e.id AND a.status = 'signed'
+         )`,
       [currentLevel, fmtDate(ninetyDaysAgo)],
     );
     const recentHours = recent?.total ?? 0;
@@ -184,24 +197,37 @@ export function createCertProgressService(db: DbClient, todayFn: () => Date = ()
     },
 
     async getDashboardStats(year: number): Promise<DashboardStats> {
+      // Supersedence rule (same as entriesService): exclude an original
+      // entry from sums + counts when it has a signed amendment, otherwise
+      // hours and job counts double-count the original alongside its
+      // correction. The amendment itself still counts via its own row.
+      const NOT_SUPERSEDED = `NOT EXISTS (
+        SELECT 1 FROM entries a
+         WHERE a.amends_entry_id = e.id AND a.status = 'signed'
+      )`;
       const lifetime = await db.get<{ total: number | null }>(
-        `SELECT SUM(work_hours) as total FROM entries WHERE status IN ('signed', 'amended')`,
+        `SELECT SUM(work_hours) as total FROM entries e
+          WHERE status IN ('signed', 'amended') AND ${NOT_SUPERSEDED}`,
       );
       const thisYear = await db.get<{ total: number | null }>(
-        `SELECT SUM(work_hours) as total FROM entries
-         WHERE status IN ('signed', 'amended') AND date_from >= ? AND date_from < ?`,
+        `SELECT SUM(work_hours) as total FROM entries e
+         WHERE status IN ('signed', 'amended') AND date_from >= ? AND date_from < ?
+           AND ${NOT_SUPERSEDED}`,
         [startOfYear(year), startOfNextYear(year)],
       );
       const lastYear = await db.get<{ total: number | null }>(
-        `SELECT SUM(work_hours) as total FROM entries
-         WHERE status IN ('signed', 'amended') AND date_from >= ? AND date_from < ?`,
+        `SELECT SUM(work_hours) as total FROM entries e
+         WHERE status IN ('signed', 'amended') AND date_from >= ? AND date_from < ?
+           AND ${NOT_SUPERSEDED}`,
         [startOfYear(year - 1), startOfYear(year)],
       );
       const jobs = await db.get<{ c: number }>(
-        `SELECT COUNT(*) as c FROM entries WHERE status IN ('signed', 'amended')`,
+        `SELECT COUNT(*) as c FROM entries e
+          WHERE status IN ('signed', 'amended') AND ${NOT_SUPERSEDED}`,
       );
       const sites = await db.get<{ c: number }>(
-        `SELECT COUNT(DISTINCT site) as c FROM entries WHERE status IN ('signed', 'amended') AND site != ''`,
+        `SELECT COUNT(DISTINCT site) as c FROM entries e
+          WHERE status IN ('signed', 'amended') AND site != '' AND ${NOT_SUPERSEDED}`,
       );
       const lifetimeHours = lifetime?.total ?? 0;
       const thisYearHours = thisYear?.total ?? 0;
@@ -217,9 +243,14 @@ export function createCertProgressService(db: DbClient, todayFn: () => Date = ()
     },
 
     async getWorkBreakdown(year: number): Promise<WorkBreakdown> {
+      // Same supersedence rule as the totals queries — drop originals that
+      // have a signed amendment so the breakdown reflects current truth.
       const rows = await db.getAll<{ work_types: string; work_hours: number }>(
-        `SELECT work_types, work_hours FROM entries
-         WHERE status IN ('signed', 'amended') AND date_from >= ? AND date_from < ?`,
+        `SELECT work_types, work_hours FROM entries e
+         WHERE status IN ('signed', 'amended') AND date_from >= ? AND date_from < ?
+           AND NOT EXISTS (
+             SELECT 1 FROM entries a WHERE a.amends_entry_id = e.id AND a.status = 'signed'
+           )`,
         [startOfYear(year), startOfNextYear(year)],
       );
       // Multi-work-type entries' hours count toward each type — intentional double
