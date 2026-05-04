@@ -49,6 +49,11 @@ export const SCHEMA_SQL = `
     equipment_notes TEXT,
     weather TEXT,
     photo_paths TEXT NOT NULL DEFAULT '[]',
+    -- 'amended' is reserved by the CHECK but no code path writes it. Supersedence is
+    -- derived at query time (entriesService.getTotalWorkHours / getLifetimeHoursByLevel
+    -- skip an original if a signed amendment exists). Mutating status to 'amended'
+    -- would invalidate the original's signature because status is in the canonical
+    -- hash input (signingService.entryRowToHashInputV1/V2/V3).
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'signed', 'amended')),
     amends_entry_id TEXT REFERENCES entries(id),
     amendment_reason TEXT,

@@ -446,6 +446,11 @@ export function createSupabaseCloudClient(): CloudClient {
         .upload(pngPath, input.png_bytes, { contentType: 'image/png', upsert: true });
       if (upErr) throw new Error(`sig_upload_failed:${upErr.message}`);
 
+      // updated_at is set explicitly here as well as via the
+      // bump_sign_requests_updated_at_trg trigger (20260503 migration).
+      // The tech-side `WHERE updated_at > since` sync filter depends on this
+      // bump landing — the explicit set is defense in depth for environments
+      // where the trigger hasn't been applied yet.
       const { data, error } = await sb
         .from('sign_requests')
         .update({
@@ -459,6 +464,7 @@ export function createSupabaseCloudClient(): CloudClient {
           signed_gps_lat: input.signed_gps_lat ?? null,
           signed_gps_lon: input.signed_gps_lon ?? null,
           signed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', input.request_id)
         .eq('status', 'pending')
@@ -471,7 +477,7 @@ export function createSupabaseCloudClient(): CloudClient {
     async declineRequest(id, reason) {
       const { data, error } = await sb
         .from('sign_requests')
-        .update({ status: 'declined', decline_reason: reason })
+        .update({ status: 'declined', decline_reason: reason, updated_at: new Date().toISOString() })
         .eq('id', id)
         .eq('status', 'pending')
         .select('*')
@@ -483,7 +489,7 @@ export function createSupabaseCloudClient(): CloudClient {
     async withdrawRequest(id) {
       const { data, error } = await sb
         .from('sign_requests')
-        .update({ status: 'withdrawn' })
+        .update({ status: 'withdrawn', updated_at: new Date().toISOString() })
         .eq('id', id)
         .eq('status', 'pending')
         .select('*')

@@ -134,6 +134,15 @@ describe('entriesService', () => {
       await service.createEntry(validInput, 'II');
       await expect(service.createAmendment('entry-1', 'reason', 'III')).rejects.toThrow('Can only amend signed entries');
     });
+
+    it('throws when an amendment already exists for the entry', async () => {
+      await service.createEntry(validInput, 'II');
+      await db.run("UPDATE entries SET status = 'signed' WHERE id = ?", ['entry-1']);
+      await service.createAmendment('entry-1', 'first amendment', 'III');
+      await expect(
+        service.createAmendment('entry-1', 'second amendment', 'III'),
+      ).rejects.toThrow('Entry already has an amendment');
+    });
   });
 
   describe('getTotalWorkHours', () => {
@@ -149,6 +158,39 @@ describe('entriesService', () => {
     it('returns 0 when no entries exist', async () => {
       const total = await service.getTotalWorkHours(2026);
       expect(total).toBe(0);
+    });
+
+    it('excludes the original when a signed amendment exists (no double-count)', async () => {
+      // Original: 8h on 2026-04-01
+      await service.createEntry({ ...validInput, date_from: '2026-04-01', date_to: '2026-04-01', work_hours: 8 }, 'II');
+      await db.run("UPDATE entries SET status = 'signed' WHERE id = ?", ['entry-1']);
+      // Amendment: 6h (corrected), still on 2026-04-01
+      await service.createAmendment('entry-1', 'corrected hours', 'II');
+      await db.run("UPDATE entries SET work_hours = 6, status = 'signed' WHERE id = ?", ['entry-2']);
+      const total = await service.getTotalWorkHours(2026);
+      expect(total).toBe(6);
+    });
+
+    it('keeps the original when its amendment is still a draft', async () => {
+      await service.createEntry({ ...validInput, date_from: '2026-04-01', date_to: '2026-04-01', work_hours: 8 }, 'II');
+      await db.run("UPDATE entries SET status = 'signed' WHERE id = ?", ['entry-1']);
+      // Amendment is draft — original should still count.
+      await service.createAmendment('entry-1', 'wip', 'II');
+      const total = await service.getTotalWorkHours(2026);
+      expect(total).toBe(8);
+    });
+  });
+
+  describe('getLifetimeHoursByLevel', () => {
+    it('excludes the original when a signed amendment exists', async () => {
+      // L2 entry: 10h, then amend at L3 with 7h. Amendment supersedes.
+      await service.createEntry({ ...validInput, date_from: '2026-04-01', date_to: '2026-04-01', work_hours: 10 }, 'II');
+      await db.run("UPDATE entries SET status = 'signed' WHERE id = ?", ['entry-1']);
+      await service.createAmendment('entry-1', 'corrected', 'III');
+      await db.run("UPDATE entries SET work_hours = 7, status = 'signed' WHERE id = ?", ['entry-2']);
+      const totals = await service.getLifetimeHoursByLevel();
+      expect(totals.II).toBe(0);
+      expect(totals.III).toBe(7);
     });
   });
 

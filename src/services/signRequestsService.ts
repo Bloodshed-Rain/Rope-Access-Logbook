@@ -7,6 +7,7 @@ import {
   saveSignaturePng,
   saveSignRequestPhoto,
   deleteSignRequestPhotosDir,
+  deleteFile,
   signRequestPhotoPath,
 } from '../utils/fileStorage';
 import { generateId } from '../utils/uuid';
@@ -225,26 +226,42 @@ export function createSignRequestsService(
 
     const now = clock();
     const sigId = uuid();
-    await db.run(
-      `INSERT INTO signatures (id, entry_id, supervisor_name, supervisor_cert_number, signature_png_path, signed_at, device_id, gps_lat, gps_lon, entry_hash, hash_version, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        sigId, entry.id,
-        row.supervisor_name_snapshot ?? '',
-        row.supervisor_cert_number_snapshot ?? '',
-        localPngPath,
-        row.signed_at ?? now,
-        row.signed_device_id ?? 'unknown',
-        row.signed_gps_lat, row.signed_gps_lon,
-        row.entry_hash ?? '',
-        row.hash_version ?? 3,
-        now,
-      ],
-    );
-    await db.run(
-      `UPDATE entries SET status='signed', pending_sign_request_id=NULL, updated_at=? WHERE id=?`,
-      [now, entry.id],
-    );
+
+    // Atomic: signature INSERT and entry UPDATE must commit together. If they
+    // split (process kill, INSERT collision), verifyIntegrity later rehashes
+    // the entry as draft against a hash computed at status='signed' and
+    // permanently shows "tampered". The PNG saved above is cleaned up on
+    // rollback so the file system doesn't accumulate orphans.
+    await db.exec('BEGIN');
+    try {
+      await db.run(
+        `INSERT INTO signatures (id, entry_id, supervisor_name, supervisor_cert_number, signature_png_path, signed_at, device_id, gps_lat, gps_lon, entry_hash, hash_version, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          sigId, entry.id,
+          row.supervisor_name_snapshot ?? '',
+          row.supervisor_cert_number_snapshot ?? '',
+          localPngPath,
+          row.signed_at ?? now,
+          row.signed_device_id ?? 'unknown',
+          row.signed_gps_lat, row.signed_gps_lon,
+          row.entry_hash ?? '',
+          row.hash_version ?? 3,
+          now,
+        ],
+      );
+      await db.run(
+        `UPDATE entries SET status='signed', pending_sign_request_id=NULL, updated_at=? WHERE id=?`,
+        [now, entry.id],
+      );
+      await db.exec('COMMIT');
+    } catch (e) {
+      await db.exec('ROLLBACK');
+      if (localPngPath) {
+        try { await deleteFile(localPngPath); } catch {}
+      }
+      throw e;
+    }
     try { await cloud.cleanupRequestAssets(row.id); } catch {}
 
     // Local notification: tech-side "your supervisor signed". Mirrors the

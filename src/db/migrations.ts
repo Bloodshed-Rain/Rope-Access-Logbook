@@ -118,15 +118,30 @@ export async function runSchemaMigrations(db: DbClient): Promise<void> {
     await db.exec('ALTER TABLE entries ADD COLUMN pending_sign_request_id TEXT');
   }
 
-  // 1. Rename subscription_tier -> subscription_status (idempotent)
+  // 1. Rename subscription_tier -> subscription_status (idempotent + crash-safe)
+  // The three-statement rename runs inside a transaction so a crash leaves the
+  // table in a known-good shape. The both-columns branch recovers from a pre-
+  // transaction partial migration that may exist on devices that ran an older
+  // build of this code.
   const profileCols = await db.getAll<{ name: string }>(`PRAGMA table_info(profile)`);
   const colNames = profileCols.map((c) => c.name);
   if (colNames.includes('subscription_tier') && !colNames.includes('subscription_status')) {
-    await db.exec(`ALTER TABLE profile ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'unknown'`);
-    await db.exec(`UPDATE profile SET subscription_status = CASE
-      WHEN subscription_tier = 'pro' THEN 'active'
-      ELSE 'unknown'
-    END`);
+    await db.exec('BEGIN');
+    try {
+      await db.exec(`ALTER TABLE profile ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'unknown'`);
+      await db.exec(`UPDATE profile SET subscription_status = CASE
+        WHEN subscription_tier = 'pro' THEN 'active'
+        ELSE 'unknown'
+      END`);
+      await db.exec(`ALTER TABLE profile DROP COLUMN subscription_tier`);
+      await db.exec('COMMIT');
+    } catch (e) {
+      await db.exec('ROLLBACK');
+      throw e;
+    }
+  } else if (colNames.includes('subscription_tier') && colNames.includes('subscription_status')) {
+    // Recovery: a prior pre-transaction partial run left both columns. Drop
+    // the legacy column. subscription_status already holds the migrated value.
     await db.exec(`ALTER TABLE profile DROP COLUMN subscription_tier`);
   } else if (!colNames.includes('subscription_status')) {
     await db.exec(`ALTER TABLE profile ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'unknown'`);

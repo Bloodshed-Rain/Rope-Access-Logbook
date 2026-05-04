@@ -17,7 +17,7 @@ import { initializeDatabase, getClient } from './src/db/initialize';
 import { colors } from './src/theme/tokens';
 import { createSupabaseCloudClient } from './src/cloud/supabaseClient';
 import { createExpoFsAbstraction } from './src/cloud/fsAbstraction';
-import { createCloudBackupService } from './src/services/cloudBackupService';
+import { getCloudBackupService } from './src/services/cloudBackupService';
 import { createSupervisorConnectionsService } from './src/services/supervisorConnectionsService';
 import { createSignRequestsService } from './src/services/signRequestsService';
 import { createExportService } from './src/services/exportService';
@@ -78,7 +78,10 @@ export default function App() {
     const unsubAuth = cloud.onAuthStateChange((s) => {
       bridgeAuthToRC(s?.user_id ?? null);
     });
-    const svc = createCloudBackupService({
+    // Shared backup service — same instance is reused by useBackup so the
+    // post-sign trigger, manual button, and this AppState→background trigger
+    // all coordinate through the same throttle and in-flight mutex.
+    const svc = getCloudBackupService({
       db,
       cloud,
       fs,

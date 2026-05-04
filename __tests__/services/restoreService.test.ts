@@ -240,6 +240,68 @@ describe('restoreService.restore', () => {
     expect(fs.files.has('file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/signatures/bad.png')).toBe(false);
   });
 
+  it('photo round-trip: asset lands at entry.photo_paths target so the entry hash still verifies after restore', async () => {
+    // Establishes that the storage-key convention `assets/photo_{entryId}_{i}.{ext}`
+    // round-trips through restore: the asset bytes end up at exactly the path
+    // the entry's photo_paths column references on the restored device.
+    // photo_paths is in the canonical hash input, so any divergence between
+    // the asset write path and entry.photo_paths would break verifyIntegrity.
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    const photoBytes = new TextEncoder().encode('photo-bytes');
+    const photoSha = require('crypto').createHash('sha256').update(Buffer.from(photoBytes)).digest('hex');
+    const photoStorageKey = 'assets/photo_e-1_0.jpg';
+    cloud.storage.set(`${uid}/${photoStorageKey}`, photoBytes);
+
+    const snap: CloudSnapshot = {
+      app_version: '1.0.0',
+      exported_at: '2026-04-16T12:00:00.000Z',
+      profile: {
+        id: 'p-1', full_name: 'T', holds_sprat: true, sprat_id: 'S', level: 'II', holds_irata: false, irata_id: null, irata_level: null, irata_expires_on: null, irata_card_photo_path: null, primary_cert: 'sprat',
+        cert_expires_on: '2027-01-01', default_employer: 'E',
+        sprat_card_photo_path: null, last_backup_at: null,
+        photos_in_backup: true, last_cloud_backup_at: null, last_uploaded_backup_id: null,
+        supervisor_capability_enabled: false,
+        supervisor_cert_number: null,
+        supervisor_directory_visible: true,
+        subscription_status: 'unknown',
+        created_at: '2026-04-01', updated_at: '2026-04-01',
+      },
+      entries: [{
+        id: 'e-1', date_from: '2026-04-10', date_to: '2026-04-10', employer: 'Emp', site: 'Site', client: 'Cli',
+        description: 'Work', work_hours: 8, tech_level_snapshot: 'II', irata_level_snapshot: null,
+        work_types: ['inspection'], other_work_description: null, equipment_notes: null, weather: null,
+        // Relative form after normalizeAppPath of `${documentDirectory}logbook/photos/e-1_0.jpg`
+        photo_paths: ['logbook/photos/e-1_0.jpg'],
+        status: 'signed', amends_entry_id: null, amendment_reason: null,
+        pending_sign_request_id: null,
+        created_at: '2026-04-10', updated_at: '2026-04-10',
+      }],
+      signatures: [],
+      schema_version: 1, cloud_schema_version: 1, backup_id: 'b-photo',
+      binary_manifest: {
+        [photoStorageKey]: { sha256: photoSha, size_bytes: photoBytes.length, created_at: '2026-04-16T12:00:00.000Z' },
+      },
+      photos_included: true,
+    };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(snap)));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    const result = await svc.restore();
+    expect(result.kind).toBe('restored');
+
+    const expectedAbsPath = 'file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/photos/e-1_0.jpg';
+    const e = await db.get<{ photo_paths: string }>('SELECT photo_paths FROM entries WHERE id = ?', ['e-1']);
+    expect(JSON.parse(e!.photo_paths)).toEqual([expectedAbsPath]);
+    // The bytes must exist where the entry says they live, otherwise the
+    // signature image would render blank and the hash would not verify.
+    expect(fs.files.has(expectedAbsPath)).toBe(true);
+  });
+
   it('refuses restore when cloud_schema_version is newer than app supports', async () => {
     const db = await createTestClient();
     const cloud = createMockCloudClient();

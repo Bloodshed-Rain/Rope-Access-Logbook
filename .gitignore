@@ -47,3 +47,6 @@ yarn-error.*
 
 # IDE
 .idea/
+
+# Supabase CLI per-developer state (project-ref, pooler URL, version cache)
+supabase/.temp/

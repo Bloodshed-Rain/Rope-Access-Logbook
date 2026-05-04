@@ -23,6 +23,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
 import { useSignRequests } from '../hooks/useSignRequests';
 import { useAuthSession } from '../hooks/useAuthSession';
+import { useReadOnly } from '../hooks/useSubscription';
 import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
@@ -54,6 +55,7 @@ export function InboxScreen() {
   const { session } = useAuthSession(cloud);
   const conns = useSupervisorConnections({ db, cloud });
   const signReqs = useSignRequests({ db, cloud, fs, hash: sha256 });
+  const readOnly = useReadOnly();
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -101,6 +103,10 @@ export function InboxScreen() {
   const isEmpty = sections.length === 0;
 
   const handleAccept = async (id: string) => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     try {
       await conns.accept.mutateAsync(id);
     } catch (e) {
@@ -109,6 +115,10 @@ export function InboxScreen() {
   };
 
   const handleDecline = async (id: string) => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     try {
       await conns.decline.mutateAsync(id);
     } catch (e) {

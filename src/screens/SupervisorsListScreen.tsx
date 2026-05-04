@@ -20,6 +20,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
+import { useReadOnly } from '../hooks/useSubscription';
 import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { RootStackParamList } from '../navigation/RootNavigator';
@@ -35,6 +36,7 @@ export function SupervisorsListScreen() {
   const { data: profile } = useProfile();
   const { session } = useAuthSession(cloud);
   const conns = useSupervisorConnections({ db, cloud });
+  const readOnly = useReadOnly();
 
   if (!profile) {
     return (
@@ -124,6 +126,10 @@ export function SupervisorsListScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
+                  if (readOnly) {
+                    navigation.navigate('Paywall');
+                    return;
+                  }
                   Alert.alert('Remove supervisor?', 'You can re-invite them later.', [
                     { text: 'Cancel', style: 'cancel' },
                     {

@@ -24,7 +24,7 @@ import { createEntriesService } from '../../src/services/entriesService';
 import { createSigningService } from '../../src/services/signingService';
 import { createExportService } from '../../src/services/exportService';
 import { createProfileService } from '../../src/services/profileService';
-import { createCloudBackupService } from '../../src/services/cloudBackupService';
+import { createCloudBackupService, getCloudBackupService, _resetCloudBackupServiceForTests } from '../../src/services/cloudBackupService';
 import { CloudSnapshot } from '../../src/types';
 
 beforeEach(async () => {
@@ -387,5 +387,26 @@ describe('cloudBackupService.backup — error handling', () => {
     });
     const r = await svc.backup();
     expect(r.kind).toBe('skipped_offline');
+  });
+});
+
+describe('getCloudBackupService — shared instance', () => {
+  beforeEach(() => {
+    _resetCloudBackupServiceForTests();
+  });
+
+  it('returns the same instance across calls so throttle/mutex are shared', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    const deps = {
+      db, cloud, fs, hash: testSha256,
+      exportService: createExportService(db),
+      clock: () => '2026-04-16T12:00:00.000Z',
+      appVersion: '1.0.0',
+    };
+    const a = getCloudBackupService(deps);
+    const b = getCloudBackupService(deps);
+    expect(a).toBe(b);
   });
 });

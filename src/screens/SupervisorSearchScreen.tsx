@@ -26,6 +26,7 @@ import { SegmentedControl } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSupervisorSearch } from '../hooks/useSupervisorSearch';
 import { useSupervisorConnections } from '../hooks/useSupervisorConnections';
+import { useReadOnly } from '../hooks/useSubscription';
 import { getClient } from '../db/initialize';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { SupervisorSearchKind, SupervisorSearchResult } from '../types';
@@ -61,6 +62,7 @@ export function SupervisorSearchScreen() {
   const cloud = useMemo(() => createSupabaseCloudClient(), []);
   const search = useSupervisorSearch(cloud);
   const conns = useSupervisorConnections({ db, cloud });
+  const readOnly = useReadOnly();
 
   const [mode, setMode] = useState<SupervisorSearchKind>('sprat_id');
   const [query, setQuery] = useState('');
@@ -72,6 +74,10 @@ export function SupervisorSearchScreen() {
   const runSearch = async () => {
     if (mode === 'email') {
       if (!trimmed) return;
+      if (readOnly) {
+        navigation.navigate('Paywall');
+        return;
+      }
       try {
         await conns.inviteByEmail.mutateAsync(trimmed);
         Alert.alert('Invite sent', `An invite was sent to ${trimmed}.`);
@@ -87,6 +93,10 @@ export function SupervisorSearchScreen() {
   };
 
   const sendRequest = async (result: SupervisorSearchResult) => {
+    if (readOnly) {
+      navigation.navigate('Paywall');
+      return;
+    }
     try {
       await conns.inviteByDirectoryResult.mutateAsync({
         result,
