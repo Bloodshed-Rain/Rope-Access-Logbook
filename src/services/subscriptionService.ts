@@ -45,7 +45,30 @@ export function deriveStatus(info: CustomerInfo): SubscriptionStatus {
   return 'unknown';
 }
 
+// Mock mode: set MOCK_SUBSCRIPTION=1 in the EAS env to bypass the RevenueCat
+// SDK entirely. The SDK's "test API key in release build" safety alert fires
+// inside Purchases.configure(); skipping that call (and stubbing every other
+// SDK method below) keeps the alert from triggering in preview builds while
+// still letting the paywall + downstream gated screens exercise the trialing
+// state. Never set this env var in the production EAS environment.
+const MOCK_PACKAGE = {
+  identifier: '$rc_monthly',
+  packageType: 'MONTHLY',
+  product: {
+    identifier: 'mock_pro_monthly',
+    priceString: '$2.99',
+    title: 'Logbook Pro (mock)',
+    description: 'Mocked package for paywall testing',
+    price: 2.99,
+    currencyCode: 'USD',
+  },
+  offeringIdentifier: 'default',
+  presentedOfferingContext: { offeringIdentifier: 'default' },
+} as unknown as PurchasesPackage;
+
 export function createSubscriptionService(db: DbClient): SubscriptionService {
+  const isMock = Constants.expoConfig?.extra?.mockSubscription === '1';
+
   async function syncStatusToDb(status: SubscriptionStatus): Promise<void> {
     try {
       await db.run('UPDATE profile SET subscription_status = ? WHERE 1=1', [status]);
@@ -58,6 +81,10 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
   // Used both as the public getStatus() body and inside purchase()'s
   // user-cancelled branch so no `this` reference is needed.
   async function resolveStatus(): Promise<SubscriptionStatus> {
+    if (isMock) {
+      await syncStatusToDb('trialing');
+      return 'trialing';
+    }
     try {
       const info = await Purchases.getCustomerInfo();
       const status = deriveStatus(info);
@@ -77,6 +104,10 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
 
   return {
     init() {
+      if (isMock) {
+        console.warn('[Sub] MOCK_SUBSCRIPTION=1 — RevenueCat SDK will not be configured');
+        return;
+      }
       const appleKey = Constants.expoConfig?.extra?.revenueCatAppleKey;
       const googleKey = Constants.expoConfig?.extra?.revenueCatGoogleKey;
 
@@ -94,6 +125,7 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async getTrialDaysRemaining() {
+      if (isMock) return 7;
       try {
         const info = await Purchases.getCustomerInfo();
         const status = deriveStatus(info);
@@ -109,6 +141,7 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async getRenewalDate() {
+      if (isMock) return null;
       try {
         const info = await Purchases.getCustomerInfo();
         const status = deriveStatus(info);
@@ -121,6 +154,7 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async getPackages() {
+      if (isMock) return [MOCK_PACKAGE];
       try {
         const offerings = await Purchases.getOfferings();
         if (offerings.current !== null && offerings.current.availablePackages.length !== 0) {
@@ -134,6 +168,10 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async purchase(pkg: PurchasesPackage) {
+      if (isMock) {
+        await syncStatusToDb('trialing');
+        return 'trialing';
+      }
       try {
         const { customerInfo } = await Purchases.purchasePackage(pkg);
         const status = deriveStatus(customerInfo);
@@ -149,6 +187,10 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async restore() {
+      if (isMock) {
+        await syncStatusToDb('trialing');
+        return 'trialing';
+      }
       try {
         const customerInfo = await Purchases.restorePurchases();
         const status = deriveStatus(customerInfo);
@@ -161,6 +203,10 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async identify(userId: string) {
+      if (isMock) {
+        await syncStatusToDb('trialing');
+        return 'trialing';
+      }
       try {
         const { customerInfo } = await Purchases.logIn(userId);
         const status = deriveStatus(customerInfo);
@@ -173,6 +219,10 @@ export function createSubscriptionService(db: DbClient): SubscriptionService {
     },
 
     async signOut() {
+      if (isMock) {
+        await syncStatusToDb('trialing');
+        return 'trialing';
+      }
       try {
         const customerInfo = await Purchases.logOut();
         const status = deriveStatus(customerInfo);

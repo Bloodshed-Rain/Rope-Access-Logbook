@@ -51,6 +51,7 @@ export default (): ExpoConfig => {
       // fingerprint consistent across environments where they may not be set.
       ...(revenueCatAppleKey ? { revenueCatAppleKey } : {}),
       ...(revenueCatGoogleKey ? { revenueCatGoogleKey } : {}),
+      mockSubscription: process.env.MOCK_SUBSCRIPTION,
       eas: {
         projectId: '86367272-4f69-486f-9baf-27583a16ea70',
       },
