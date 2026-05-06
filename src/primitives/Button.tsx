@@ -25,7 +25,7 @@ export function Button({
   textStyle,
   haptic,
 }: ButtonProps) {
-  const { colors, spacing, radii, borders, touchTarget } = useTheme();
+  const { colors, spacing, radii, borders, touchTarget, typography } = useTheme();
 
   const isPrimary = variant === 'primary';
   const isDanger = variant === 'danger';
@@ -105,7 +105,7 @@ export function Button({
           <Text
             style={[
               {
-                fontFamily: 'Michroma_400Regular',
+                fontFamily: typography.label.fontFamily,
                 fontSize: 11,
                 letterSpacing: 1.8,
                 textTransform: 'uppercase',

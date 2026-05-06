@@ -178,6 +178,14 @@ export function createSignRequestsService(
     );
     if (!cached) throw new Error('request_not_found_in_cache');
     const req = JSON.parse(cached.payload_json) as SignRequest;
+    // Fast-fail if the cached request is no longer pending (withdrawn,
+    // declined, expired, or already signed). The server would reject this
+    // anyway, but per the service-layer invariant model the service is
+    // the authority — don't compute a hash and post for a request whose
+    // local cache already says it's terminal.
+    if (req.status !== 'pending') {
+      throw new Error(`request_not_pending:${req.status}`);
+    }
     const entry = req.entry_payload as Entry;
     const entry_hash = await computeEntryHashFromPayload(entry, hash, 3);
     const png_bytes = Uint8Array.from(Buffer.from(args.png_base64, 'base64'));
@@ -199,6 +207,11 @@ export function createSignRequestsService(
 
   async function applyIncomingSignature(row: SignRequest): Promise<Signature> {
     if (row.status !== 'signed') throw new Error('not_signed');
+    // A signed request must carry an entry_hash. Persisting an empty hash
+    // creates a row that verifyIntegrity will perpetually flag as tampered
+    // with no recovery path. Refuse rather than write a guaranteed-failing
+    // signature out of thin air.
+    if (!row.entry_hash) throw new Error('signed_request_missing_entry_hash');
     const entry = row.entry_payload as Entry;
 
     // Idempotency: if a signature already exists for this entry, short-circuit.
@@ -245,7 +258,7 @@ export function createSignRequestsService(
           row.signed_at ?? now,
           row.signed_device_id ?? 'unknown',
           row.signed_gps_lat, row.signed_gps_lon,
-          row.entry_hash ?? '',
+          row.entry_hash,
           row.hash_version ?? 3,
           now,
         ],
@@ -397,7 +410,14 @@ export function createSignRequestsService(
       }
 
       if (currentUid && r.tech_user_id === currentUid && r.status === 'signed') {
-        await applyIncomingSignature(r);
+        // Localized try/catch so a single bad row (e.g. signed but missing
+        // entry_hash, which applyIncomingSignature now refuses outright)
+        // doesn't break the rest of the sync loop. The trade-off: the
+        // refused entry stays locked (`status='draft'`, lock set) with no
+        // UI path to recover. That should be near-zero in practice — the
+        // server only writes signed rows with an entry_hash — but if it
+        // does happen, the user would need to withdraw and re-send.
+        try { await applyIncomingSignature(r); } catch {}
       }
 
       if (

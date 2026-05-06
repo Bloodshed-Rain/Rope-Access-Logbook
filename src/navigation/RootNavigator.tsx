@@ -30,6 +30,7 @@ import { SignatureScreen } from '../screens/SignatureScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { MagicLinkWaitScreen } from '../screens/MagicLinkWaitScreen';
 import { CloudConflictScreen } from '../screens/CloudConflictScreen';
+import { CloudRestorePromptScreen } from '../screens/CloudRestorePromptScreen';
 import { SupervisorSearchScreen } from '../screens/SupervisorSearchScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { SignRequestDetailScreen } from '../screens/SignRequestDetailScreen';
@@ -59,6 +60,7 @@ export type RootStackParamList = {
   Auth: undefined;
   MagicLinkWait: { email: string };
   CloudConflict: undefined;
+  CloudRestorePrompt: undefined;
   SupervisorSearch: undefined;
   SupervisorsList: undefined;
   SignRequestDetail: { requestId: string };
@@ -187,6 +189,22 @@ export function RootNavigator() {
     return backupStatus?.last_uploaded_backup_id !== preview.data.backup_id;
   }, [session, profile, localEntries, preview.data, backupStatus]);
 
+  // Scenario B per cloud-backup spec §6.3 / §6.5: signed-in, local has no
+  // entries, cloud has data. Without this gate the next backup trigger
+  // silently overwrites the populated cloud snapshot with the empty local
+  // state — data loss for any tech who installs on a new device or signs
+  // back into an existing account from a fresh install.
+  const restorePrompt = React.useMemo(() => {
+    if (!session || !profile || !preview.data) return false;
+    if (!preview.data.has_cloud_data) return false;
+    // While `useEntries` is loading, `localEntries === undefined`. Treating
+    // that as "empty" would briefly mount the restore screen for a user
+    // whose local logbook is populated, before the navigator re-renders
+    // into CloudConflict once the query settles. Wait for resolution.
+    if (localEntries === undefined) return false;
+    return localEntries.length === 0;
+  }, [session, profile, localEntries, preview.data]);
+
   if (isLoading) return <LoadingSpinner fullScreen label="Loading profile" />;
   if (profile && session === null && sessionLoading) {
     return <LoadingSpinner fullScreen label="Checking cloud session" />;
@@ -245,6 +263,10 @@ export function RootNavigator() {
                 localLastBackupAt={backupStatus?.last_cloud_backup_at ?? null}
               />
             )}
+          </Stack.Screen>
+        ) : restorePrompt ? (
+          <Stack.Screen name="CloudRestorePrompt" options={{ headerShown: false, gestureEnabled: false }}>
+            {() => <CloudRestorePromptScreen db={getClient()} />}
           </Stack.Screen>
         ) : (
           <>

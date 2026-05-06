@@ -30,7 +30,7 @@ export function SectionHeader({ label, num, accent: _accent = 'orange', right }:
         {num && (
           <Text
             style={{
-              fontFamily: 'JetBrainsMono_700Bold',
+              fontFamily: typography.title2.fontFamily,
               fontSize: 10,
               letterSpacing: 0.5,
               color: colors.accentPrimary,

@@ -9,7 +9,7 @@ export interface ChipProps {
 }
 
 export function Chip({ label, selected, onPress }: ChipProps) {
-  const { colors, borders } = useTheme();
+  const { colors, borders, typography } = useTheme();
 
   return (
     <Pressable
@@ -26,7 +26,7 @@ export function Chip({ label, selected, onPress }: ChipProps) {
     >
       <Text
         style={{
-          fontFamily: 'Michroma_400Regular',
+          fontFamily: typography.label.fontFamily,
           fontSize: 9,
           letterSpacing: 1.4,
           textTransform: 'uppercase',

@@ -31,6 +31,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUpdateProfile } from '../hooks/useProfile';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { useSignRequests } from '../hooks/useSignRequests';
+import { useReadOnly } from '../hooks/useSubscription';
 import { sha256 } from '../utils/hash';
 import { RootStackParamList } from '../navigation/RootNavigator';
 
@@ -157,6 +158,12 @@ export function SettingsSheet({
   const updateProfile = useUpdateProfile();
   const { session } = useAuthSession(cloud);
   const signRequests = useSignRequests({ db, cloud, fs, hash: sha256 });
+  const readOnly = useReadOnly();
+
+  const goPaywall = () => {
+    onClose();
+    navigation.navigate('Paywall');
+  };
 
   const [signingOut, setSigningOut] = useState(false);
   const [deleteStep, setDeleteStep] = useState<'idle' | 'type' | 'deleting'>('idle');
@@ -210,6 +217,11 @@ export function SettingsSheet({
 
   const confirmEnableCapability = async () => {
     if (!certInput.trim()) return;
+    if (readOnly) {
+      setShowEnableForm(false);
+      goPaywall();
+      return;
+    }
     try {
       await profileService.enableSupervisorCapability(
         certInput.trim(),
@@ -227,6 +239,10 @@ export function SettingsSheet({
   };
 
   const handleCapabilityToggle = (next: boolean) => {
+    if (readOnly) {
+      goPaywall();
+      return;
+    }
     if (next) {
       requestEnableCapability();
       return;
@@ -278,6 +294,10 @@ export function SettingsSheet({
 
   const handleDirectoryVisibleToggle = async (next: boolean) => {
     if (!profile.supervisor_cert_number) return;
+    if (readOnly) {
+      goPaywall();
+      return;
+    }
     try {
       await profileService.setSupervisorDirectoryVisible(
         next,
@@ -401,6 +421,7 @@ export function SettingsSheet({
                 value={capabilityOn}
                 onValueChange={handleCapabilityToggle}
                 accessibilityLabel="Supervisor capability"
+                disabled={readOnly}
               />
             }
           />
@@ -435,6 +456,7 @@ export function SettingsSheet({
                   value={!!profile.supervisor_directory_visible}
                   onValueChange={handleDirectoryVisibleToggle}
                   accessibilityLabel="Directory visibility"
+                  disabled={readOnly}
                 />
               }
             />
@@ -485,7 +507,7 @@ export function SettingsSheet({
               <Button
                 title="Enable supervising"
                 onPress={confirmEnableCapability}
-                disabled={!certInput.trim()}
+                disabled={!certInput.trim() || readOnly}
               />
               <Button title="Cancel" variant="secondary" onPress={cancelEnableForm} />
             </View>

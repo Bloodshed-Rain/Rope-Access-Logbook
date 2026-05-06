@@ -37,7 +37,7 @@ export function EmptyState({ title, subtitle, actionLabel, onAction, caption }: 
       >
         <Text
           style={{
-            fontFamily: 'Michroma_400Regular',
+            fontFamily: typography.title1.fontFamily,
             fontSize: 22,
             color: colors.accentPrimary,
           }}

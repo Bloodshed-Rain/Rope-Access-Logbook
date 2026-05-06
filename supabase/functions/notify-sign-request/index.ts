@@ -24,7 +24,11 @@ serve(async (req) => {
     if (userErr || !userData.user) return new Response('unauthenticated', { status: 401 });
     const callerId = userData.user.id;
 
-    const { type, record, old_record } = await req.json();
+    // old_record from the client is not trusted for routing — a party can
+    // pass any old_record.status to fire spurious push notifications at the
+    // counterparty. Routing decisions below depend only on the authoritative
+    // row fetched with service-role and on `type`.
+    const { type, record } = await req.json();
     if (!record?.id || !type) {
       return new Response(JSON.stringify({ error: 'bad_payload' }), { status: 400 });
     }
@@ -49,11 +53,15 @@ serve(async (req) => {
     let title = '';
     let body = '';
 
+    // Routing is derived from authoritative.status alone. Each terminal
+    // status uniquely identifies which party caused the transition (signed
+    // and declined come from the supervisor; withdrawn comes from the tech),
+    // so the recipient is the *other* party.
     if (type === 'INSERT' && authoritative.status === 'pending') {
       recipientId = authoritative.supervisor_user_id;
       title = 'New sign request';
       body = 'A technician has sent you a logbook entry to sign.';
-    } else if (type === 'UPDATE' && authoritative.status !== old_record?.status) {
+    } else if (type === 'UPDATE') {
       if (authoritative.status === 'signed') {
         recipientId = authoritative.tech_user_id;
         title = 'Entry signed';

@@ -14,7 +14,7 @@ const STATUS_LABELS: Record<EntryStatus, string> = {
 };
 
 export function Badge({ status }: BadgeProps) {
-  const { colors, borders } = useTheme();
+  const { colors, borders, typography } = useTheme();
 
   let bg: string = 'transparent';
   let text: string = colors.textSecondary;
@@ -43,7 +43,7 @@ export function Badge({ status }: BadgeProps) {
     >
       <Text
         style={{
-          fontFamily: 'Michroma_400Regular',
+          fontFamily: typography.label.fontFamily,
           fontSize: 8.5,
           letterSpacing: 1.4,
           textTransform: 'uppercase',

@@ -16,8 +16,10 @@
    supabase functions deploy delete-account          --no-verify-jwt
    supabase functions deploy cleanup-request-assets  --no-verify-jwt
    supabase functions deploy notify-sign-request     --no-verify-jwt
+   supabase functions deploy invite-supervisor
+   supabase functions deploy search-supervisors
    ```
-   (`--no-verify-jwt` because each function verifies the caller manually inside its handler.)
+   The first three deploy with `--no-verify-jwt` because they need to read the auth header and verify it manually (e.g. `delete-account` derives `user_id` from the JWT to delete the caller's own account, never accepting it as a parameter). `invite-supervisor` and `search-supervisors` deploy without that flag and rely on Supabase's standard JWT verification.
 7. Set secrets for the functions:
    ```bash
    supabase secrets set \
