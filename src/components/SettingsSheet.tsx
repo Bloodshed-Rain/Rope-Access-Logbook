@@ -57,7 +57,7 @@ function Section({ label, children }: SectionProps) {
         style={[
           typography.label,
           {
-            color: colors.textSecondary,
+            color: colors.textPrimary,
             paddingHorizontal: spacing.base,
             paddingVertical: spacing.sm,
             textTransform: 'uppercase',
@@ -115,13 +115,13 @@ function SettingsRow({
       <View style={{ flex: 1 }}>
         <Text style={[typography.body, { color: titleColor }]}>{title}</Text>
         {subtitle && (
-          <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
+          <Text style={[typography.caption, { color: colors.textPrimary, marginTop: 2 }]}>
             {subtitle}
           </Text>
         )}
       </View>
       {right}
-      {showChevron && <ChevronRight size={18} color={colors.textSecondary} />}
+      {showChevron && <ChevronRight size={18} color={colors.textPrimary} />}
     </View>
   );
 
@@ -435,7 +435,7 @@ export function SettingsSheet({
                 borderBottomColor: colors.divider,
               }}
             >
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+              <Text style={[typography.caption, { color: colors.textPrimary }]}>
                 SPRAT Level III cert
               </Text>
               <Text style={[typography.body, { color: colors.textPrimary, marginTop: 2 }]}>
@@ -492,7 +492,7 @@ export function SettingsSheet({
                   <Text style={[typography.body, { color: colors.textPrimary }]}>
                     List me in the supervisor directory
                   </Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  <Text style={[typography.caption, { color: colors.textPrimary }]}>
                     Allows techs to find you by name or cert number
                   </Text>
                 </View>
