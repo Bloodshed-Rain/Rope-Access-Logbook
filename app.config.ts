@@ -34,13 +34,13 @@ export default (): ExpoConfig => {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#FAF7F2',
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: 'com.ropeaccess.logbook',
     },
-    splash: { image: './assets/splash-icon.png', resizeMode: 'contain', backgroundColor: '#003366' },
+    splash: { image: './assets/splash-icon.png', resizeMode: 'contain', backgroundColor: '#FAF7F2' },
     assetBundlePatterns: ['**/*'],
     web: { favicon: './assets/favicon.png' },
     plugins: ['expo-sqlite', 'expo-web-browser', '@react-native-community/datetimepicker', 'expo-notifications', 'expo-apple-authentication'],
