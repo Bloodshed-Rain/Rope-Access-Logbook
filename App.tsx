@@ -24,6 +24,8 @@ import { createExportService } from './src/services/exportService';
 import { createSubscriptionService } from './src/services/subscriptionService';
 import { createNotificationCenterService } from './src/services/notificationCenterService';
 import { createProfileService } from './src/services/profileService';
+import { createGearService } from './src/services/gearService';
+import { createGearCatalogService } from './src/services/gearCatalogService';
 import { sha256 } from './src/utils/hash';
 import { APP_VERSION } from './src/constants';
 
@@ -147,6 +149,28 @@ export default function App() {
             });
           }
         }
+
+        // Gear inspections: surface anything due within 30 days, plus due
+        // today / overdue, into the bell. dedupeKey: gearId so multiple
+        // items due on the same day each get their own row.
+        try {
+          const gearSvc = createGearService(db);
+          const dueSoon = await gearSvc.listDue(30);
+          for (const item of dueSoon) {
+            if (!item.next_inspection_due) continue;
+            const dueMs = new Date(item.next_inspection_due + 'T00:00:00Z').getTime();
+            const daysUntil = Math.floor((dueMs - today.getTime()) / (24 * 60 * 60 * 1000));
+            const kind = daysUntil <= 0 ? 'gear_inspection_0d' : 'gear_inspection_30d';
+            await notif.record({
+              kind,
+              payload: { gearId: item.id, name: item.name, dueOn: item.next_inspection_due, daysUntil },
+              dedupeOnDay: true,
+              dedupeKey: item.id,
+            });
+          }
+        } catch {
+          /* best-effort, silent */
+        }
       } catch {
         /* best-effort, silent */
       }
@@ -163,6 +187,10 @@ export default function App() {
             await conns.sync();
             const signReqs = createSignRequestsService(db, cloud, fs, sha256);
             await signReqs.sync();
+            // Gear catalog: 12h consideration throttle + 7d staleness gate
+            // inside the service, so this is at most one network call per week.
+            const catalogSvc = createGearCatalogService(cloud);
+            await catalogSvc.refreshIfStale();
           } catch {
             // best-effort, silent
           }

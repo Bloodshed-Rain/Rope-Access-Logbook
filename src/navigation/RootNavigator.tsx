@@ -43,6 +43,11 @@ import { EditCertsScreen } from '../screens/EditCertsScreen';
 import { EditAvatarScreen } from '../screens/EditAvatarScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { TermsOfServiceScreen } from '../screens/TermsOfServiceScreen';
+import { GearScreen } from '../screens/GearScreen';
+import { GearDetailScreen } from '../screens/GearDetailScreen';
+import { AddGearScreen } from '../screens/AddGearScreen';
+import { EditGearScreen } from '../screens/EditGearScreen';
+import { LogInspectionScreen } from '../screens/LogInspectionScreen';
 import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { createSigningService } from '../services/signingService';
@@ -74,6 +79,11 @@ export type RootStackParamList = {
   EditAvatar: undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
+  GearList: undefined;
+  GearDetail: { gearId: string };
+  AddGear: undefined;
+  EditGear: { gearId: string };
+  LogInspection: { gearId: string };
 };
 
 export type TabParamList = {
@@ -319,6 +329,11 @@ export function RootNavigator() {
             <Stack.Screen name="EditAvatar" component={EditAvatarScreen} options={{ title: 'Edit avatar' }} />
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ title: 'Privacy policy' }} />
             <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ title: 'Terms of service' }} />
+            <Stack.Screen name="GearList" component={GearScreen} options={{ title: 'Gear' }} />
+            <Stack.Screen name="GearDetail" component={GearDetailScreen} options={{ title: 'Gear detail' }} />
+            <Stack.Screen name="AddGear" component={AddGearScreen} options={{ title: 'Add gear' }} />
+            <Stack.Screen name="EditGear" component={EditGearScreen} options={{ title: 'Edit gear' }} />
+            <Stack.Screen name="LogInspection" component={LogInspectionScreen} options={{ title: 'Log inspection' }} />
           </>
         )}
       </Stack.Navigator>

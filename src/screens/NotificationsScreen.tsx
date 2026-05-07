@@ -25,6 +25,7 @@ import {
   Inbox as InboxIcon,
   TrendingUp,
   Undo2,
+  Wrench,
   XCircle,
 } from 'lucide-react-native';
 import { Screen, LoadingSpinner } from '../primitives';
@@ -128,6 +129,25 @@ function metaForKind(item: NotificationRow): KindMeta {
         Icon: CloudOff,
         iconColor: 'statusWarn',
       };
+    case 'gear_inspection_30d': {
+      const name = typeof p.name === 'string' ? p.name : 'A gear item';
+      const dueOn = typeof p.dueOn === 'string' ? p.dueOn : null;
+      return {
+        title: 'Gear inspection due soon',
+        body: dueOn ? `${name} is due ${dueOn}` : `${name} is due for inspection`,
+        Icon: Wrench,
+        iconColor: 'statusWarn',
+      };
+    }
+    case 'gear_inspection_0d': {
+      const name = typeof p.name === 'string' ? p.name : 'A gear item';
+      return {
+        title: 'Gear inspection due today',
+        body: `${name} — don't use it on rope until it's been inspected`,
+        Icon: Wrench,
+        iconColor: 'statusErr',
+      };
+    }
     default:
       return {
         title: String(item.kind),
@@ -206,6 +226,12 @@ export function NotificationsScreen() {
       case 'backup_stale':
         navigation.navigate('Main', { screen: 'Me' });
         return;
+      case 'gear_inspection_30d':
+      case 'gear_inspection_0d': {
+        const gearId = typeof p.gearId === 'string' ? p.gearId : null;
+        if (gearId) navigation.navigate('GearDetail', { gearId });
+        return;
+      }
     }
   }, [navigation]);
 

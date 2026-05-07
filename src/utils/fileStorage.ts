@@ -47,6 +47,28 @@ export async function saveCardPhoto(sourceUri: string): Promise<string> {
 // Mirrors saveCardPhoto: copies the picked / shot image into the logbook
 // avatars dir under a deterministic name. Suffixed with a timestamp so the
 // same file path doesn't get cached by <Image> after the user re-picks.
+// Gear photo: deterministic filename under PHOTOS_DIR so the on-device path
+// matches the cloud storage-key convention (`assets/gearphoto_{id}.{ext}`),
+// the way entry photos do. Lets the same path round-trip through restore
+// without diverging from gear.photo_path.
+export async function saveGearPhoto(sourceUri: string, gearId: string): Promise<string> {
+  await ensureDir(PHOTOS_DIR);
+  const ext = sourceUri.split('.').pop() || 'jpg';
+  const destPath = `${PHOTOS_DIR}gearphoto_${gearId}.${ext}`;
+  await FileSystem.copyAsync({ from: sourceUri, to: destPath });
+  return destPath;
+}
+
+// Inspection-cert photo: same deterministic-naming pattern as gear photos,
+// keyed by inspection id rather than gear id.
+export async function saveInspectionCertPhoto(sourceUri: string, inspectionId: string): Promise<string> {
+  await ensureDir(PHOTOS_DIR);
+  const ext = sourceUri.split('.').pop() || 'jpg';
+  const destPath = `${PHOTOS_DIR}inspcert_${inspectionId}.${ext}`;
+  await FileSystem.copyAsync({ from: sourceUri, to: destPath });
+  return destPath;
+}
+
 export async function saveAvatarPhoto(sourceUri: string): Promise<string> {
   await ensureDir(AVATARS_DIR);
   const ext = sourceUri.split('.').pop() || 'jpg';

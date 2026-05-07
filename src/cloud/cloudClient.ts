@@ -1,6 +1,7 @@
 // src/cloud/cloudClient.ts
 import {
   AuthSession,
+  GearCatalogEntry,
   SupervisorConnection,
   SignRequest,
   SupervisorSearchKind,
@@ -88,6 +89,9 @@ export interface CloudClient {
   subscribeSignRequests(callback: (row: SignRequest) => void): () => void;
   downloadSignRequestAsset(bucketKey: string): Promise<Uint8Array>;
   cleanupRequestAssets(requestId: string): Promise<void>;
+
+  // Gear catalog (autocomplete only — public-readable, no client writes)
+  listGearCatalog(): Promise<GearCatalogEntry[]>;
 
   // Push Notifications
   registerPushToken(token: string): Promise<void>;

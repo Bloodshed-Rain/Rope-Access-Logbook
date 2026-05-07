@@ -582,6 +582,11 @@ export function MeScreen() {
               disabled={backup.isPending}
             />
           )}
+          <Button
+            title="Manage gear"
+            variant="secondary"
+            onPress={() => navigation.navigate('GearList')}
+          />
         </View>
 
         {/* Subscription strip — only when status is meaningful */}

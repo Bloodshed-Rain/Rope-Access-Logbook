@@ -26,6 +26,7 @@ import { useEntries } from '../hooks/useEntries';
 import { useSignRequests } from '../hooks/useSignRequests';
 import { useTodayHours } from '../hooks/useTodayHours';
 import { useNotificationCenter } from '../hooks/useNotificationCenter';
+import { useDueGear } from '../hooks/useGear';
 import { useReadOnly } from '../hooks/useSubscription';
 import {
   useCertProgress,
@@ -126,6 +127,11 @@ export function DashboardScreen() {
       !e.pending_sign_request_id &&
       entryRequiredFieldsFilled(e),
   ).length;
+
+  // Gear due in next 30 days — surfaces a Dashboard card only when non-zero
+  // so the screen stays calm for users with no pending inspections.
+  const { data: dueGear } = useDueGear(30);
+  const dueGearCount = dueGear?.length ?? 0;
 
   // Pull-to-refresh: invalidate React Query keys whose queryFn already calls
   // service.sync() under the hood. Cheaper than re-instantiating services
@@ -360,6 +366,16 @@ export function DashboardScreen() {
                 params: { filter: 'needs_signature' },
               })
             }
+          />
+        )}
+
+        {/* Gear due for inspection — appears only when there's something to act on. */}
+        {(dueGearCount ?? 0) > 0 && (
+          <StatCard
+            title="Gear inspection due"
+            big={`${dueGearCount}`}
+            caption={dueGearCount === 1 ? 'item within 30 days' : 'items within 30 days'}
+            onPress={() => navigation.navigate('GearList')}
           />
         )}
 

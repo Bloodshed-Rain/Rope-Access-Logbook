@@ -128,4 +128,41 @@ export const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS idx_notifications_unread
     ON notifications(read_at) WHERE read_at IS NULL;
+
+  CREATE TABLE IF NOT EXISTS gear (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL CHECK (category IN (
+      'harness','helmet','rope','lanyard','sling',
+      'descender','ascender','carabiner','pulley','other'
+    )),
+    manufacturer TEXT,
+    model TEXT,
+    serial_number TEXT,
+    manufacture_date TEXT,
+    first_use_date TEXT,
+    retired_at TEXT,
+    retirement_reason TEXT,
+    inspection_interval_months INTEGER NOT NULL DEFAULT 6,
+    next_inspection_due TEXT,
+    photo_path TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS gear_inspections (
+    id TEXT PRIMARY KEY,
+    gear_id TEXT NOT NULL REFERENCES gear(id),
+    inspected_on TEXT NOT NULL,
+    result TEXT NOT NULL CHECK (result IN ('pass','pass_with_concerns','fail')),
+    inspector_name TEXT,
+    notes TEXT,
+    cert_photo_path TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_gear_inspections_gear ON gear_inspections(gear_id);
+  -- Partial index: lookups are always for active items due soon, never retired.
+  CREATE INDEX IF NOT EXISTS idx_gear_due ON gear(next_inspection_due) WHERE retired_at IS NULL;
 `;

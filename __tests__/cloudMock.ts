@@ -2,6 +2,7 @@
 import { CloudClient, AuthProvider } from '../src/cloud/cloudClient';
 import {
   AuthSession,
+  GearCatalogEntry,
   SupervisorConnection,
   SignRequest,
   SupervisorDirectoryEntry,
@@ -35,6 +36,8 @@ export interface MockCloudClient extends CloudClient {
   setDirectoryEntry(entry: SupervisorDirectoryEntry): void;
   /** Test-only: switch the active session. Used by round-trip tests that act as tech then supervisor. */
   actAs(session: AuthSession): void;
+  /** Test-only: seed catalog rows. */
+  setGearCatalog(items: GearCatalogEntry[]): void;
 }
 
 export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudClient {
@@ -58,6 +61,7 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
   const connections = new Map<string, MockConnRow>();
   const requests = new Map<string, MockReqRow>();
   const directory = new Map<string, SupervisorDirectoryEntry>();
+  const gearCatalog: GearCatalogEntry[] = [];
   const connListeners = new Set<(r: SupervisorConnection) => void>();
   const reqListeners = new Set<(r: SignRequest) => void>();
 
@@ -527,6 +531,16 @@ export function createMockCloudClient(opts: MockCloudOptions = {}): MockCloudCli
 
     async notifySignRequest() {
       // No-op in tests: real push dispatch is exercised via manual QA only.
+    },
+
+    async listGearCatalog() {
+      if (!online) throw new Error('offline');
+      return gearCatalog.map((r) => ({ ...r }));
+    },
+
+    setGearCatalog(items: GearCatalogEntry[]) {
+      gearCatalog.length = 0;
+      gearCatalog.push(...items.map((r) => ({ ...r })));
     },
   };
 }

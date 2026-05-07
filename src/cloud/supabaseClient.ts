@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import { CloudClient, AuthProvider } from './cloudClient';
 import {
   AuthSession as AppAuthSession,
+  GearCatalogEntry,
   SupervisorConnection,
   SignRequest,
 } from '../types';
@@ -551,6 +552,16 @@ export function createSupabaseCloudClient(): CloudClient {
           body: { type, record, old_record: oldRecord },
         });
       } catch {}
+    },
+
+    async listGearCatalog(): Promise<GearCatalogEntry[]> {
+      const { data, error } = await sb
+        .from('gear_catalog')
+        .select('id, manufacturer, model, category')
+        .order('manufacturer', { ascending: true })
+        .order('model', { ascending: true });
+      if (error) throw new Error(`gear_catalog_list:${error.message}`);
+      return (data ?? []) as GearCatalogEntry[];
     },
   };
 }

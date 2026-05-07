@@ -231,6 +231,12 @@ export interface CloudSnapshot extends JsonBackup {
   backup_id: string;
   binary_manifest: BinaryManifest;
   photos_included: boolean;
+  // Added at cloud_schema_version 3. Optional on the type so v1/v2 snapshots
+  // (legacy clients, restore-from-old-cloud) parse cleanly. The new tables
+  // come back empty when restoring from an older snapshot; the spec calls
+  // this out as the intended pre-feature → feature path.
+  gear?: GearItem[];
+  gear_inspections?: GearInspection[];
 }
 
 export interface AuthSession {
@@ -331,3 +337,91 @@ export interface SupervisorSearchResult {
 
 export type HashFn = (input: string) => Promise<string>;
 export type UuidFn = () => string;
+
+// --- Equipment inventory ---
+
+export type GearCategory =
+  | 'harness'
+  | 'helmet'
+  | 'rope'
+  | 'lanyard'
+  | 'sling'
+  | 'descender'
+  | 'ascender'
+  | 'carabiner'
+  | 'pulley'
+  | 'other';
+
+export type GearInspectionResult = 'pass' | 'pass_with_concerns' | 'fail';
+
+export interface GearItem {
+  id: string;
+  name: string;
+  category: GearCategory;
+  manufacturer: string | null;
+  model: string | null;
+  serial_number: string | null;
+  manufacture_date: string | null;
+  first_use_date: string | null;
+  retired_at: string | null;
+  retirement_reason: string | null;
+  inspection_interval_months: number;
+  next_inspection_due: string | null;
+  photo_path: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GearInspection {
+  id: string;
+  gear_id: string;
+  inspected_on: string;
+  result: GearInspectionResult;
+  inspector_name: string | null;
+  notes: string | null;
+  cert_photo_path: string | null;
+  created_at: string;
+}
+
+export interface GearCatalogEntry {
+  id: string;
+  manufacturer: string;
+  model: string;
+  category: GearCategory;
+}
+
+export interface CreateGearInput {
+  name?: string;
+  category: GearCategory;
+  manufacturer?: string | null;
+  model?: string | null;
+  serial_number?: string | null;
+  manufacture_date?: string | null;
+  first_use_date?: string | null;
+  inspection_interval_months?: number;
+  photo_path?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateGearInput {
+  name?: string;
+  category?: GearCategory;
+  manufacturer?: string | null;
+  model?: string | null;
+  serial_number?: string | null;
+  manufacture_date?: string | null;
+  first_use_date?: string | null;
+  inspection_interval_months?: number;
+  photo_path?: string | null;
+  notes?: string | null;
+}
+
+export interface LogInspectionInput {
+  gear_id: string;
+  inspected_on?: string;
+  result: GearInspectionResult;
+  inspector_name?: string | null;
+  notes?: string | null;
+  cert_photo_path?: string | null;
+}

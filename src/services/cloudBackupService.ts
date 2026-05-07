@@ -4,7 +4,7 @@ import { CloudClient } from '../cloud/cloudClient';
 import { FileSystemAbstraction } from '../cloud/fsAbstraction';
 import {
   BackupResult, BinaryManifest, BinaryManifestEntry, CloudSnapshot,
-  HashFn, Profile, Signature, Entry,
+  GearInspection, GearItem, HashFn, Profile, Signature, Entry,
 } from '../types';
 import { createExportService } from './exportService';
 import { normalizeAppPath } from '../utils/paths';
@@ -97,6 +97,38 @@ export function createCloudBackupService(deps: CloudBackupDeps) {
       }
     }
 
+    // Gear inventory + inspections (cloud_schema_version 3). Read directly
+    // from the DB; exportService stays JsonBackup-shaped so the local JSON
+    // export doesn't carry gear (paper-equivalent only).
+    const gearRows = await db.getAll<GearItem>('SELECT * FROM gear ORDER BY created_at ASC');
+    const inspectionRows = await db.getAll<GearInspection>('SELECT * FROM gear_inspections ORDER BY created_at ASC');
+
+    if (photosIncluded) {
+      for (const g of gearRows) {
+        if (!g.photo_path) continue;
+        const ext = g.photo_path.split('.').pop() ?? 'jpg';
+        const ref = await buildAssetRef(g.photo_path, `assets/gearphoto_${g.id}.${ext}`);
+        binary_manifest[ref.key] = ref.entry;
+        assetsToUpload.push({ key: ref.key, bytes: ref.bytes });
+      }
+      for (const insp of inspectionRows) {
+        if (!insp.cert_photo_path) continue;
+        const ext = insp.cert_photo_path.split('.').pop() ?? 'jpg';
+        const ref = await buildAssetRef(insp.cert_photo_path, `assets/inspcert_${insp.id}.${ext}`);
+        binary_manifest[ref.key] = ref.entry;
+        assetsToUpload.push({ key: ref.key, bytes: ref.bytes });
+      }
+    }
+
+    const gearForSnapshot: GearItem[] = gearRows.map((g) => ({
+      ...g,
+      photo_path: g.photo_path ? normalizeAppPath(g.photo_path) : null,
+    }));
+    const inspectionsForSnapshot: GearInspection[] = inspectionRows.map((i) => ({
+      ...i,
+      cert_photo_path: i.cert_photo_path ? normalizeAppPath(i.cert_photo_path) : null,
+    }));
+
     const profileForSnapshot: Profile = {
       ...base.profile,
       sprat_card_photo_path: base.profile.sprat_card_photo_path
@@ -118,10 +150,12 @@ export function createCloudBackupService(deps: CloudBackupDeps) {
       profile: profileForSnapshot,
       entries: entriesForSnapshot,
       signatures: signaturesForSnapshot,
-      cloud_schema_version: 2,
+      cloud_schema_version: 3,
       backup_id,
       binary_manifest,
       photos_included: photosIncluded,
+      gear: gearForSnapshot,
+      gear_inspections: inspectionsForSnapshot,
     };
 
     const cached = await loadCachedManifest();

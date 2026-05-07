@@ -1,0 +1,3837 @@
+[
+  {
+    "manufacturer": "Beal",
+    "model": "Hold Up Chest Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Air Hook Large",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Air Smith 3-Matic",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Be Quick",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Be Safe",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "O'Light 3-Matic",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Air Stop",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Air Top",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Dragon",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Dragon Top",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Evacuation Triangle",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Hero Pro",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Hero Sit",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Offshore",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Shaolin",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Styxbelt",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Styxfast",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Hard Rock Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Dynaclip",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Dynapro 8",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Dynapro Air Hook",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Dynapro Air V Hook",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Ergo Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Mobile Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Air Leash",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Edge Guard",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Escaper",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Genius Tool Bucket",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Glass-Bucket",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Hot Protector",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Long Tool Bucket",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Monitor Mobile Fall Arrester",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Pinch",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Super Leash",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Workseat",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Access Unicore 10.5mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Aider Tactic 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Antipodes 11.5mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Australis",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Baobab",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Berlin 9.8 Unicore",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Contract",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Hotline 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Industrie 10.5mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Industrie 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Pro Water 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Raider Tactic 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Beal",
+    "model": "Rescue VLS",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Assaultline",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "BlueWater II Plus",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Canyon Pro",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Canyon Pro DS",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Canyonator 9.2mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "DGR",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Lightning Pro",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Pro-G Static",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Safeline",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "Spec-Static",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "BlueWater",
+    "model": "NFPA Sewn Eye Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ProSteel Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ProTech Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "SwivaBiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "CLUTCH",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "LEVR",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "MPD",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ProSeries Rescue 8",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ATOM Access",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ATOM Access Plus",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ATOM Chest Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ATOM Global",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ATOM Global Quick",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ATOM Rescue",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Fulcrum Escape Belt",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Outback Convertible",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Dynamic Bullnose Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Dynamic I-Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "BOOST Foot Loop",
+    "category": "other"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "CAPTO",
+    "category": "other"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Pick-Off Strap",
+    "category": "other"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "SQUID",
+    "category": "other"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "AZTEK ProSeries",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "CSR2 Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "ProSwivel Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "SWIVO",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Static-Pro Lifeline",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "T95",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Compact Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "SL Anchor Strap",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "CMC",
+    "model": "Variable Anchor Strap",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Saflok Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Rollgliss Bucket Truck Rescue",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Rollgliss R250",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Rollgliss R350",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Delta",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "ExoFit NEX",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "ExoFit NEX Rope Access Rescue",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "ExoFit X100",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "ExoFit X200",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "ExoFit X300",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Nano-Lok",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Nano-Lok Edge",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Sealed-Blok",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Shockwave 2",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Talon",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Ultra-Lok",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "Lad-Saf X3 Cable Sleeve",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DBI-SALA",
+    "model": "SecuraSpan Horizontal Lifeline",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Aero",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Alpha Steel",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Belay Master 2",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Boa",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Boa HMS Locksafe",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Ceros",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Director",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Equal D Steel",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Klettersteig",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Mamba Screwgate",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Oval Steel",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "PerfectO",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Phantom",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Revolver",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Revolver Rig",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Revolver Wire Gate",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Rhino HMS",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Rhino HMS Locksafe",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Sentinel",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Shadow HMS",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Shadow Locking",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Spectre 2",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Ultra D",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Ultra O",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "XSRE",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Pivot",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Captain",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Kinisi",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Kinisi Max",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Fidus Thimble Loop",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Nomad Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Axis Swivel",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Bat Plate",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Compact Shackle",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Director Swivel Boss",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Director Yoke",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Focus",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Mega Vault",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Micro Vault",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Porter Bag",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Rigging Hub",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Tool Bag",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Vault",
+    "category": "other"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Buddy",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Hitch Climber Eccentric",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Hitch Climber V2",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Impact Block Small",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Pinto 2",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Pinto Rig",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Propel",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Rigger Becket",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Triple Attachment Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Dynatec Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "DMM",
+    "model": "Tech Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Foot Cruiser",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Tree Cruiser",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Axiom Pulley Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "DSG Triton",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "HMS Bulletproof",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "HMS Magnum Triple",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "HMS Strike Screw",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "HMS Strike Slider",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "HMS Strike Triple",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Oval Power",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Oval Power 2500 Screw",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Oval Power 2500 Triple",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Permalock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Pure Screw",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Pure Slider",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Pure Triple",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Safelock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Eddy",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Hannibal",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Mega Jul",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Megawatt",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Nano Jul",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Flex Lite",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Flex Pro",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Flex Pro Plus",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Helios",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Treeraptor",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Treerex Bungee Chest",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Treerex II",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Vector Chest X",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Vector Waist Belt",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Vertic Triple Lock",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Vertic Triple Lock Black",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Zodiac 3R",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Zodiac Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Cable Kit",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Ombilix Adjust",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Switch Adjust",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Switch Double Adjust",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Switch Pro Double Adjust",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Fuse",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Ohm II",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Professional Rope Protector",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Talon Tree Crampon",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Rail Double",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Spoc",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Performance Static 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Rap Line II",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Super Static",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Edelrid",
+    "model": "Swift 48 Pro Dry 8.9mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Twist Lock Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Carbon FT-One Fit Tower",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Carbon FT-One Tower",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "ComforTech 6D Tower",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Contractor Universal",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "FlowTech LTE",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "FT-Weld",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Journeyman Flex Steel",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Roughneck",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Tradesman Plus",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "DuraTech SRD",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "ViewPack Shock-Absorbing Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Hinged Trailing Rope Grab",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Manual Rope Grab",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Cable Sling Anchor",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Falltech",
+    "model": "Web Pass-Through Anchor Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "B7-Comfort",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "Defender",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "Series 1",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "Series 3",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "Series 5",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "CR3-Edge SRL",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "Diablo SRL",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "Halo SRL",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "Internal Shock Lanyard 11200",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Guardian Fall Protection",
+    "model": "A5 Concrete Anchor",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Compact Basic Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Pulsar Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Sync Chest Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Alloy Karabiner Offset Tri-Act",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Alloy Scaffold Hook",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Alloy Scaffold Hook Rescue",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "ALTO Alloy Oval Screwgate",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "ALTO Alloy Oval Tri-Act",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "ALTUS Aluminium D Screwgate",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "ALTUS Aluminium Tri-Act",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "CONTRACT Steel Oval Screwgate",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Delta Screwlink",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "FastClip",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Steel D Twistlock Captive",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Steel HMS Screwgate 45kN",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Steel HMS Twist Lock 45kN",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Micron Self Evacuation Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Powerlock",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Prism Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Quadra Rescue Device",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Rotor Automatic Rescue Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Vector Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Apex Modular Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Aura Modular System",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Casualty Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "CORONA",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "ECLIPSE",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Extol Rope Access Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "MATRIX",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Neon Rigger's Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "NEXUS",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Phoenix",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Workseat",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Duon",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Duon Air",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Elite Twin Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "FLEXOR Elasticated Twin Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Piranha Adjustable Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "TENSOR Twin Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "4 Step Footloop",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Gratemate Rope Protector",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Hurricane Hauling Device",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Kari Transport Bag",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "LASER Temporary Horizontal Anchor Line",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "MANTLE Canvas Rope Protector",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "QUADPOD Portable Anchor",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Quantum Back-up Device",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "RescuePack WTG",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Rigger's Tower Climbing Kit",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Sentinel Rope Protector",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Suspension Relief Footloop",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Towerlatch",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Xtendr Rescue Pole",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Alloy Pulley 2cm",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Alloy Rescue Pulley 5cm",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "CYCLONE Hauling Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "HEXAN 6:1 Pulley System",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Stainless Steel Pulley 5cm",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Swing Cheek Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Vantage Rescue Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "6mm Accessory Cord",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "ENERGIS Dynamic Rope 10mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Tectra 11mm Low Stretch",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Protected Sewn Nylon Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Heightec",
+    "model": "Sewn Nylon Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP210 Professional Hand Ascender Left",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP220 Professional Hand Ascender Right",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP227 STRYDER Foot Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP229 Chest Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP240 Ultrasafe Hand Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Big Dan SuperSafe",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Iron Wizard",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH200 Stainless D Shape",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH204 HMS Karabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH212 Steel HMS",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH214 Mini HMS",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH215 Link",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH218 Aluminium Wizard",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH219 Stainless Iron Wizard",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH221 Aluminium Offset Oval",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH250 Stainless Twister",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH255 Twister",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH260 Steel Twister",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH300 Captive Eye",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH301 Steel Captive Eye",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH307 Firemans Karabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH308 Stainless Offset D",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH407 Scaffold Hook",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH415 Iron Wizard Large",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH451 Mongoose",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH452 Gecko",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KH453 Gator",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL100 Accessory Karabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL120 Compact Oval",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL121 Aluminium Oval",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL200 Offset D Keylock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL202 Klettersteig Keylock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL216 Offset Karabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL308 D Shape Keylock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL311 Steel Oval Keylock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "KL321 Offset Oval Keylock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "SH907 Triple-Action Snaphook",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Triple Action Snaphook",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "UltraLink Large",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "UltraLink Small",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "D1PRO Escape",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "D1PRO Tactical",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "D2 Personal Escape",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "D4 Work/Rescue Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "D4PRO Work/Rescue Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "D5 Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "D5PRO Work/Rescue Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Rescue Figure 8",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Sar A-B Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Singing Tree Rope Wrench RP280",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "DW200 A-Frame Deadweight Anchor",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Edge Roller ER100",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "GG301 Medium Pre-Cast Anchor",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "HaulerBiner Compact Rescue Kit",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "NESSIE Lanyard Clip",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "REFLEX Mechanical Hitch",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Rocker Ropegrab RP500",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP300 Small Rigging Plate",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP310 Medium Rigging Plate",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "SmartSnap",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Squirrel Tether",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Steel Ring 70kN",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "UltraLink",
+    "category": "other"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "200 Series Rigging Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Eiger Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Prussik Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "R-ALF Locking Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "Rope Wrench Pulley RP281",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP048 Compact Rigging Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP051 Small Forged Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP054 Medium Forged Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP248 200-Series Compact Rigging Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP251 200-Series Small Rigging Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP255 200-Series Medium Rigging Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "RP257 200-Series Large Rigging Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "ZipSpeed Tandem",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "ISC Wales",
+    "model": "WS100 Wire Anchor Strop",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Duck",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Futura Body",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Futura Foot",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Futura Hand",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Lift",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Ninja Foot",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Kanguro",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Ovalone",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Trapper",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "X-Large",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Hydrobot",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Indy Evo",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Oka",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Sierra Duo",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Stark",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Target Canyon",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Target Cave",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Top Tree",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Tower",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Mouse Work",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Plaster Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Scarab",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Slyde",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Back-Up",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Modular Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Robot Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Semi-Static 10.5mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Kong",
+    "model": "Static 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "AirCore",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "DuraFlex",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "H500 Construction Comfort",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "H700 Construction Comfort",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "H700 Industry Comfort",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "Revolution DualTech",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "Titan",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "Falcon+ Cable Retractable",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "HP Shock-Absorbing Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "Manyard II",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "TurboLite+",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "ManHandler Winch",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Miller",
+    "model": "Vi-Go Ladder Climbing System",
+    "category": "other"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "EVOTECH",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "EVOTECH Arc Flash",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "Gravity",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "Latchways PRD",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "Workman",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "Comfo-Cap",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "Skullgard",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "V-Gard",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "V-Gard H1",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "V-Gard H1 Pro",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "V-EDGE SRL",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "V-Series Shock Absorbing Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "V-SHOCK Personal Fall Limiter",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "MSA",
+    "model": "SureClimb Vertical Lifeline",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Ascension",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Ascentree",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Basic",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Croll L",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Croll S",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Knee Ascent Cam",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Knee Ascent Loop",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Pantin",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Tibloc",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Am'D",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Attache",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Bm'D",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Freino Z",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "OK",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Omni",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Oxan",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Sm'D",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Vertigo",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Vulcan",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "William",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Chicane",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Grigri",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "I'D Evac",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "I'D L",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "I'D S",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Maestro L",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Maestro S",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Rig",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Simple",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Stop",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Zigzag",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Zigzag Plus",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Astro Bod Fast",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Astro Sit Fast",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Avao Bod",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Avao Bod Fast",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Avao Sit",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Avao Sit Fast",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Falcon",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Falcon Ascent",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Falcon Mountain",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Newton",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Newton Easyfit",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Newton Fast Jak",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Sam",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Sequoia",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Sequoia SRT",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Top",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Top Croll S",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Volt",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Volt Wind",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Boreo",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Strato",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Strato Vent",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Vertex",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Vertex Hi-Viz",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Vertex Vent",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Absorbica-I",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Absorbica-Y",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Asap'Sorber",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Grillon",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Jane",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Microflip",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Progress Adjust-I",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Zillon",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "ASAP",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "ASAP Lock",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Caritool",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Footape",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Footcord",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Litepod",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Podium",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Protec",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Rescucender",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Shunt",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Toolink",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Tooltape",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Fixe",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Micro Traxion",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Minder L1",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Minder S1",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Mini Traxion",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Pro Traxion",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Rescue",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Rollclip A",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Rollclip Z",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Spin L1",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Spin L1D",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Spin L2",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Spin S1",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Trac",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Trac Plus",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Axis 11mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Club 10mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Parallel 10.5mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Push 9mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Vector 12.5mm",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Anneau",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Connexion Fixe",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Petzl",
+    "model": "Pur'Anneau",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Advantage Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Pit Viper Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Dura-Shield Pro Litter Bridle",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Dynamic Versa Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Rope Bag Standard",
+    "category": "other"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Rope Guard 24",
+    "category": "other"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Dura-Shield Explorer",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Dura-Shield Tech",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Extreme Pro G",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Hudson Classic Old Glory",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Hudson Classic Professional",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Isostatic Polyester",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Max Wear Hudson Classic Sport",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Patriot Vertical Lifeline",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Pit Rope Max Wear",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Son of Pit Rope",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "Anchor Hitch Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "PMI",
+    "model": "ANSI Anchor Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Protecta",
+    "model": "AD111A Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Protecta",
+    "model": "First Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Protecta",
+    "model": "Pro Dual Leg Stretch Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Protecta",
+    "model": "Rebel SRL",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Protecta",
+    "model": "Pro Line Horizontal Lifeline",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Pirate",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "rockD",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "rockO",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "rockSteel",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "rockX",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "SwivaBiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Akimbo",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Akimbo 2",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "DownRigger",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "MiniEight",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Rescue Eight",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Totem",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Unicender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "AZTEK Pro Kit",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Enforcer Load Cell",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "rockGrab",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Transporter",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "TriRig",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Vortex",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Hydra",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Kootenay Ultra",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Machined Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Machined Rescue Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Mini Machined Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Omni-Block 1.1",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Omni-Block 1.5",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Omni-Block 2.0",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Omni-Block 2.6",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Rock Exotica",
+    "model": "Omni-Block SwivaBiner",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Cam Clean",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Lift Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Colt Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Mini Accessory Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Mini D Screwgate",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Mini Pear Accessory",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Oval Steel Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Oxy Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Steel Triple Lock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Vision",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Double Stop Plus",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Figure 8",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Jack Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Rescue Figure 8",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Sir Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Body II",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Bow",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Expert 3D Speed",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Expert 3D Standard",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Franklin Work Seat",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Garnet",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Laika Dog Rescue Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Penguin",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Profi Worker 3D Speed",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Profi Worker 3D Standard",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "RL Chest Work",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Sit Worker II",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Sit Worker III",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Spinel",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Technic",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Timber 3D",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Top Chest Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Urban II",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Access Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Aero Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Flash Aero Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Flash Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Hex Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Industry Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Penta Helmet",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Atika Rope Protector",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Back Up Fall Arrester",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Detachable Ring",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Edge Roller",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Footer II",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Locker",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Porter Tool Holder",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Easy Lift Rescue Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Extra Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Mini Roll Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Red Block",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Small Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Tandem Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Route 44",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Singing Rock",
+    "model": "Dyneema Sling 11mm",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Skedco",
+    "model": "Drag-N-Lift Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skedco",
+    "model": "HMD Hasty Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skedco",
+    "model": "Half-Sked",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skedco",
+    "model": "Oregon Spine Splint II",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skedco",
+    "model": "Sked Stretcher Basic",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Get Up",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Quick Tree Foot Clamp",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Stand Up",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "FS 110 ALU",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "FS 51 ST",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "FS 64 ST",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "FS 90 ALU",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "FS 90 ST",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "FS 90 ST ANSI",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "FS 92",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Kobra Tri",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "OBX",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ovaloy Screw",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ovaloy Tri",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ovaloy Twist",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "OvalSteel Tri",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "OvalSteel TW",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "OVX",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "PassO-Tri",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "TriLock",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Viper Steel SC",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "A-330",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "A-370",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "A-730",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Lory",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Lory Pro",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Milan",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Milan 2.0",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Milan 2.0 Hub",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Milan 2.0 Power",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Sirius",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Spark",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Spark Tactical",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "ARG 30",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "CS 2",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "CS 4",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite ARB",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite Argon",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite Ion",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite Mounter",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite Neon",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite Proton Wind",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite Strato",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ignite Trion",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Inceptor GRX",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Inceptor GRX High Voltage",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Inceptor GRX High Voltage Reflective",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Inceptor GRX REF",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Inceptor GRX-MNT",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Inceptor GRX-MNT REF",
+    "category": "helmet"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "BFD Y Band",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Ergogrip SK12",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Peanut I",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skysafe Eco-R",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skysafe Eco-W",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skysafe Pro Flex Y",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skysafe Pro I",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skysafe Pro Tie Back Y",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skysafe Pro Y",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skysafe Pro+",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Tuner Pro",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Veric",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Claw CL-001",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Peanut",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Perisrop Edge Protector",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Rescue Device Driver RDD",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Skypack",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "CRIC",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Mini Tandem Pulley",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Orbiter A",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Orbiter D",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Orbiter H",
+    "category": "pulley"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Loop 26 kN",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Skylotec",
+    "model": "Rescue Loop",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Ergo Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Excel-Pro",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Pole-Tech",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Rig-Tech",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Scaff-Pro",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "X-Harness",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Adjustable Rope Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "DSL3",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "SP140 Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Spectre S",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "SpanSet",
+    "model": "Gotcha Rescue Kit",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "Chest Ascender",
+    "category": "ascender"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "SafeD Carabiner",
+    "category": "carabiner"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "ATS",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "F4 Escape Device",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "FCX Escape Descender",
+    "category": "descender"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "Tech Extension Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "Lightning GT Hook",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "Pocket Escape System Bag",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "EscapeTech",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "FireTech 2",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "HTP Static",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "SafetyPro",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "SuperStatic 2",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "WorkPro",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Sterling",
+    "model": "Tech Sewn Sling",
+    "category": "sling"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "treeMOTION",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "treeMOTION S.Light",
+    "category": "harness"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "antiSHOCK Lanyard",
+    "category": "lanyard"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "glideHITCH",
+    "category": "other"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "CE Climb",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "KM G",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "KM III",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "KM III Max",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "KM Pro",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "Patron",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "Patron Plus",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Teufelberger",
+    "model": "Sirius Bull",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Aramid Escape Rope",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Bee-Line",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Double Esterlon",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Imori",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Kernmaster",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Kernmaster Phantom",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Kernmaster Safari",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "XTC Fire",
+    "category": "rope"
+  },
+  {
+    "manufacturer": "Yale Cordage",
+    "model": "Yalex",
+    "category": "rope"
+  }
+]

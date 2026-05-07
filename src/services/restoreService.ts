@@ -6,7 +6,11 @@ import { CloudSnapshot, CloudStatePreview } from '../types';
 import { rehydrateAppPath } from '../utils/paths';
 import { scheduleCertExpiryNotifications } from '../utils/notifications';
 
-const MAX_CLOUD_SCHEMA_VERSION = 2;
+// Bumped to 3 with the gear inventory addition (equipment-inventory-design §7.1).
+// `schema_version` (the inner JsonBackup envelope) stays at 2 because the
+// shape of entries / signatures / profile is unchanged — only the snapshot
+// envelope grew the new gear / gear_inspections arrays.
+const MAX_CLOUD_SCHEMA_VERSION = 3;
 const MAX_DB_SCHEMA_VERSION = 2;
 
 export interface RestoreDeps {
@@ -33,6 +37,18 @@ function storageKeyToRelativePath(storageKey: string): string {
   if (storageKey.startsWith('assets/photo_')) {
     const rest = storageKey.replace('assets/photo_', '');
     return `logbook/photos/${rest}`;
+  }
+  // Gear inventory (cloud_schema_version 3). Mirrors the entry-photo
+  // round-trip invariant: `saveGearPhoto` writes locally to the same
+  // `logbook/photos/gearphoto_{id}.{ext}` path that this resolves to,
+  // so backup → restore preserves gear.photo_path byte-for-byte.
+  if (storageKey.startsWith('assets/gearphoto_')) {
+    const rest = storageKey.replace('assets/gearphoto_', '');
+    return `logbook/photos/gearphoto_${rest}`;
+  }
+  if (storageKey.startsWith('assets/inspcert_')) {
+    const rest = storageKey.replace('assets/inspcert_', '');
+    return `logbook/photos/inspcert_${rest}`;
   }
   throw new Error(`Unknown storage key format: ${storageKey}`);
 }
@@ -102,6 +118,11 @@ export function createRestoreService(deps: RestoreDeps) {
         await db.exec('DELETE FROM signatures');
         await db.exec('DELETE FROM entries');
         await db.exec('DELETE FROM profile');
+        // Gear tables — additive. Snapshots from cloud_schema_version < 3
+        // don't carry these arrays; the local tables come back empty in that
+        // case (we still wipe so a v3 → v2 → v3 round-trip stays consistent).
+        await db.exec('DELETE FROM gear_inspections');
+        await db.exec('DELETE FROM gear');
 
         const p = snap.profile;
         const rehydratedCard = p.sprat_card_photo_path
@@ -161,6 +182,36 @@ export function createRestoreService(deps: RestoreDeps) {
               s.id, s.entry_id, s.supervisor_name, s.supervisor_cert_number,
               rehydratedSigPath, s.signed_at, s.device_id, s.gps_lat, s.gps_lon,
               s.entry_hash, s.hash_version, s.created_at,
+            ],
+          );
+        }
+
+        // Gear inventory (cloud_schema_version 3). Pre-feature snapshots have
+        // no `gear` field — `?? []` keeps the loops empty in that case.
+        for (const g of snap.gear ?? []) {
+          const rehydratedPhoto = g.photo_path ? rehydrateAppPath(g.photo_path) : null;
+          await db.run(
+            `INSERT INTO gear (id, name, category, manufacturer, model, serial_number,
+                manufacture_date, first_use_date, retired_at, retirement_reason,
+                inspection_interval_months, next_inspection_due, photo_path, notes,
+                created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              g.id, g.name, g.category, g.manufacturer, g.model, g.serial_number,
+              g.manufacture_date, g.first_use_date, g.retired_at, g.retirement_reason,
+              g.inspection_interval_months, g.next_inspection_due, rehydratedPhoto,
+              g.notes, g.created_at, g.updated_at,
+            ],
+          );
+        }
+        for (const insp of snap.gear_inspections ?? []) {
+          const rehydratedCert = insp.cert_photo_path ? rehydrateAppPath(insp.cert_photo_path) : null;
+          await db.run(
+            `INSERT INTO gear_inspections (id, gear_id, inspected_on, result, inspector_name, notes, cert_photo_path, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              insp.id, insp.gear_id, insp.inspected_on, insp.result,
+              insp.inspector_name, insp.notes, rehydratedCert, insp.created_at,
             ],
           );
         }

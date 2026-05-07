@@ -383,24 +383,137 @@ describe('restoreService — v1 snapshot back-compat', () => {
     expect(row?.other_work_description).toBeNull();
   });
 
-  it('accepts cloud_schema_version 2 and refuses 3', async () => {
+  it('accepts cloud_schema_version 3 and refuses 4', async () => {
     const db = await createTestClient();
     const cloud = createMockCloudClient();
     const fs = createMockFs();
     await cloud.signInWithMagicLink('tech@example.com');
     const uid = cloud.getCurrentUserId()!;
 
-    const v2Snap = makeSnapshot({ cloud_schema_version: 2, backup_id: 'b-v2' });
-    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(v2Snap)));
+    const v3Snap = makeSnapshot({ cloud_schema_version: 3, backup_id: 'b-v3' });
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(v3Snap)));
     const r1 = await createRestoreService({ db, cloud, fs, appVersion: '1.0.0' }).restore();
     expect(r1.kind).toBe('restored');
 
     const db2 = await createTestClient();
-    const v3Snap = { ...makeSnapshot(), cloud_schema_version: 3 };
-    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(v3Snap)));
+    // cloud_schema_version 4 doesn't exist yet — but a future snapshot at that
+    // version landing on a today-vintage client must be refused, not silently
+    // dropped or partially applied. The cast bypasses the type union so the
+    // test can exercise the fence.
+    const v4Snap = { ...makeSnapshot(), cloud_schema_version: 4 as unknown as 3 };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(v4Snap)));
     const r2 = await createRestoreService({ db: db2, cloud, fs, appVersion: '1.0.0' }).restore();
     expect(r2.kind).toBe('version_too_new');
     if (r2.kind === 'version_too_new') expect(r2.which).toBe('cloud');
+  });
+
+  it('cloud_schema_version 2 snapshot restores with empty gear tables', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    // Pre-feature snapshot: no gear / gear_inspections fields.
+    const legacy = makeSnapshot({ cloud_schema_version: 2, backup_id: 'b-pre-gear' });
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(legacy)));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    const result = await svc.restore();
+    expect(result.kind).toBe('restored');
+    const gearCount = await db.get<{ n: number }>('SELECT COUNT(*) AS n FROM gear');
+    const inspCount = await db.get<{ n: number }>('SELECT COUNT(*) AS n FROM gear_inspections');
+    expect(gearCount?.n).toBe(0);
+    expect(inspCount?.n).toBe(0);
+  });
+
+  it('round-trips gear and inspections through cloud_schema_version 3', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    const snap: CloudSnapshot = {
+      ...makeSnapshot(),
+      cloud_schema_version: 3,
+      backup_id: 'b-gear-rt',
+      gear: [
+        {
+          id: 'g-1', name: 'My harness', category: 'harness',
+          manufacturer: 'Petzl', model: 'Avao Bod',
+          serial_number: 'SN1', manufacture_date: '2025-01-01', first_use_date: '2025-02-01',
+          retired_at: null, retirement_reason: null,
+          inspection_interval_months: 6, next_inspection_due: '2026-08-01',
+          photo_path: null, notes: 'demo',
+          created_at: '2025-02-01', updated_at: '2025-02-01',
+        },
+      ],
+      gear_inspections: [
+        {
+          id: 'i-1', gear_id: 'g-1', inspected_on: '2026-02-01',
+          result: 'pass', inspector_name: 'Insp', notes: null,
+          cert_photo_path: null, created_at: '2026-02-01',
+        },
+      ],
+    };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(snap)));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    await svc.restore();
+    const g = await db.get<{ name: string; category: string }>('SELECT name, category FROM gear WHERE id = ?', ['g-1']);
+    expect(g?.name).toBe('My harness');
+    expect(g?.category).toBe('harness');
+    const insp = await db.get<{ result: string; gear_id: string }>('SELECT result, gear_id FROM gear_inspections WHERE id = ?', ['i-1']);
+    expect(insp?.result).toBe('pass');
+    expect(insp?.gear_id).toBe('g-1');
+  });
+
+  it('gear photo asset round-trips: bytes land at gear.photo_path target', async () => {
+    const db = await createTestClient();
+    const cloud = createMockCloudClient();
+    const fs = createMockFs();
+    await cloud.signInWithMagicLink('tech@example.com');
+    const uid = cloud.getCurrentUserId()!;
+
+    const photoBytes = new TextEncoder().encode('gear-photo-bytes');
+    const photoSha = require('crypto').createHash('sha256').update(Buffer.from(photoBytes)).digest('hex');
+    const photoStorageKey = 'assets/gearphoto_g-1.jpg';
+    cloud.storage.set(`${uid}/${photoStorageKey}`, photoBytes);
+
+    const snap: CloudSnapshot = {
+      ...makeSnapshot(),
+      cloud_schema_version: 3,
+      backup_id: 'b-gear-photo',
+      photos_included: true,
+      profile: { ...makeSnapshot().profile, photos_in_backup: true },
+      binary_manifest: {
+        [photoStorageKey]: { sha256: photoSha, size_bytes: photoBytes.length, created_at: '2026-04-16T12:00:00.000Z' },
+      },
+      gear: [
+        {
+          id: 'g-1', name: 'Harness', category: 'harness',
+          manufacturer: null, model: null, serial_number: null,
+          manufacture_date: null, first_use_date: '2026-01-01',
+          retired_at: null, retirement_reason: null,
+          inspection_interval_months: 6, next_inspection_due: '2026-07-01',
+          // Relative form — what cloudBackupService writes after normalizeAppPath.
+          photo_path: 'logbook/photos/gearphoto_g-1.jpg',
+          notes: null, created_at: '2026-01-01', updated_at: '2026-01-01',
+        },
+      ],
+      gear_inspections: [],
+    };
+    cloud.storage.set(`${uid}/snapshot.json`, new TextEncoder().encode(JSON.stringify(snap)));
+
+    const svc = createRestoreService({ db, cloud, fs, appVersion: '1.0.0' });
+    const result = await svc.restore();
+    expect(result.kind).toBe('restored');
+
+    const expectedAbs = 'file:///var/mobile/Containers/Data/Application/ABC123/Documents/logbook/photos/gearphoto_g-1.jpg';
+    const row = await db.get<{ photo_path: string }>('SELECT photo_path FROM gear WHERE id = ?', ['g-1']);
+    expect(row?.photo_path).toBe(expectedAbs);
+    expect(fs.files.has(expectedAbs)).toBe(true);
   });
 });
 

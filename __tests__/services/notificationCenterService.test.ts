@@ -66,4 +66,45 @@ describe('notificationCenterService', () => {
     const all = await db.getAll(`SELECT id FROM notifications WHERE kind = 'backup_stale'`);
     expect(all).toHaveLength(2);
   });
+
+  test('per-gearId dedupe lets multiple items due on the same day each record once', async () => {
+    const db = await createTestClient();
+    const svc = createNotificationCenterService(db, () => '2026-05-06T12:00:00.000Z', testUuid);
+
+    const id1 = await svc.record({
+      kind: 'gear_inspection_30d',
+      payload: { gearId: 'g-1', name: 'Harness A' },
+      dedupeOnDay: true,
+      dedupeKey: 'g-1',
+    });
+    const id2 = await svc.record({
+      kind: 'gear_inspection_30d',
+      payload: { gearId: 'g-2', name: 'Harness B' },
+      dedupeOnDay: true,
+      dedupeKey: 'g-2',
+    });
+    // Same gear-1 again on the same day → dedupes to first id.
+    const id3 = await svc.record({
+      kind: 'gear_inspection_30d',
+      payload: { gearId: 'g-1', name: 'Harness A (2nd call)' },
+      dedupeOnDay: true,
+      dedupeKey: 'g-1',
+    });
+
+    expect(id1).not.toBe(id2);
+    expect(id3).toBe(id1);
+    expect((await svc.list()).length).toBe(2);
+  });
+
+  test('different kinds do not collide on dedupeKey', async () => {
+    const db = await createTestClient();
+    const svc = createNotificationCenterService(db, () => '2026-05-06T12:00:00.000Z', testUuid);
+    const a = await svc.record({
+      kind: 'gear_inspection_30d', payload: {}, dedupeOnDay: true, dedupeKey: 'g-1',
+    });
+    const b = await svc.record({
+      kind: 'gear_inspection_0d', payload: {}, dedupeOnDay: true, dedupeKey: 'g-1',
+    });
+    expect(a).not.toBe(b);
+  });
 });
