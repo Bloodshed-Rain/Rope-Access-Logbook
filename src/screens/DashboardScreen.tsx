@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react-native';
 import { Screen, Button, Banner } from '../primitives';
-import { StatCard } from '../primitives';
+import { StatCard, AvatarUpload } from '../primitives';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProfile } from '../hooks/useProfile';
 import { useEntries } from '../hooks/useEntries';
@@ -38,7 +38,6 @@ import { createSupabaseCloudClient } from '../cloud/supabaseClient';
 import { createExpoFsAbstraction } from '../cloud/fsAbstraction';
 import { sha256 } from '../utils/hash';
 import { entryRequiredFieldsFilled } from '../utils/entryComplete';
-import { TechSittingIllustration } from '../components/illustrations/TechSittingIllustration';
 import { RootStackParamList } from '../navigation/RootNavigator';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -68,6 +67,16 @@ function recertCaption(daysToExpiry: number, state: string): string {
   if (state === 'expired') return `Re-cert expired ${Math.abs(daysToExpiry)}d ago`;
   if (state === 'expires-today') return 'Re-cert expires today';
   return `Re-cert in ${daysToExpiry}d`;
+}
+
+function initialsFromName(name: string | undefined | null): string {
+  if (!name) return '';
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((p) => p[0] ?? '')
+    .slice(0, 2)
+    .join('');
 }
 
 export function DashboardScreen() {
@@ -294,11 +303,22 @@ export function DashboardScreen() {
           )}
         </View>
 
-        {/* Hero: hours today */}
+        {/* Hero: hours today. Avatar mirrors MeScreen's derivation
+            (user-set avatar → SPRAT card photo → initials). */}
         <StatCard
           big={`${todayHours}h`}
           title="logged today"
-          illustration={<TechSittingIllustration />}
+          illustration={
+            <AvatarUpload
+              uri={
+                profile?.avatar_path
+                  ?? (profile?.holds_sprat ? profile?.sprat_card_photo_path : null)
+                  ?? undefined
+              }
+              size={120}
+              initials={initialsFromName(profile?.full_name)}
+            />
+          }
         />
 
         {/* Read-only banner — lapsed subscription. The Me-tab's
