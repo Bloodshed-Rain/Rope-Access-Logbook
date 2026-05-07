@@ -46,7 +46,7 @@ export function Step2(props: Step2Props) {
       </Text>
 
       <View style={{ gap: spacing.sm }}>
-        <Text style={[typography.label, { color: colors.textSecondary }]}>Work types</Text>
+        <Text style={[typography.label, { color: colors.textPrimary }]}>Work types</Text>
         <View
           style={{
             borderWidth: borders.hair,

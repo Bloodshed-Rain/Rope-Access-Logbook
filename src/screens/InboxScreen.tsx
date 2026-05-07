@@ -203,7 +203,7 @@ export function InboxScreen() {
           <Text style={[typography.caption, { color: colors.textSecondary }]} numberOfLines={1}>
             {dateRangeText}
             {techHint ? (
-              <Text style={{ color: colors.textDisabled }}>{`  ·  ${techHint}`}</Text>
+              <Text style={{ color: colors.textSecondary }}>{`  ·  ${techHint}`}</Text>
             ) : null}
           </Text>
         </View>

@@ -10,7 +10,7 @@ const palette = {
   divider:      '#ECEAE5',
 
   textPrimary:   '#111827',
-  textSecondary: '#6B7280',
+  textSecondary: '#374151',
   textDisabled:  '#9CA3AF',
   textInverse:   '#FFFFFF',
 

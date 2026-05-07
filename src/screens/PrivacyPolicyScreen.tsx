@@ -51,7 +51,7 @@ export function PrivacyPolicyScreen() {
           local copy on your device is not exported anywhere first.
         </Text>
 
-        <Text style={[typography.caption, { color: colors.textDisabled, marginTop: spacing.md }]}>
+        <Text style={[typography.caption, { color: colors.textSecondary, marginTop: spacing.md }]}>
           The above is pre-launch boilerplate, not a final legal document.
           For pre-launch questions or data requests, email
           strsmichael@gmail.com.

@@ -93,7 +93,7 @@ export function Step1(props: Step1Props) {
       {/* Employer — list-first per spec, with an "Add new" row that reveals
           a free-text input. */}
       <View style={{ gap: spacing.sm }}>
-        <Text style={[typography.label, { color: colors.textSecondary }]}>Employer</Text>
+        <Text style={[typography.label, { color: colors.textPrimary }]}>Employer</Text>
         {employerMode === 'pick' && distinctEmployers.length > 0 ? (
           <View
             style={{
@@ -161,7 +161,7 @@ export function Step1(props: Step1Props) {
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <Text style={[typography.label, { color: colors.textSecondary }]}>When</Text>
+        <Text style={[typography.label, { color: colors.textPrimary }]}>When</Text>
         <SegmentedControl
           options={[
             { value: 'today',     label: 'Today' },

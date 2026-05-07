@@ -23,8 +23,8 @@ export function Input({ label, error, hint, style, editable = true, ...props }: 
   return (
     <View style={{ gap: spacing.s2 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Text style={[typography.caption, { color: colors.textDisabled }]}>{label}</Text>
-        {hint && <Text style={[typography.caption, { color: colors.textDisabled }]}>{hint}</Text>}
+        <Text style={[typography.label, { color: colors.textPrimary }]}>{label}</Text>
+        {hint && <Text style={[typography.caption, { color: colors.textSecondary }]}>{hint}</Text>}
       </View>
       <TextInput
         editable={editable}
@@ -58,7 +58,7 @@ export function Input({ label, error, hint, style, editable = true, ...props }: 
           },
           style,
         ]}
-        placeholderTextColor={colors.textDisabled}
+        placeholderTextColor={colors.textSecondary}
         onFocus={(e) => {
           setFocused(true);
           props.onFocus?.(e);

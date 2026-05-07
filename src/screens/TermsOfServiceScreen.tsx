@@ -56,7 +56,7 @@ export function TermsOfServiceScreen() {
           makes from the data shown in the app.
         </Text>
 
-        <Text style={[typography.caption, { color: colors.textDisabled, marginTop: spacing.md }]}>
+        <Text style={[typography.caption, { color: colors.textSecondary, marginTop: spacing.md }]}>
           The above is pre-launch boilerplate, not a final legal document.
           The published terms will supersede this text.
         </Text>

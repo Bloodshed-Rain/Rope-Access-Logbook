@@ -57,7 +57,7 @@ export function EmptyState({ title, subtitle, actionLabel, onAction, caption }: 
         <View style={{ marginTop: spacing.base, alignItems: 'center' }}>
           <Button title={actionLabel} onPress={onAction} />
           {caption && (
-            <Text style={[typography.caption, { color: colors.textDisabled, marginTop: spacing.xs }]}>
+            <Text style={[typography.caption, { color: colors.textSecondary, marginTop: spacing.xs }]}>
               {caption}
             </Text>
           )}

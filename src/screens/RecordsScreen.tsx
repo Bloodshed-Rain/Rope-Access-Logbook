@@ -270,7 +270,7 @@ export function RecordsScreen() {
           </Text>
           <Text style={[typography.caption, { color: colors.textSecondary }]} numberOfLines={1}>
             {dateRangeText}
-            <Text style={{ color: colors.textDisabled }}>{`  ·  ${item.work_hours}h`}</Text>
+            <Text style={{ color: colors.textSecondary }}>{`  ·  ${item.work_hours}h`}</Text>
           </Text>
         </View>
         <View style={{ marginLeft: spacing.sm, alignItems: 'flex-end', gap: spacing.xs }}>

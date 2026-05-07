@@ -39,7 +39,7 @@ export function SectionHeader({ label, num, accent: _accent = 'orange', right }:
             {num}
           </Text>
         )}
-        <Text style={[typography.title2, { color: colors.textDisabled }]}>{label}</Text>
+        <Text style={[typography.title2, { color: colors.textSecondary }]}>{label}</Text>
       </View>
       {right && (
         <View>
